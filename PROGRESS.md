@@ -1,6 +1,10 @@
-# 🎉 MVP Week 1 开发进度报告
+# 🎉 StarKeeper 开发进度报告
 
-## ✅ 已完成任务（100%）
+## ✅ PR #1: MVP Week 1 Foundation（已合并）
+
+### 完成时间: 2024-01-XX
+### 分支: feature/mvp-week1-foundation → main
+### 完成度: 100%
 
 ### 1. ✅ 初始化 Tailwind CSS + 组件库
 - 安装 Tailwind CSS 3.3.5
@@ -193,54 +197,199 @@ window.location.href = '/';
 
 ---
 
-## 🐛 已知限制
+## 🐛 已知限制（PR #1）
 
 1. OAuth 需要后端（已提供 PAT 替代方案）
-2. CSS Lint 警告（Tailwind 语法，不影响运行）
+2. CSS Lint 警告（Tailwind 语法,不影响运行）
 3. 端口 3000 被占用（自动切换到 3001）
+
+---
+
+## ✅ PR #2: 标签管理与 Gist 存储（进行中）
+
+### 分支: feature/tag-management
+### 完成度: 95%（待测试）
+
+### 新增功能
+
+#### 1. ✅ 标签管理 UI 组件
+- **TagBadge**: 可自定义颜色的标签徽章组件
+  - 支持 3 种尺寸（sm/md/lg）
+  - 8 种预设颜色
+  - 可删除功能
+  
+- **TagInput**: 智能标签输入组件
+  - 实时自动补全建议
+  - 键盘快捷键（Enter/Escape）
+  - 基于现有标签的建议列表
+
+- **TagModal**: 完整的标签管理模态框
+  - 显示项目基本信息
+  - 标签添加/删除
+  - 颜色选择器（8 种颜色）
+  - 笔记编辑功能
+  - 实时预览
+
+#### 2. ✅ Gist 元数据存储
+- **metadata.service.js**: Gist CRUD 服务层
+  - `findOrCreateMetadataGist()` - 自动创建用户 Gist
+  - `loadMetadataFromGist()` - 加载元数据
+  - `saveMetadataToGist()` - 保存元数据
+  - `updateRepoMetadata()` - 更新单个 repo
+  - `batchUpdateMetadata()` - 批量更新
+  - 格式转换器（Store ↔ Gist）
+
+#### 3. ✅ Dashboard 集成
+- Gist 自动初始化
+- 元数据自动加载
+- 标签自动保存（防抖 1 秒）
+- Card 组件显示标签和颜色
+- Modal 打开/关闭逻辑
+
+#### 4. ✅ Sidebar 标签过滤
+- 显示所有已使用标签
+- 多选筛选支持
+- 清除筛选按钮
+- 实时更新标签统计
+
+### 技术实现
+
+```javascript
+// Gist 数据结构
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-XX",
+  "repositories": {
+    "owner/repo": {
+      "tags": ["frontend", "react"],
+      "notes": "My project notes",
+      "color": "blue"
+    }
+  }
+}
+```
+
+### 新增文件
+
+```
+src/
+├── components/
+│   └── tags/
+│       ├── TagBadge.jsx           ✅ 标签徽章
+│       ├── TagInput.jsx           ✅ 标签输入
+│       └── TagModal.jsx           ✅ 标签模态框
+├── services/
+│   └── metadata.service.js        ✅ Gist 服务
+└── pages/
+    └── DashboardPage.jsx          🔄 集成标签功能
+```
+
+### 用户流程
+
+1. 用户登录后自动创建 StarKeeper metadata Gist
+2. 点击 repo 卡片"管理标签"按钮
+3. 在 Modal 中添加标签、选择颜色、写笔记
+4. 自动保存到 Gist（防抖）
+5. 刷新页面数据持久化
+6. Sidebar 中筛选标签
+
+### 待测试项（TESTING.md）
+
+- [ ] Gist 初始化与创建
+- [ ] 标签添加/删除/编辑
+- [ ] 颜色自定义与持久化
+- [ ] 笔记功能
+- [ ] 自动补全建议
+- [ ] Sidebar 标签过滤
+- [ ] 数据持久化（刷新测试）
+- [ ] Grid/List 视图标签显示
+- [ ] 错误处理（网络/Token）
+- [ ] 性能测试（100+ repos）
+
+---
+
+## 📊 总体进度
+
+### Week 1-2: MVP 核心功能
+- ✅ 基础框架搭建（PR #1）
+- 🔄 标签管理系统（PR #2）
+- ⏳ AI 自动摘要
+- ⏳ 导入/导出功能
+
+### Week 3-4: 高级功能
+- ⏳ 语义搜索
+- ⏳ 活跃度监控
+- ⏳ 数据可视化
+
+### Week 5-6: 浏览器扩展
+- ⏳ Chrome Extension
+- ⏳ 快捷操作
+
+---
+
+## 🎯 下一步计划
+
+完成 PR #2 后:
+1. 测试所有标签管理功能
+2. 优化用户体验
+3. 创建 PR #2 并合并
+4. 开始实现 AI 自动摘要功能
 
 ---
 
 ## ✨ 亮点演示
 
-### 登录页面
+### 登录页面（PR #1）
 - 精美的渐变背景
 - 功能特性展示
 - GitHub 一键登录
 
-### 主面板
+### 主面板（PR #1 + PR #2）
 - 实时搜索过滤
 - Grid/List 视图切换
 - 语言分类统计
+- **标签管理与筛选** ⭐ NEW
+- **Gist 自动存储** ⭐ NEW
+- **自定义标签颜色** ⭐ NEW
 - 响应式侧边栏
 
 ### 性能
 - Vite 快速热更新
 - 组件懒加载
 - 状态持久化
+- **Gist 自动防抖保存** ⭐ NEW
 
 ---
 
-## 📝 建议
+## 📝 使用说明
 
-### 立即可做
-1. 创建 GitHub Personal Access Token
-2. 在控制台设置 token
-3. 开始体验应用！
+### 首次使用
+1. 创建 GitHub Personal Access Token（需要 `repo` 和 `gist` 权限）
+2. 在登录页输入 Token
+3. 系统自动创建 StarKeeper metadata Gist
+4. 开始管理你的 Stars！
 
-### 后续优化
-1. 实现标签功能
-2. 添加 AI 摘要
-3. 创建后端 API
+### 标签管理
+1. 点击任意 repo 卡片的"管理标签"按钮
+2. 输入标签名按 Enter 添加
+3. 选择颜色自定义标签
+4. 添加笔记记录想法
+5. 所有更改自动保存到 Gist
+
+### 标签筛选
+1. 在左侧 Sidebar 查看所有标签
+2. 勾选标签进行筛选
+3. 支持多选（OR 逻辑）
+4. 点击"清除筛选"查看全部
 
 ---
 
-**🎊 恭喜！MVP 第一周基础功能已全部完成！**
+**🎊 MVP 核心功能稳步推进中！**
 
-现在你可以：
-- ✅ 浏览应用界面 http://localhost:3001
-- ✅ 使用 PAT 登录测试
-- ✅ 查看你的 GitHub Stars
+当前状态:
+- ✅ PR #1 已合并
+- 🔄 PR #2 开发完成,待测试
+- ⏳ 准备开始 AI 功能开发
 - ✅ 搜索和过滤项目
 
 **下一步：实现标签管理功能！** 🚀

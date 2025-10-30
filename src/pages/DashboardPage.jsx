@@ -3,17 +3,57 @@ import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos } from '../services/github.service';
+import TagModal from '../components/tags/TagModal';
+import TagBadge from '../components/tags/TagBadge';
+import { 
+  findOrCreateMetadataGist, 
+  loadMetadataFromGist,
+  updateRepoMetadata as saveRepoMetadataToGist,
+  convertGistToStoreFormat
+} from '../services/metadata.service';
 
 export default function DashboardPage() {
-  const { accessToken } = useAuthStore();
-  const { stars, filteredStars, setStars, setLoading, loading } = useStarsStore();
+  const { accessToken, gistId, setGistId } = useAuthStore();
+  const { stars, filteredStars, setStars, setLoading, loading, updateRepoMetadata, metadata, getAllTags, setMetadata } = useStarsStore();
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
+  const [selectedRepo, setSelectedRepo] = useState(null);
+  const [showTagModal, setShowTagModal] = useState(false);
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
       loadStars();
     }
   }, [accessToken]);
+
+  // 加载元数据
+  useEffect(() => {
+    if (accessToken && !gistId) {
+      initializeMetadata();
+    } else if (accessToken && gistId) {
+      loadMetadata();
+    }
+  }, [accessToken, gistId]);
+
+  const initializeMetadata = async () => {
+    try {
+      const id = await findOrCreateMetadataGist(accessToken);
+      setGistId(id);
+      console.log('✅ Gist ID 已初始化:', id);
+    } catch (error) {
+      console.error('初始化元数据失败:', error);
+    }
+  };
+
+  const loadMetadata = async () => {
+    try {
+      const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
+      const storeMetadata = convertGistToStoreFormat(gistMetadata);
+      setMetadata(storeMetadata);
+      console.log('✅ 元数据已加载，共', Object.keys(storeMetadata).length, '个仓库');
+    } catch (error) {
+      console.error('加载元数据失败:', error);
+    }
+  };
 
   const loadStars = async () => {
     setLoading(true);
@@ -25,6 +65,35 @@ export default function DashboardPage() {
       alert('加载失败：' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenTagModal = (repo) => {
+    setSelectedRepo(repo);
+    setShowTagModal(true);
+  };
+
+  const handleSaveTag = async (data) => {
+    // 更新本地状态
+    updateRepoMetadata(data.repoId, {
+      tags: data.tags,
+      notes: data.notes,
+      color: data.color,
+    });
+
+    // 保存到 Gist
+    if (gistId) {
+      try {
+        await saveRepoMetadataToGist(accessToken, gistId, data.repoId, {
+          tags: data.tags,
+          notes: data.notes,
+          color: data.color,
+        });
+        console.log('✅ 标签已保存到 Gist');
+      } catch (error) {
+        console.error('保存到 Gist 失败:', error);
+        alert('保存失败：' + error.message);
+      }
     }
   };
 
@@ -100,13 +169,25 @@ export default function DashboardPage() {
         </div>
 
         {/* Stars Grid/List */}
-        <StarsList stars={filteredStars} />
+        <StarsList stars={filteredStars} onOpenTagModal={handleOpenTagModal} />
+
+        {/* Tag Modal */}
+        <TagModal
+          isOpen={showTagModal}
+          onClose={() => setShowTagModal(false)}
+          repo={selectedRepo}
+          currentTags={metadata[selectedRepo?.id]?.tags || []}
+          currentNotes={metadata[selectedRepo?.id]?.notes || ''}
+          currentColor={metadata[selectedRepo?.id]?.color || '#3B82F6'}
+          allTags={getAllTags()}
+          onSave={handleSaveTag}
+        />
       </div>
     </MainLayout>
   );
 }
 
-function StarsList({ stars }) {
+function StarsList({ stars, onOpenTagModal }) {
   const { viewMode } = useUIStore();
 
   if (stars.length === 0) {
@@ -121,7 +202,7 @@ function StarsList({ stars }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stars.map((star) => (
-          <StarCard key={star.id} star={star} />
+          <StarCard key={star.id} star={star} onOpenTagModal={onOpenTagModal} />
         ))}
       </div>
     );
@@ -130,13 +211,18 @@ function StarsList({ stars }) {
   return (
     <div className="space-y-4">
       {stars.map((star) => (
-        <StarListItem key={star.id} star={star} />
+        <StarListItem key={star.id} star={star} onOpenTagModal={onOpenTagModal} />
       ))}
     </div>
   );
 }
 
-function StarCard({ star }) {
+function StarCard({ star, onOpenTagModal }) {
+  const { metadata } = useStarsStore();
+  const repoMeta = metadata[star.id] || {};
+  const tags = repoMeta.tags || [];
+  const color = repoMeta.color || '#3B82F6';
+  
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -159,6 +245,20 @@ function StarCard({ star }) {
         {star.description || '暂无描述'}
       </p>
 
+      {/* 标签显示 */}
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {tags.slice(0, 3).map((tag) => (
+            <TagBadge key={tag} tag={tag} color={color} size="sm" />
+          ))}
+          {tags.length > 3 && (
+            <span className="px-2 py-0.5 text-xs text-gray-500">
+              +{tags.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between text-sm text-gray-500">
         <div className="flex items-center space-x-4">
           <span>⭐ {star.stargazersCount.toLocaleString()}</span>
@@ -166,15 +266,23 @@ function StarCard({ star }) {
             <span>🔀 {star.forksCount.toLocaleString()}</span>
           )}
         </div>
-        <span className="text-xs">
-          {new Date(star.updatedAt).toLocaleDateString('zh-CN')}
-        </span>
+        <button
+          onClick={() => onOpenTagModal(star)}
+          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+        >
+          {tags.length > 0 ? '编辑标签' : '添加标签'}
+        </button>
       </div>
     </div>
   );
 }
 
-function StarListItem({ star }) {
+function StarListItem({ star, onOpenTagModal }) {
+  const { metadata } = useStarsStore();
+  const repoMeta = metadata[star.id] || {};
+  const tags = repoMeta.tags || [];
+  const color = repoMeta.color || '#3B82F6';
+  
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
@@ -194,12 +302,28 @@ function StarListItem({ star }) {
           <p className="text-sm text-gray-600 mb-2">
             {star.description || '暂无描述'}
           </p>
+          
+          {/* 标签显示 */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {tags.map((tag) => (
+                <TagBadge key={tag} tag={tag} color={color} size="sm" />
+              ))}
+            </div>
+          )}
+          
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <span>⭐ {star.stargazersCount.toLocaleString()}</span>
             <span>🔀 {star.forksCount.toLocaleString()}</span>
             <span>更新于 {new Date(star.updatedAt).toLocaleDateString('zh-CN')}</span>
           </div>
         </div>
+        <button
+          onClick={() => onOpenTagModal(star)}
+          className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+        >
+          {tags.length > 0 ? '编辑' : '添加标签'}
+        </button>
       </div>
     </div>
   );
