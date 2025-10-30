@@ -463,13 +463,192 @@ Gist 存储格式（扩展）：
 
 ---
 
-## 📊 总体进度
+## ✅ PR #4: 导入/导出功能（进行中）
+
+### 分支: feature/import-export
+### 完成度: 100%
+
+### 功能概述
+
+实现完整的数据导入/导出功能，支持 Markdown、CSV、JSON 三种格式，方便用户备份和分享 Stars 数据。
+
+---
+
+## ✨ 新增功能
+
+### 1. 导出服务 (export.service.js)
+
+#### 导出 Markdown
+- ✅ 按标签自动分类
+- ✅ 包含项目基本信息
+- ✅ 包含 AI 摘要和功能点
+- ✅ 包含用户笔记
+- ✅ 统计信息（Stars、Forks、语言）
+- ✅ 未分类项目单独分组
+- ✅ 精美的 Markdown 格式
+
+#### 导出 CSV
+- ✅ 表格格式，适合 Excel 打开
+- ✅ 包含所有关键字段
+- ✅ 标签用分号分隔
+- ✅ 正确处理引号和换行
+
+#### 导出 JSON
+- ✅ 完整的数据结构
+- ✅ 包含所有元数据
+- ✅ 版本标识（1.0.0）
+- ✅ 导出时间戳
+- ✅ 便于程序化处理
+
+### 2. 导出统计
+- ✅ 项目总数统计
+- ✅ 已添加标签数量
+- ✅ 有笔记数量
+- ✅ 有 AI 摘要数量
+- ✅ 标签总数统计
+- ✅ 未分类数量
+
+### 3. 导出模态框 (ExportModal.jsx)
+
+#### UI 设计
+- ✅ 精美的模态框设计
+- ✅ 数据统计卡片
+- ✅ 格式选择界面
+- ✅ 格式图标和描述
+- ✅ 选中状态高亮
+- ✅ 导出进度动画
+
+#### 交互功能
+- ✅ 单选格式选择
+- ✅ 一键导出下载
+- ✅ 导出进度提示
+- ✅ 错误处理
+- ✅ 自动关闭
+
+### 4. Dashboard 集成
+
+#### Toolbar 增强
+- ✅ 添加 "导出" 按钮
+- ✅ Download 图标
+- ✅ 与刷新按钮并列
+- ✅ 响应式布局
+
+---
+
+## 🗂️ 文件清单
+
+### 新增文件
+\`\`\`
+src/services/
+└── export.service.js          # 导出服务（350+ 行）
+
+src/components/common/
+└── ExportModal.jsx             # 导出模态框
+\`\`\`
+
+### 修改文件
+\`\`\`
+src/pages/DashboardPage.jsx    # 集成导出功能
+\`\`\`
+
+---
+
+## � 导出格式示例
+
+### Markdown 格式
+\`\`\`markdown
+# My GitHub Stars Collection
+
+> 导出时间: 2024-10-30
+> 项目总数: 123
+
+---
+
+## 🏷️ react
+
+### [react](https://github.com/facebook/react)
+**Owner:** [@facebook](...)
+**描述:** A declarative JavaScript library...
+**AI 摘要:** React 的声明式 UI 库
+**主要功能:**
+- 组件化开发
+- 虚拟 DOM
+**统计:** ⭐ 220,000 | 🔀 45,000 | 💻 JavaScript
+\`\`\`
+
+### CSV 格式
+\`\`\`csv
+Name,Full Name,Owner,Description,URL,Language,Stars,Forks,Updated,Tags,Notes,AI Summary
+react,facebook/react,facebook,"A declarative...",https://...,JavaScript,220000,45000,2024-10-30T...,frontend; react,"My notes","React 的声明式..."
+\`\`\`
+
+### JSON 格式
+\`\`\`json
+{
+  "version": "1.0.0",
+  "exportedAt": "2024-10-30T12:00:00Z",
+  "totalCount": 123,
+  "repositories": [
+    {
+      "id": 10270250,
+      "name": "react",
+      "fullName": "facebook/react",
+      "metadata": {
+        "tags": ["frontend", "react"],
+        "notes": "My notes",
+        "aiSummary": {...}
+      }
+    }
+  ]
+}
+\`\`\`
+
+---
+
+## 🎨 技术亮点
+
+1. **多格式支持**
+   - Markdown：适合阅读和分享
+   - CSV：适合数据分析
+   - JSON：适合程序处理
+
+2. **智能分类**
+   - 按标签自动分组
+   - 未分类单独处理
+   - 保持数据完整性
+
+3. **用户友好**
+   - 实时统计预览
+   - 一键下载
+   - 清晰的格式说明
+   - 精美的 UI 设计
+
+4. **数据完整**
+   - 包含所有用户数据
+   - 包含 AI 生成内容
+   - 包含项目元数据
+   - 时间戳记录
+
+---
+
+## 🔄 用户流程
+
+1. 点击 Dashboard 的 "导出" 按钮
+2. 查看数据统计概览
+3. 选择导出格式（Markdown/CSV/JSON）
+4. 点击 "导出" 按钮
+5. 文件自动下载到本地
+6. 文件名格式: `github-stars-2024-10-30.md`
+
+---
+
+## �📊 总体进度
 
 ### Week 1-2: MVP 核心功能
 - ✅ 基础框架搭建（PR #1）
 - ✅ 标签管理系统（PR #2）
-- 🔄 AI 自动摘要（PR #3）
-- ⏳ 导入/导出功能
+- ✅ AI 自动摘要（PR #3）
+- 🔄 导入/导出功能（PR #4）
 
 ### Week 3-4: 高级功能
 - ⏳ 语义搜索
@@ -484,10 +663,11 @@ Gist 存储格式（扩展）：
 
 ## 🎯 下一步计划
 
-完成 PR #2 后:
-1. 测试所有标签管理功能
-2. 优化用户体验
-3. 创建 PR #2 并合并
+完成 PR #4 后:
+1. 测试导出功能
+2. 优化导出格式
+3. 创建 PR #4 并合并
+4. 开始语义搜索功能
 4. 开始实现 AI 自动摘要功能
 
 ---
