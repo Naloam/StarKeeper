@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, Download } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
@@ -7,6 +7,7 @@ import { generateSummary } from '../services/dashscope.service';
 import TagModal from '../components/tags/TagModal';
 import TagBadge from '../components/tags/TagBadge';
 import AISummary from '../components/common/AISummary';
+import ExportModal from '../components/common/ExportModal';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState({});
 
   useEffect(() => {
@@ -198,14 +200,23 @@ export default function DashboardPage() {
               共 {stars.length} 个项目 · 显示 {filteredStars.length} 个
             </p>
           </div>
-          <button
-            onClick={loadStars}
-            disabled={loading}
-            className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>刷新</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>导出</span>
+            </button>
+            <button
+              onClick={loadStars}
+              disabled={loading}
+              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>刷新</span>
+            </button>
+          </div>
         </div>
 
         {/* Stars Grid/List */}
@@ -226,6 +237,14 @@ export default function DashboardPage() {
           currentColor={metadata[selectedRepo?.id]?.color || '#3B82F6'}
           allTags={getAllTags()}
           onSave={handleSaveTag}
+        />
+
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          stars={stars}
+          metadata={metadata}
         />
       </div>
     </MainLayout>
