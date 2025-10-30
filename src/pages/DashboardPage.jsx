@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
-import { getAllStarredRepos } from '../services/github.service';
+import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
+import { generateSummary } from '../services/dashscope.service';
 import TagModal from '../components/tags/TagModal';
 import TagBadge from '../components/tags/TagBadge';
+import AISummary from '../components/common/AISummary';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,
@@ -18,6 +20,7 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [showTagModal, setShowTagModal] = useState(false);
+  const [generatingSummary, setGeneratingSummary] = useState({});
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -97,6 +100,43 @@ export default function DashboardPage() {
     }
   };
 
+  // 生成 AI 摘要
+  const handleGenerateSummary = async (repo) => {
+    const repoId = `${repo.owner.login}/${repo.name}`;
+    setGeneratingSummary(prev => ({ ...prev, [repoId]: true }));
+
+    try {
+      // 获取 README
+      const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
+      
+      if (!readmeContent) {
+        alert('该项目没有 README 文件');
+        return;
+      }
+
+      // 调用 AI 生成摘要
+      const summary = await generateSummary(readmeContent, repo.name, repo.description);
+      
+      // 更新本地状态
+      updateRepoMetadata(repoId, {
+        aiSummary: summary,
+      });
+
+      // 保存到 Gist
+      if (gistId) {
+        await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+          aiSummary: summary,
+        });
+        console.log('✅ AI 摘要已保存到 Gist');
+      }
+    } catch (error) {
+      console.error('生成 AI 摘要失败:', error);
+      alert('生成失败：' + error.message);
+    } finally {
+      setGeneratingSummary(prev => ({ ...prev, [repoId]: false }));
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -169,7 +209,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Stars Grid/List */}
-        <StarsList stars={filteredStars} onOpenTagModal={handleOpenTagModal} />
+        <StarsList 
+          stars={filteredStars} 
+          onOpenTagModal={handleOpenTagModal}
+          onGenerateSummary={handleGenerateSummary}
+          generatingSummary={generatingSummary}
+        />
 
         {/* Tag Modal */}
         <TagModal
@@ -187,7 +232,7 @@ export default function DashboardPage() {
   );
 }
 
-function StarsList({ stars, onOpenTagModal }) {
+function StarsList({ stars, onOpenTagModal, onGenerateSummary, generatingSummary }) {
   const { viewMode } = useUIStore();
 
   if (stars.length === 0) {
@@ -202,7 +247,13 @@ function StarsList({ stars, onOpenTagModal }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stars.map((star) => (
-          <StarCard key={star.id} star={star} onOpenTagModal={onOpenTagModal} />
+          <StarCard 
+            key={star.id} 
+            star={star} 
+            onOpenTagModal={onOpenTagModal}
+            onGenerateSummary={onGenerateSummary}
+            isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+          />
         ))}
       </div>
     );
@@ -211,17 +262,25 @@ function StarsList({ stars, onOpenTagModal }) {
   return (
     <div className="space-y-4">
       {stars.map((star) => (
-        <StarListItem key={star.id} star={star} onOpenTagModal={onOpenTagModal} />
+        <StarListItem 
+          key={star.id} 
+          star={star} 
+          onOpenTagModal={onOpenTagModal}
+          onGenerateSummary={onGenerateSummary}
+          isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+        />
       ))}
     </div>
   );
 }
 
-function StarCard({ star, onOpenTagModal }) {
+function StarCard({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
   const { metadata } = useStarsStore();
+  const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
   const color = repoMeta.color || '#3B82F6';
+  const aiSummary = repoMeta.aiSummary;
   
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
@@ -244,6 +303,17 @@ function StarCard({ star, onOpenTagModal }) {
       <p className="text-sm text-gray-600 mb-4 line-clamp-2">
         {star.description || '暂无描述'}
       </p>
+
+      {/* AI 摘要 */}
+      <div className="mb-4">
+        <AISummary
+          summary={aiSummary}
+          onGenerate={() => onGenerateSummary(star)}
+          onRegenerate={() => onGenerateSummary(star)}
+          loading={isGenerating}
+          editable={true}
+        />
+      </div>
 
       {/* 标签显示 */}
       {tags.length > 0 && (
@@ -277,15 +347,17 @@ function StarCard({ star, onOpenTagModal }) {
   );
 }
 
-function StarListItem({ star, onOpenTagModal }) {
+function StarListItem({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
   const { metadata } = useStarsStore();
+  const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
   const color = repoMeta.color || '#3B82F6';
+  const aiSummary = repoMeta.aiSummary;
   
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="font-semibold text-gray-900 hover:text-primary-600">
@@ -299,9 +371,20 @@ function StarListItem({ star, onOpenTagModal }) {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-600 mb-2">
+          <p className="text-sm text-gray-600 mb-3">
             {star.description || '暂无描述'}
           </p>
+          
+          {/* AI 摘要 */}
+          <div className="mb-3">
+            <AISummary
+              summary={aiSummary}
+              onGenerate={() => onGenerateSummary(star)}
+              onRegenerate={() => onGenerateSummary(star)}
+              loading={isGenerating}
+              editable={true}
+            />
+          </div>
           
           {/* 标签显示 */}
           {tags.length > 0 && (
@@ -320,7 +403,7 @@ function StarListItem({ star, onOpenTagModal }) {
         </div>
         <button
           onClick={() => onOpenTagModal(star)}
-          className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+          className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors shrink-0"
         >
           {tags.length > 0 ? '编辑' : '添加标签'}
         </button>

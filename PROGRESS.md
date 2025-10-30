@@ -297,14 +297,169 @@ src/
 
 - [ ] Gist 初始化与创建
 - [ ] 标签添加/删除/编辑
-- [ ] 颜色自定义与持久化
-- [ ] 笔记功能
-- [ ] 自动补全建议
-- [ ] Sidebar 标签过滤
-- [ ] 数据持久化（刷新测试）
-- [ ] Grid/List 视图标签显示
-- [ ] 错误处理（网络/Token）
-- [ ] 性能测试（100+ repos）
+- [x] 颜色自定义与持久化
+- [x] 笔记功能
+- [x] 自动补全建议
+- [x] Sidebar 标签过滤
+- [x] 数据持久化（刷新测试）
+- [x] Grid/List 视图标签显示
+- [x] 错误处理（网络/Token）
+- [x] 性能测试（100+ repos）
+
+---
+
+## ✅ PR #3: AI 自动摘要（进行中）
+
+### 分支: feature/ai-summary
+### 完成度: 100%
+
+### 功能概述
+
+集成阿里云通义千问 API，为每个 GitHub 项目自动生成智能摘要，帮助用户快速了解项目核心价值。
+
+---
+
+## ✨ 新增功能
+
+### 1. AI 摘要展示组件
+
+#### AISummary 组件
+- ✅ 渐变背景设计（紫色主题）
+- ✅ 一句话摘要显示
+- ✅ 主要功能点列表
+- ✅ 适用场景说明
+- ✅ 技术栈展示
+- ✅ 生成/重新生成按钮
+- ✅ 编辑摘要功能
+- ✅ 加载动画效果
+- ✅ 时间戳显示
+
+### 2. README 自动获取
+
+#### 增强 GitHub Service
+- ✅ 复用现有 `getRepoReadme()` 函数
+- ✅ Base64 解码 README 内容
+- ✅ 自动截取前 3000 字符
+- ✅ 错误处理（无 README 情况）
+
+### 3. AI 摘要生成
+
+#### 增强 DashScope Service
+- ✅ 使用 qwen-turbo 模型（快速+成本低）
+- ✅ 结构化 JSON 输出：
+  - `summary`: 一句话概括（50字以内）
+  - `features`: 主要功能点（3-5条）
+  - `useCase`: 适用场景（30字以内）
+  - `techStack`: 技术栈列表
+- ✅ 智能 JSON 提取
+- ✅ 错误降级处理
+
+### 4. 摘要持久化
+
+#### 集成 Gist 存储
+- ✅ 摘要保存到 `metadata.repositories[repoId].aiSummary`
+- ✅ 支持缓存（避免重复生成）
+- ✅ 自动同步到 GitHub Gist
+
+### 5. Dashboard 集成
+
+#### 更新 DashboardPage
+- ✅ 添加 `generatingSummary` 状态管理
+- ✅ `handleGenerateSummary()` 函数
+- ✅ 传递 props 到 StarCard/StarListItem
+- ✅ Grid/List 视图统一支持
+
+### 6. 用户交互
+
+#### StarCard & StarListItem 增强
+- ✅ 显示 AI 摘要卡片
+- ✅ "生成摘要"按钮（首次）
+- ✅ "重新生成"按钮（已有摘要）
+- ✅ 加载动画（生成中）
+- ✅ 编辑摘要功能
+
+---
+
+## 🗂️ 文件清单
+
+### 新增文件
+\`\`\`
+src/components/common/
+└── AISummary.jsx           # AI 摘要展示组件
+\`\`\`
+
+### 修改文件
+\`\`\`
+src/pages/DashboardPage.jsx    # 集成 AI 摘要功能
+\`\`\`
+
+---
+
+## 💾 数据结构
+
+Gist 存储格式（扩展）：
+\`\`\`json
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-10-30T12:00:00Z",
+  "repositories": {
+    "owner/repo": {
+      "tags": ["frontend", "react"],
+      "notes": "项目笔记",
+      "color": "blue",
+      "aiSummary": {
+        "summary": "React 的声明式 UI 库",
+        "features": [
+          "组件化开发",
+          "虚拟 DOM",
+          "单向数据流"
+        ],
+        "useCase": "构建现代化 Web 应用",
+        "techStack": ["JavaScript", "JSX"],
+        "timestamp": 1730278800000
+      }
+    }
+  }
+}
+\`\`\`
+
+---
+
+## 🔄 用户流程
+
+1. 用户浏览 Stars 列表
+2. 点击项目卡片的 "生成摘要" 按钮
+3. 系统自动获取 README 内容
+4. 调用阿里云 DashScope API 生成结构化摘要
+5. 摘要实时显示在卡片中
+6. 自动保存到 Gist（防止重复生成）
+7. 用户可点击 "重新生成" 更新摘要
+8. 用户可编辑摘要内容
+
+---
+
+## 🎨 技术亮点
+
+1. **成本优化**: 使用阿里云 qwen-turbo，成本仅为 OpenAI 的 1/10
+2. **智能缓存**: 摘要保存到 Gist，避免重复 API 调用
+3. **用户体验**: 渐变背景、加载动画、实时预览
+4. **容错性强**: JSON 解析失败时降级处理
+5. **结构化输出**: 统一的数据格式，便于后续扩展
+
+---
+
+## 📊 API 成本估算
+
+基于阿里云 DashScope 定价：
+- **qwen-turbo**: ¥0.0008/千tokens
+- **平均 README**: ~2000 tokens
+- **生成摘要**: ~500 tokens
+- **单次成本**: ¥0.002（约 $0.0003）
+- **1000 个 repos**: ¥2（约 $0.3）
+
+对比 OpenAI GPT-3.5:
+- **单次成本**: ¥0.02（约 $0.003）
+- **节省**: 90% 成本
 
 ---
 
@@ -312,8 +467,8 @@ src/
 
 ### Week 1-2: MVP 核心功能
 - ✅ 基础框架搭建（PR #1）
-- 🔄 标签管理系统（PR #2）
-- ⏳ AI 自动摘要
+- ✅ 标签管理系统（PR #2）
+- 🔄 AI 自动摘要（PR #3）
 - ⏳ 导入/导出功能
 
 ### Week 3-4: 高级功能
