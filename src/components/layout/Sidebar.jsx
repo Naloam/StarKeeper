@@ -1,4 +1,4 @@
-import { Search, Filter, Tag, Grid, List, SortAsc } from 'lucide-react';
+import { Search, Filter, Tag, Grid, List, SortAsc, SortDesc, Star, Calendar, Type } from 'lucide-react';
 import { useStarsStore, useUIStore } from '../../store';
 
 export default function Sidebar() {
@@ -9,6 +9,10 @@ export default function Sidebar() {
     setSelectedLanguages,
     selectedTags,
     setSelectedTags,
+    sortBy,
+    setSortBy,
+    sortDirection,
+    setSortDirection,
     getAllLanguages,
     getAllTags,
     filteredStars,
@@ -87,6 +91,59 @@ export default function Sidebar() {
           >
             <List className="w-4 h-4" />
             <span className="text-sm">列表</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 排序选项 */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">排序方式</span>
+          <button
+            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            className="p-1 hover:bg-gray-100 rounded"
+            title={sortDirection === 'asc' ? '升序' : '降序'}
+          >
+            {sortDirection === 'asc' ? (
+              <SortAsc className="w-4 h-4 text-gray-600" />
+            ) : (
+              <SortDesc className="w-4 h-4 text-gray-600" />
+            )}
+          </button>
+        </div>
+        <div className="space-y-1">
+          <button
+            onClick={() => setSortBy('updated')}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sortBy === 'updated'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>最近更新</span>
+          </button>
+          <button
+            onClick={() => setSortBy('stars')}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sortBy === 'stars'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Star className="w-4 h-4" />
+            <span>Star 数量</span>
+          </button>
+          <button
+            onClick={() => setSortBy('name')}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+              sortBy === 'name'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Type className="w-4 h-4" />
+            <span>项目名称</span>
           </button>
         </div>
       </div>

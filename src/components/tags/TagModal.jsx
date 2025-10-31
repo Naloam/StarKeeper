@@ -49,14 +49,18 @@ export default function TagModal({
     setTags(tags.filter(t => t !== tag));
   };
 
-  const handleSave = () => {
-    onSave({
-      repoId: repo.id,
-      tags,
-      notes,
-      color: selectedColor,
-    });
-    onClose();
+  const handleSave = async () => {
+    try {
+      await onSave({
+        repoId: repo.id,
+        tags,
+        notes,
+        color: selectedColor,
+      });
+      onClose();
+    } catch (error) {
+      console.error('保存失败:', error);
+    }
   };
 
   if (!isOpen) return null;

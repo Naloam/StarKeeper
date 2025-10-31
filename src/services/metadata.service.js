@@ -100,8 +100,11 @@ export async function saveMetadataToGist(accessToken, gistId, metadata) {
  */
 export async function updateRepoMetadata(accessToken, gistId, repoId, repoMetadata) {
   try {
+    console.log('🔧 updateRepoMetadata 调用:', { gistId, repoId, repoMetadata });
+    
     // 加载现有元数据
     const metadata = await loadMetadataFromGist(accessToken, gistId);
+    console.log('📥 加载的元数据:', metadata);
 
     // 更新特定仓库的元数据
     metadata.repositories = metadata.repositories || {};
@@ -110,11 +113,14 @@ export async function updateRepoMetadata(accessToken, gistId, repoId, repoMetada
       ...repoMetadata,
       updatedAt: new Date().toISOString(),
     };
+    
+    console.log('📝 更新后的 repositories[' + repoId + ']:', metadata.repositories[repoId]);
 
     // 保存回 Gist
     await saveMetadataToGist(accessToken, gistId, metadata);
+    console.log('✅ updateRepoMetadata 完成');
   } catch (error) {
-    console.error('更新仓库元数据失败:', error);
+    console.error('❌ 更新仓库元数据失败:', error);
     throw error;
   }
 }
@@ -201,6 +207,72 @@ export function convertGistToStoreFormat(gistMetadata) {
   return gistMetadata.repositories || {};
 }
 
+/**
+ * 更新分享配置
+ * @param {string} accessToken
+ * @param {string} gistId
+ * @param {Object} shareConfig - { isPublic, shareTitle, shareDescription }
+ * @param {Array} stars - 要分享的仓库列表（可选，如果提供则保存）
+ * @returns {Promise<string>} shareId (Gist ID)
+ */
+export async function updateShareConfig(accessToken, gistId, shareConfig, stars = null) {
+  try {
+    console.log('📤 更新分享配置:', shareConfig);
+    
+    // 加载现有元数据
+    const metadata = await loadMetadataFromGist(accessToken, gistId);
+    
+    // 使用 Gist ID 作为 shareId（这样可以通过 shareId 直接获取 Gist）
+    const shareId = gistId;
+    
+    console.log('🔑 ShareId (Gist ID):', shareId);
+    
+    // 更新分享配置
+    const updatedMetadata = {
+      ...metadata,
+      shareConfig: {
+        isPublic: shareConfig.isPublic,
+        shareId: shareId,
+        shareTitle: shareConfig.shareTitle || 'My Stars Collection',
+        shareDescription: shareConfig.shareDescription || '',
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    
+    // 如果提供了 stars 数据，保存到 sharedStars 字段
+    if (stars && shareConfig.isPublic) {
+      console.log('💾 保存', stars.length, '个仓库到分享列表');
+      updatedMetadata.sharedStars = stars.map(star => ({
+        id: star.id,
+        name: star.name,
+        fullName: star.fullName,
+        owner: {
+          login: star.owner.login,
+          avatarUrl: star.owner.avatarUrl,
+        },
+        description: star.description,
+        language: star.language,
+        stargazersCount: star.stargazersCount,
+        forksCount: star.forksCount,
+        htmlUrl: star.htmlUrl,
+        createdAt: star.createdAt,
+        updatedAt: star.updatedAt,
+      }));
+    }
+    
+    // 保存到 Gist
+    await saveMetadataToGist(accessToken, gistId, updatedMetadata);
+    
+    console.log('✅ 分享配置已更新，ShareId:', shareId);
+    
+    return shareId;
+  } catch (error) {
+    console.error('更新分享配置失败:', error);
+    throw error;
+  }
+}
+
 export default {
   findOrCreateMetadataGist,
   loadMetadataFromGist,
@@ -210,4 +282,5 @@ export default {
   deleteRepoMetadata,
   convertStoreToGistFormat,
   convertGistToStoreFormat,
+  updateShareConfig,
 };

@@ -356,6 +356,31 @@ export async function getMetadataGist(accessToken, gistId) {
   }
 }
 
+/**
+ * 获取公开的 Gist
+ * @param {string} gistId - Gist ID
+ * @param {string} [accessToken] - 可选的 access token，提供后可避免速率限制
+ * @returns {Promise<Object>}
+ */
+export async function getPublicGist(gistId, accessToken = null) {
+  try {
+    // 如果提供了 token，使用认证请求（速率限制更高）
+    // 否则使用匿名请求（每小时 60 次限制）
+    const octokit = accessToken ? createOctokitClient(accessToken) : new Octokit();
+    
+    console.log('🔑 请求 Gist:', gistId, accessToken ? '(已认证)' : '(匿名)');
+    
+    const { data } = await octokit.gists.get({
+      gist_id: gistId,
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('获取公开 Gist 失败:', error);
+    throw error;
+  }
+}
+
 export default {
   createOctokitClient,
   getCurrentUser,
@@ -369,4 +394,5 @@ export default {
   createMetadataGist,
   updateMetadataGist,
   getMetadataGist,
+  getPublicGist,
 };
