@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles, Download } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, Download, Share2 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
@@ -8,11 +8,13 @@ import TagModal from '../components/tags/TagModal';
 import TagBadge from '../components/tags/TagBadge';
 import AISummary from '../components/common/AISummary';
 import ExportModal from '../components/common/ExportModal';
+import ShareModal from '../components/common/ShareModal';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,
   updateRepoMetadata as saveRepoMetadataToGist,
-  convertGistToStoreFormat
+  convertGistToStoreFormat,
+  updateShareConfig
 } from '../services/metadata.service';
 
 export default function DashboardPage() {
@@ -22,6 +24,8 @@ export default function DashboardPage() {
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareConfig, setShareConfig] = useState(null);
   const [generatingSummary, setGeneratingSummary] = useState({});
 
   useEffect(() => {
@@ -54,6 +58,12 @@ export default function DashboardPage() {
       const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
       const storeMetadata = convertGistToStoreFormat(gistMetadata);
       setMetadata(storeMetadata);
+      
+      // 加载分享配置
+      if (gistMetadata.shareConfig) {
+        setShareConfig(gistMetadata.shareConfig);
+      }
+      
       console.log('✅ 元数据已加载，共', Object.keys(storeMetadata).length, '个仓库');
     } catch (error) {
       console.error('加载元数据失败:', error);
@@ -79,26 +89,47 @@ export default function DashboardPage() {
   };
 
   const handleSaveTag = async (data) => {
-    // 更新本地状态
+    console.log('💾 保存标签数据:', data);
+    console.log('📊 当前 metadata 状态:', metadata);
+    console.log('🔑 repoId:', data.repoId, 'type:', typeof data.repoId);
+    
+    // 先更新本地状态（立即反馈）
     updateRepoMetadata(data.repoId, {
       tags: data.tags,
       notes: data.notes,
       color: data.color,
     });
+    
+    // 立即检查更新后的状态
+    setTimeout(() => {
+      console.log('✨ 更新后的 metadata:', metadata);
+      console.log('✨ 该仓库的 metadata:', metadata[data.repoId]);
+    }, 100);
 
     // 保存到 Gist
     if (gistId) {
       try {
+        console.log('📤 上传到 Gist:', { gistId, repoId: data.repoId });
         await saveRepoMetadataToGist(accessToken, gistId, data.repoId, {
           tags: data.tags,
           notes: data.notes,
           color: data.color,
         });
         console.log('✅ 标签已保存到 Gist');
+        
+        // 重新加载元数据确保同步
+        const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
+        const storeMetadata = convertGistToStoreFormat(gistMetadata);
+        setMetadata(storeMetadata);
+        console.log('✅ 元数据已重新加载，共', Object.keys(storeMetadata).length, '个仓库');
+        console.log('✅ 重新加载后该仓库的 metadata:', storeMetadata[data.repoId]);
       } catch (error) {
-        console.error('保存到 Gist 失败:', error);
+        console.error('❌ 保存到 Gist 失败:', error);
         alert('保存失败：' + error.message);
+        throw error; // 抛出错误，阻止 Modal 关闭
       }
+    } else {
+      console.warn('⚠️ gistId 不存在，无法保存到 Gist');
     }
   };
 
@@ -136,6 +167,33 @@ export default function DashboardPage() {
       alert('生成失败：' + error.message);
     } finally {
       setGeneratingSummary(prev => ({ ...prev, [repoId]: false }));
+    }
+  };
+
+  const handleUpdateShare = async (newShareConfig) => {
+    console.log('🔄 开始更新分享配置:', newShareConfig);
+    
+    try {
+      // 传递当前的 stars 数据，以便在分享页面展示
+      const shareId = await updateShareConfig(accessToken, gistId, newShareConfig, stars);
+      
+      console.log('✅ 收到 ShareId:', shareId);
+      
+      // 更新本地状态
+      const updatedConfig = {
+        ...newShareConfig,
+        shareId,
+      };
+      
+      setShareConfig(updatedConfig);
+      console.log('✅ 本地状态已更新:', updatedConfig);
+      
+      setShowShareModal(false);
+      alert('分享设置已更新！');
+    } catch (error) {
+      console.error('❌ 更新分享配置失败:', error);
+      alert('更新失败：' + error.message);
+      throw error; // 重新抛出错误，防止 Modal 关闭
     }
   };
 
@@ -202,6 +260,13 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center space-x-3">
             <button
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>分享</span>
+            </button>
+            <button
               onClick={() => setShowExportModal(true)}
               className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -245,6 +310,14 @@ export default function DashboardPage() {
           onClose={() => setShowExportModal(false)}
           stars={stars}
           metadata={metadata}
+        />
+
+        {/* Share Modal */}
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          shareConfig={shareConfig}
+          onUpdateShare={handleUpdateShare}
         />
       </div>
     </MainLayout>
