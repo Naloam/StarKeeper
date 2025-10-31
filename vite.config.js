@@ -11,6 +11,20 @@ export default defineConfig({
     hmr: {
       clientPort: 443, // Codespaces 使用 443 端口
     },
+    proxy: {
+      // 代理 DashScope API 请求
+      '/api/dashscope': {
+        target: 'https://dashscope.aliyuncs.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dashscope/, ''),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // 添加必要的请求头
+            console.log('🔄 代理请求:', req.method, req.url);
+          });
+        }
+      }
+    }
   },
   test: {
     globals: true,

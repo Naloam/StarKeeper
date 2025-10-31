@@ -187,8 +187,10 @@ export async function getRepoReadme(accessToken, owner, repo) {
       repo,
     });
 
-    // 解码 base64 内容
-    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+    // 解码 base64 内容（浏览器兼容）
+    // 移除换行符，然后使用 atob 解码
+    const base64Content = data.content.replace(/\n/g, '');
+    const content = decodeURIComponent(escape(atob(base64Content)));
     return content;
   } catch (error) {
     // README 不存在时返回空字符串
