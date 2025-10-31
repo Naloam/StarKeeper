@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles, Download, Share2 } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, Download, Share2, Zap } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
@@ -27,6 +27,8 @@ export default function DashboardPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareConfig, setShareConfig] = useState(null);
   const [generatingSummary, setGeneratingSummary] = useState({});
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -136,9 +138,25 @@ export default function DashboardPage() {
   // 生成 AI 摘要
   const handleGenerateSummary = async (repo) => {
     const repoId = `${repo.owner.login}/${repo.name}`;
+    const repoMeta = metadata[repo.id] || {};
+    
+    // 检查是否已有摘要且未过期（7天内）
+    const existingSummary = repoMeta.aiSummary;
+    if (existingSummary && existingSummary.timestamp) {
+      const daysSinceGeneration = (Date.now() - existingSummary.timestamp) / (1000 * 60 * 60 * 24);
+      if (daysSinceGeneration < 7) {
+        const confirmed = window.confirm(
+          `该项目已有 AI 摘要（生成于 ${Math.floor(daysSinceGeneration)} 天前）。是否重新生成？`
+        );
+        if (!confirmed) return;
+      }
+    }
+    
     setGeneratingSummary(prev => ({ ...prev, [repoId]: true }));
 
     try {
+      console.log('🚀 开始为项目生成摘要:', repoId);
+      
       // 获取 README
       const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
       
@@ -147,15 +165,21 @@ export default function DashboardPage() {
         return;
       }
 
+      console.log('📄 README 内容长度:', readmeContent.length);
+
       // 调用 AI 生成摘要
       const summary = await generateSummary(readmeContent, repo.name, repo.description);
       
-      // 更新本地状态
-      updateRepoMetadata(repoId, {
+      console.log('✅ 摘要生成成功:', summary);
+      
+      // 更新本地状态 - 使用 repo.id 作为 key
+      updateRepoMetadata(repo.id, {
         aiSummary: summary,
       });
+      
+      console.log('💾 本地状态已更新，repo.id:', repo.id);
 
-      // 保存到 Gist
+      // 保存到 Gist - 使用 repoId (owner/name) 格式
       if (gistId) {
         await saveRepoMetadataToGist(accessToken, gistId, repoId, {
           aiSummary: summary,
@@ -163,11 +187,107 @@ export default function DashboardPage() {
         console.log('✅ AI 摘要已保存到 Gist');
       }
     } catch (error) {
-      console.error('生成 AI 摘要失败:', error);
+      console.error('❌ 生成 AI 摘要失败:', error);
       alert('生成失败：' + error.message);
     } finally {
       setGeneratingSummary(prev => ({ ...prev, [repoId]: false }));
     }
+  };
+
+  // 保存编辑后的 AI 摘要
+  const handleSaveSummary = async (repo, updatedSummary) => {
+    const repoId = `${repo.owner.login}/${repo.name}`;
+
+    try {
+      // 更新本地状态 - 使用 repo.id 作为 key
+      updateRepoMetadata(repo.id, {
+        aiSummary: updatedSummary,
+      });
+
+      // 保存到 Gist
+      if (gistId) {
+        await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+          aiSummary: updatedSummary,
+        });
+        console.log('✅ 编辑的摘要已保存');
+      }
+    } catch (error) {
+      console.error('保存摘要失败:', error);
+      throw error; // 重新抛出错误，让 AISummary 组件显示错误提示
+    }
+  };
+
+  // 批量生成 AI 摘要
+  const handleBatchGenerateSummary = async () => {
+    // 筛选出还没有 AI 摘要的项目
+    const reposWithoutSummary = filteredStars.filter(star => {
+      const repoMeta = metadata[star.id] || {};
+      return !repoMeta.aiSummary;
+    });
+
+    if (reposWithoutSummary.length === 0) {
+      alert('当前显示的所有项目都已有 AI 摘要');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `即将为 ${reposWithoutSummary.length} 个项目生成 AI 摘要，这可能需要一些时间。是否继续？`
+    );
+
+    if (!confirmed) return;
+
+    setBatchGenerating(true);
+    setBatchProgress({ current: 0, total: reposWithoutSummary.length });
+
+    for (let i = 0; i < reposWithoutSummary.length; i++) {
+      const repo = reposWithoutSummary[i];
+      const repoId = `${repo.owner.login}/${repo.name}`;
+
+      try {
+        console.log(`📝 [${i + 1}/${reposWithoutSummary.length}] 正在为 ${repoId} 生成摘要...`);
+        
+        // 获取 README
+        const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
+        
+        if (!readmeContent) {
+          console.warn(`⚠️  ${repoId} 没有 README，跳过`);
+          setBatchProgress({ current: i + 1, total: reposWithoutSummary.length });
+          continue;
+        }
+
+        // 调用 AI 生成摘要
+        const summary = await generateSummary(readmeContent, repo.name, repo.description);
+        
+        // 更新本地状态 - 使用 repo.id 作为 key
+        updateRepoMetadata(repo.id, {
+          aiSummary: summary,
+        });
+
+        // 保存到 Gist - 使用 repoId (owner/name) 格式
+        if (gistId) {
+          await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+            aiSummary: summary,
+          });
+        }
+
+        console.log(`✅ [${i + 1}/${reposWithoutSummary.length}] ${repoId} 摘要生成成功`);
+        
+        // 更新进度
+        setBatchProgress({ current: i + 1, total: reposWithoutSummary.length });
+        
+        // 避免速率限制，每个请求之间等待 2 秒
+        if (i < reposWithoutSummary.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`❌ ${repoId} 生成失败:`, error);
+        // 继续处理下一个
+        setBatchProgress({ current: i + 1, total: reposWithoutSummary.length });
+      }
+    }
+
+    setBatchGenerating(false);
+    alert(`批量生成完成！成功生成 ${batchProgress.current} 个项目的摘要。`);
   };
 
   const handleUpdateShare = async (newShareConfig) => {
@@ -260,6 +380,24 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center space-x-3">
             <button
+              onClick={handleBatchGenerateSummary}
+              disabled={batchGenerating || loading}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="为当前显示的所有项目批量生成 AI 摘要"
+            >
+              {batchGenerating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>生成中 {batchProgress.current}/{batchProgress.total}</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  <span>批量生成摘要</span>
+                </>
+              )}
+            </button>
+            <button
               onClick={() => setShowShareModal(true)}
               className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -289,6 +427,7 @@ export default function DashboardPage() {
           stars={filteredStars} 
           onOpenTagModal={handleOpenTagModal}
           onGenerateSummary={handleGenerateSummary}
+          onSaveSummary={handleSaveSummary}
           generatingSummary={generatingSummary}
         />
 
@@ -324,7 +463,7 @@ export default function DashboardPage() {
   );
 }
 
-function StarsList({ stars, onOpenTagModal, onGenerateSummary, generatingSummary }) {
+function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, generatingSummary }) {
   const { viewMode } = useUIStore();
 
   if (stars.length === 0) {
@@ -344,6 +483,7 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, generatingSummary
             star={star} 
             onOpenTagModal={onOpenTagModal}
             onGenerateSummary={onGenerateSummary}
+            onSaveSummary={onSaveSummary}
             isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
           />
         ))}
@@ -359,6 +499,7 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, generatingSummary
           star={star} 
           onOpenTagModal={onOpenTagModal}
           onGenerateSummary={onGenerateSummary}
+          onSaveSummary={onSaveSummary}
           isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
         />
       ))}
@@ -366,7 +507,7 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, generatingSummary
   );
 }
 
-function StarCard({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
+function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
@@ -402,6 +543,7 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
           summary={aiSummary}
           onGenerate={() => onGenerateSummary(star)}
           onRegenerate={() => onGenerateSummary(star)}
+          onSave={(updatedSummary) => onSaveSummary(star, updatedSummary)}
           loading={isGenerating}
           editable={true}
         />
@@ -439,7 +581,7 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
   );
 }
 
-function StarListItem({ star, onOpenTagModal, onGenerateSummary, isGenerating }) {
+function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
@@ -473,6 +615,7 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, isGenerating })
               summary={aiSummary}
               onGenerate={() => onGenerateSummary(star)}
               onRegenerate={() => onGenerateSummary(star)}
+              onSave={(updatedSummary) => onSaveSummary(star, updatedSummary)}
               loading={isGenerating}
               editable={true}
             />

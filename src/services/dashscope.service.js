@@ -40,6 +40,9 @@ ${truncatedContent}
 4. techStack 列出主要技术栈（语言、框架等）
 5. 只返回 JSON，不要其他说明文字`;
 
+    console.log('📤 发送 DashScope API 请求...');
+    console.log('URL:', `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`);
+
     const response = await axios.post(
       `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
       {
@@ -72,13 +75,17 @@ ${truncatedContent}
       }
     );
 
+    console.log('✅ API 响应成功:', response.status);
+
     // 解析响应
     const text = response.data.output.choices[0].message.content;
+    console.log('🤖 AI 返回内容:', text);
     
     // 尝试提取 JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const result = JSON.parse(jsonMatch[0]);
+      console.log('✅ JSON 解析成功:', result);
       return {
         summary: result.summary || '项目摘要生成失败',
         features: result.features || [],
@@ -91,6 +98,7 @@ ${truncatedContent}
     }
     
     // 如果无法解析为 JSON，返回原始文本
+    console.warn('⚠️  无法解析 JSON，返回原始文本');
     return {
       summary: text.slice(0, 100),
       features: [],
@@ -102,17 +110,15 @@ ${truncatedContent}
     };
     
   } catch (error) {
-    console.error('DashScope API 调用失败:', error);
+    console.error('❌ DashScope API 调用失败:', error);
+    console.error('错误详情:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
     
-    // 返回错误信息
-    return {
-      summary: '摘要生成失败',
-      features: [],
-      useCase: '服务暂时不可用',
-      techStack: [],
-      error: error.message,
-      timestamp: Date.now(),
-    };
+    // 抛出错误让调用方处理
+    throw new Error(`AI 摘要生成失败: ${error.response?.data?.message || error.message}`);
   }
 }
 

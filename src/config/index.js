@@ -3,7 +3,10 @@
  */
 export const DASHSCOPE_CONFIG = {
   apiKey: import.meta.env.VITE_DASHSCOPE_API_KEY,
-  baseUrl: import.meta.env.VITE_DASHSCOPE_BASE_URL,
+  // 在开发环境使用代理，避免 CORS 问题
+  baseUrl: import.meta.env.DEV 
+    ? '/api/dashscope/api/v1/services/aigc'  // 开发环境使用代理
+    : 'https://dashscope.aliyuncs.com/api/v1/services/aigc', // 生产环境直接调用
   
   // 模型配置
   models: {
