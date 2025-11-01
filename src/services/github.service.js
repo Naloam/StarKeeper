@@ -1,9 +1,32 @@
 import { Octokit } from '@octokit/rest';
 import { GITHUB_CONFIG } from '../config';
+import { handleApiError } from '../utils/toast';
 
 /**
  * GitHub API 服务封装
  */
+
+/**
+ * 统一的 API 错误处理
+ * @param {Error} error - 错误对象
+ * @param {string} context - 错误上下文描述
+ */
+function handleGitHubError(error, context = 'API 请求') {
+  console.error(`${context}失败:`, error);
+  
+  // 提取错误信息
+  const errorInfo = {
+    status: error.status,
+    message: error.message,
+    response: error.response,
+  };
+  
+  // 使用 toast 显示用户友好的错误信息
+  handleApiError(errorInfo, `${context}失败`);
+  
+  // 重新抛出错误供上层处理
+  throw error;
+}
 
 /**
  * 创建 Octokit 实例
@@ -40,8 +63,7 @@ export async function getCurrentUser(accessToken) {
       following: data.following,
     };
   } catch (error) {
-    console.error('获取用户信息失败:', error);
-    throw error;
+    handleGitHubError(error, '获取用户信息');
   }
 }
 
@@ -96,8 +118,7 @@ export async function getStarredRepos(accessToken, options = {}) {
       disabled: repo.disabled,
     }));
   } catch (error) {
-    console.error('获取 starred repos 失败:', error);
-    throw error;
+    handleGitHubError(error, '获取 starred repos');
   }
 }
 
@@ -167,8 +188,7 @@ export async function getAllStarredRepos(accessToken, onProgress) {
 
     return allRepos;
   } catch (error) {
-    console.error('获取所有 starred repos 失败:', error);
-    throw error;
+    handleGitHubError(error, '获取所有 starred repos');
   }
 }
 

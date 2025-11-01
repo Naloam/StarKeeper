@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store';
 import LoginPage from './pages/LoginPage';
 import CallbackPage from './pages/CallbackPage';
@@ -6,8 +7,10 @@ import DashboardPage from './pages/DashboardPage';
 import CleanupPage from './pages/CleanupPage';
 import DeduplicationPage from './pages/DeduplicationPage';
 import SharePage from './pages/SharePage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { useEffect, useState } from 'react';
 import { validateGitHubToken } from './utils/auth';
+import { setupNetworkListener } from './utils/toast';
 
 function App() {
   const { isAuthenticated, accessToken, login, logout } = useAuthStore();
@@ -15,6 +18,11 @@ function App() {
 
   console.log('🚀 App 组件已加载');
   console.log('🔑 认证状态:', isAuthenticated);
+
+  // 设置网络状态监听
+  useEffect(() => {
+    setupNetworkListener();
+  }, []);
 
   // 应用启动时检查 store 中的 token
   useEffect(() => {
@@ -77,29 +85,65 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
-        />
-        <Route path="/auth/callback" element={<CallbackPage />} />
-        <Route
-          path="/dashboard"
-          element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/cleanup"
-          element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
-        />
-        <Route
-          path="/deduplication"
-          element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
-        />
-        <Route path="/share/:shareId" element={<SharePage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
+          />
+          <Route path="/auth/callback" element={<CallbackPage />} />
+          <Route
+            path="/dashboard"
+            element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/cleanup"
+            element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
+          />
+          <Route
+            path="/deduplication"
+            element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
+          />
+          <Route path="/share/:shareId" element={<SharePage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </BrowserRouter>
+      
+      {/* Toast 通知组件 */}
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
+        toastOptions={{
+          // 默认配置
+          duration: 4000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            borderRadius: '12px',
+            padding: '16px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+            maxWidth: '500px',
+          },
+          // 成功样式
+          success: {
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // 错误样式
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </ErrorBoundary>
   );
 }
 
