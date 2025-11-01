@@ -1,5 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles, Download, Share2, Zap, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Search, 
+  Plus, 
+  Grid3x3, 
+  List, 
+  Download, 
+  Upload, 
+  RefreshCw, 
+  Share2, 
+  Sparkles, 
+  Activity,
+  Trash2,
+  Loader2,
+  Zap
+} from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
@@ -21,6 +36,7 @@ import {
 } from '../services/metadata.service';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { accessToken, gistId, setGistId } = useAuthStore();
   const { stars, filteredStars, setStars, setLoading, loading, updateRepoMetadata, metadata, getAllTags, setMetadata } = useStarsStore();
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
@@ -557,6 +573,14 @@ export default function DashboardPage() {
                   <span>批量分析健康度</span>
                 </>
               )}
+            </button>
+            <button
+              onClick={() => navigate('/cleanup')}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all"
+              title="智能清理建议，帮你整理无效或重复的 Stars"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>智能清理</span>
             </button>
             <button
               onClick={() => setShowShareModal(true)}

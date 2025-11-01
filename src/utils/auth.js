@@ -132,6 +132,40 @@ export function clearStoredToken() {
   localStorage.removeItem('github_token');
 }
 
+/**
+ * 验证 GitHub Token 是否有效
+ * @param {string} token
+ * @returns {Promise<{valid: boolean, user?: Object, error?: string}>}
+ */
+export async function validateGitHubToken(token) {
+  try {
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (response.ok) {
+      const user = await response.json();
+      return { valid: true, user };
+    }
+
+    if (response.status === 401) {
+      return { valid: false, error: 'Token 无效或已过期' };
+    }
+
+    if (response.status === 403) {
+      return { valid: false, error: 'Token 权限不足或已被限制' };
+    }
+
+    return { valid: false, error: `验证失败: ${response.status}` };
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return { valid: false, error: '网络错误，无法验证 Token' };
+  }
+}
+
 export default {
   getGitHubAuthUrl,
   validateState,
@@ -142,4 +176,5 @@ export default {
   storeToken,
   getStoredToken,
   clearStoredToken,
+  validateGitHubToken,
 };
