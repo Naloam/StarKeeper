@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles, Download, Share2, Zap } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, Download, Share2, Zap, Activity } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
 import { generateSummary } from '../services/dashscope.service';
+import { calculateHealthScore, batchCalculateHealthScore } from '../services/health.service';
 import TagModal from '../components/tags/TagModal';
 import TagBadge from '../components/tags/TagBadge';
 import AISummary from '../components/common/AISummary';
 import ExportModal from '../components/common/ExportModal';
 import ShareModal from '../components/common/ShareModal';
+import HealthBadge from '../components/common/HealthBadge';
+import HealthDetailModal from '../components/common/HealthDetailModal';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,
@@ -29,6 +32,13 @@ export default function DashboardPage() {
   const [generatingSummary, setGeneratingSummary] = useState({});
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  
+  // 健康度分析相关状态
+  const [analyzingHealth, setAnalyzingHealth] = useState({});
+  const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+  const [healthAnalysisProgress, setHealthAnalysisProgress] = useState({ current: 0, total: 0 });
+  const [selectedHealthRepo, setSelectedHealthRepo] = useState(null);
+  const [showHealthModal, setShowHealthModal] = useState(false);
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -290,6 +300,139 @@ export default function DashboardPage() {
     alert(`批量生成完成！成功生成 ${batchProgress.current} 个项目的摘要。`);
   };
 
+  // 分析单个项目健康度
+  const handleAnalyzeHealth = async (repo) => {
+    const repoId = repo.id;
+    const repoMeta = metadata[repoId] || {};
+    
+    // 检查是否已有健康度数据且未过期（7天内）
+    const existingHealth = repoMeta.healthScore;
+    if (existingHealth && existingHealth.cacheExpiry) {
+      const isExpired = new Date(existingHealth.cacheExpiry) < new Date();
+      if (!isExpired) {
+        // 直接显示现有数据
+        setSelectedHealthRepo({ repo, healthScore: existingHealth });
+        setShowHealthModal(true);
+        return;
+      }
+    }
+    
+    setAnalyzingHealth(prev => ({ ...prev, [repoId]: true }));
+
+    try {
+      console.log('🏥 开始分析项目健康度:', repo.fullName);
+      
+      // 计算健康度
+      const healthScore = await calculateHealthScore(accessToken, repo);
+      
+      console.log('✅ 健康度分析成功:', healthScore);
+      
+      // 更新本地状态
+      updateRepoMetadata(repo.id, {
+        healthScore: healthScore,
+      });
+      
+      console.log('💾 健康度数据已更新到本地状态');
+
+      // 保存到 Gist
+      if (gistId) {
+        const gistRepoId = `${repo.owner.login}/${repo.name}`;
+        await saveRepoMetadataToGist(accessToken, gistId, gistRepoId, {
+          healthScore: healthScore,
+        });
+        console.log('✅ 健康度数据已保存到 Gist');
+      }
+
+      // 显示详情弹窗
+      setSelectedHealthRepo({ repo, healthScore });
+      setShowHealthModal(true);
+    } catch (error) {
+      console.error('❌ 分析健康度失败:', error);
+      alert('分析失败：' + error.message);
+    } finally {
+      setAnalyzingHealth(prev => ({ ...prev, [repoId]: false }));
+    }
+  };
+
+  // 批量分析健康度
+  const handleBatchAnalyzeHealth = async () => {
+    // 筛选出还没有健康度数据或数据已过期的项目
+    const reposNeedingAnalysis = filteredStars.filter(star => {
+      const repoMeta = metadata[star.id] || {};
+      const existingHealth = repoMeta.healthScore;
+      if (!existingHealth) return true;
+      if (!existingHealth.cacheExpiry) return true;
+      return new Date(existingHealth.cacheExpiry) < new Date();
+    });
+
+    if (reposNeedingAnalysis.length === 0) {
+      alert('当前显示的所有项目都已有健康度数据（且未过期）');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `即将为 ${reposNeedingAnalysis.length} 个项目分析健康度，这可能需要一些时间。是否继续？`
+    );
+
+    if (!confirmed) return;
+
+    setBatchAnalyzing(true);
+    setHealthAnalysisProgress({ current: 0, total: reposNeedingAnalysis.length });
+
+    for (let i = 0; i < reposNeedingAnalysis.length; i++) {
+      const repo = reposNeedingAnalysis[i];
+      const repoId = `${repo.owner.login}/${repo.name}`;
+
+      try {
+        console.log(`🏥 [${i + 1}/${reposNeedingAnalysis.length}] 正在分析 ${repoId}...`);
+        
+        // 计算健康度
+        const healthScore = await calculateHealthScore(accessToken, repo);
+        
+        // 更新本地状态
+        updateRepoMetadata(repo.id, {
+          healthScore: healthScore,
+        });
+
+        // 保存到 Gist
+        if (gistId) {
+          await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+            healthScore: healthScore,
+          });
+        }
+
+        console.log(`✅ [${i + 1}/${reposNeedingAnalysis.length}] ${repoId} 健康度: ${healthScore.score}分`);
+        
+        // 更新进度
+        setHealthAnalysisProgress({ current: i + 1, total: reposNeedingAnalysis.length });
+        
+        // 避免速率限制，每个请求之间等待 1 秒
+        if (i < reposNeedingAnalysis.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`❌ ${repoId} 分析失败:`, error);
+        // 继续处理下一个
+        setHealthAnalysisProgress({ current: i + 1, total: reposNeedingAnalysis.length });
+      }
+    }
+
+    setBatchAnalyzing(false);
+    alert(`批量分析完成！成功分析 ${healthAnalysisProgress.current} 个项目的健康度。`);
+  };
+
+  // 显示健康度详情
+  const handleShowHealthDetail = (repo) => {
+    const repoMeta = metadata[repo.id] || {};
+    if (repoMeta.healthScore) {
+      setSelectedHealthRepo({ repo, healthScore: repoMeta.healthScore });
+      setShowHealthModal(true);
+    } else {
+      // 如果没有健康度数据，直接分析
+      handleAnalyzeHealth(repo);
+    }
+  };
+
   const handleUpdateShare = async (newShareConfig) => {
     console.log('🔄 开始更新分享配置:', newShareConfig);
     
@@ -398,6 +541,24 @@ export default function DashboardPage() {
               )}
             </button>
             <button
+              onClick={handleBatchAnalyzeHealth}
+              disabled={batchAnalyzing || loading}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              title="为当前显示的所有项目批量分析健康度"
+            >
+              {batchAnalyzing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>分析中 {healthAnalysisProgress.current}/{healthAnalysisProgress.total}</span>
+                </>
+              ) : (
+                <>
+                  <Activity className="w-4 h-4" />
+                  <span>批量分析健康度</span>
+                </>
+              )}
+            </button>
+            <button
               onClick={() => setShowShareModal(true)}
               className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -429,6 +590,9 @@ export default function DashboardPage() {
           onGenerateSummary={handleGenerateSummary}
           onSaveSummary={handleSaveSummary}
           generatingSummary={generatingSummary}
+          onAnalyzeHealth={handleAnalyzeHealth}
+          onShowHealthDetail={handleShowHealthDetail}
+          analyzingHealth={analyzingHealth}
         />
 
         {/* Tag Modal */}
@@ -458,12 +622,21 @@ export default function DashboardPage() {
           shareConfig={shareConfig}
           onUpdateShare={handleUpdateShare}
         />
+
+        {/* Health Detail Modal */}
+        {showHealthModal && selectedHealthRepo && (
+          <HealthDetailModal
+            repo={selectedHealthRepo.repo}
+            healthScore={selectedHealthRepo.healthScore}
+            onClose={() => setShowHealthModal(false)}
+          />
+        )}
       </div>
     </MainLayout>
   );
 }
 
-function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, generatingSummary }) {
+function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, generatingSummary, onAnalyzeHealth, onShowHealthDetail, analyzingHealth }) {
   const { viewMode } = useUIStore();
 
   if (stars.length === 0) {
@@ -485,6 +658,9 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
             onGenerateSummary={onGenerateSummary}
             onSaveSummary={onSaveSummary}
             isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+            onAnalyzeHealth={onAnalyzeHealth}
+            onShowHealthDetail={onShowHealthDetail}
+            isAnalyzing={analyzingHealth[star.id]}
           />
         ))}
       </div>
@@ -501,19 +677,23 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
           onGenerateSummary={onGenerateSummary}
           onSaveSummary={onSaveSummary}
           isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+          onAnalyzeHealth={onAnalyzeHealth}
+          onShowHealthDetail={onShowHealthDetail}
+          isAnalyzing={analyzingHealth[star.id]}
         />
       ))}
     </div>
   );
 }
 
-function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating }) {
+function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating, onAnalyzeHealth, onShowHealthDetail, isAnalyzing }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
   const color = repoMeta.color || '#3B82F6';
   const aiSummary = repoMeta.aiSummary;
+  const healthScore = repoMeta.healthScore;
   
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
@@ -526,11 +706,35 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
           </h3>
           <p className="text-sm text-gray-500">@{star.owner.login}</p>
         </div>
-        {star.language && (
-          <span className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded">
-            {star.language}
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-2">
+          {star.language && (
+            <span className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded">
+              {star.language}
+            </span>
+          )}
+          {/* 健康度徽章 */}
+          {healthScore && !isAnalyzing ? (
+            <HealthBadge 
+              healthScore={healthScore} 
+              size="sm"
+              onClick={() => onShowHealthDetail(star)}
+            />
+          ) : isAnalyzing ? (
+            <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              <span>分析中...</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => onAnalyzeHealth(star)}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+              title="分析健康度"
+            >
+              <Activity className="w-3 h-3" />
+              <span>分析健康度</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="text-sm text-gray-600 mb-4 line-clamp-2">
@@ -581,13 +785,14 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
   );
 }
 
-function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating }) {
+function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating, onAnalyzeHealth, onShowHealthDetail, isAnalyzing }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
   const color = repoMeta.color || '#3B82F6';
   const aiSummary = repoMeta.aiSummary;
+  const healthScore = repoMeta.healthScore;
   
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -603,6 +808,28 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
               <span className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded">
                 {star.language}
               </span>
+            )}
+            {/* 健康度徽章 */}
+            {healthScore && !isAnalyzing ? (
+              <HealthBadge 
+                healthScore={healthScore} 
+                size="sm"
+                onClick={() => onShowHealthDetail(star)}
+              />
+            ) : isAnalyzing ? (
+              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span>分析中...</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => onAnalyzeHealth(star)}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+                title="分析健康度"
+              >
+                <Activity className="w-3 h-3" />
+                <span>分析健康度</span>
+              </button>
             )}
           </div>
           <p className="text-sm text-gray-600 mb-3">
