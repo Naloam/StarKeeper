@@ -51,9 +51,16 @@ export default function LoginPage() {
 
       const user = await response.json();
 
-      // 登录成功
-      login(token.trim(), user);
-      navigate('/dashboard');
+      // 登录成功 - 注意参数顺序: login(user, accessToken, gistId)
+      // Store token to localStorage for persistence
+      const { storeToken } = await import('../utils/auth');
+      storeToken(token.trim());
+      
+      // 调用 login 更新 store
+      login(user, token.trim());
+      
+      // 强制刷新页面以确保使用新的 token
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('Token login error:', err);
       setError(err.message || 'Token 验证失败');
@@ -216,8 +223,19 @@ export default function LoginPage() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-gray-500 space-y-2">
           <p>Made with ❤️ for GitHub Users</p>
+          <button
+            onClick={() => {
+              // 清除所有缓存数据
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            清除缓存并刷新
+          </button>
         </div>
       </div>
     </div>

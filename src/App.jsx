@@ -29,12 +29,15 @@ function App() {
           
           if (result.valid) {
             console.log('✅ Token 验证成功:', result.user.login);
-            login(token, result.user);
+            login(result.user, token);
           } else {
             console.warn('❌ Token 验证失败:', result.error);
             // Token 无效，清除所有数据
             clearStoredToken();
             logout();
+            
+            // 清除 zustand persist 数据
+            localStorage.removeItem('starkeeper-auth');
             
             // 显示友好提示
             if (result.error.includes('无效') || result.error.includes('过期')) {
