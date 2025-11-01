@@ -14,18 +14,24 @@ import {
   Sparkles
 } from 'lucide-react';
 import useStarsStore from '../store';
+import { useAuthStore } from '../store';
 import { 
   generateCleanupSuggestions,
   archiveRepos,
   restoreArchivedRepos,
   getArchivedRepos
 } from '../services/cleanup.service';
-import { updateMetadata } from '../services/metadata.service';
+import { 
+  updateRepoMetadata, 
+  batchUpdateMetadata,
+  saveMetadataToGist
+} from '../services/metadata.service';
 import HealthBadge from '../components/common/HealthBadge';
 
 export default function CleanupPage() {
   const navigate = useNavigate();
-  const { stars, metadata, setMetadata, accessToken } = useStarsStore();
+  const { stars, metadata, setMetadata } = useStarsStore();
+  const { accessToken, gistId } = useAuthStore();
   
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +90,7 @@ export default function CleanupPage() {
     setArchiving(true);
     try {
       const updatedMetadata = archiveRepos(Array.from(selectedRepos), metadata);
-      await updateMetadata(accessToken, updatedMetadata);
+      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
       setMetadata(updatedMetadata);
       setSelectedRepos(new Set());
       analyzeStars(); // 重新分析
@@ -103,7 +109,7 @@ export default function CleanupPage() {
     setArchiving(true);
     try {
       const updatedMetadata = restoreArchivedRepos(Array.from(selectedRepos), metadata);
-      await updateMetadata(accessToken, updatedMetadata);
+      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
       setMetadata(updatedMetadata);
       setSelectedRepos(new Set());
       analyzeStars(); // 重新分析
