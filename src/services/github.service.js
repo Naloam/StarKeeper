@@ -383,6 +383,186 @@ export async function getPublicGist(gistId, accessToken = null) {
   }
 }
 
+/**
+ * 获取仓库的 Releases 信息
+ * @param {string} accessToken
+ * @param {string} owner
+ * @param {string} repo
+ * @returns {Promise<Object>} - { latestRelease, releaseCount }
+ */
+export async function getRepoReleases(accessToken, owner, repo) {
+  try {
+    const octokit = createOctokitClient(accessToken);
+    
+    // 获取最新的 release
+    const { data: releases } = await octokit.repos.listReleases({
+      owner,
+      repo,
+      per_page: 10,
+    });
+
+    if (releases.length === 0) {
+      return {
+        latestRelease: null,
+        releaseCount: 0,
+      };
+    }
+
+    return {
+      latestRelease: {
+        name: releases[0].name,
+        tagName: releases[0].tag_name,
+        publishedAt: releases[0].published_at,
+        htmlUrl: releases[0].html_url,
+      },
+      releaseCount: releases.length,
+    };
+  } catch (error) {
+    // 如果没有 releases 权限或仓库没有 releases，返回 null
+    if (error.status === 404 || error.status === 403) {
+      return {
+        latestRelease: null,
+        releaseCount: 0,
+      };
+    }
+    console.error('获取 Releases 失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取仓库的活跃度数据
+ * @param {string} accessToken
+ * @param {string} owner
+ * @param {string} repo
+ * @returns {Promise<Object>} - { commitsLast30Days, openIssues, openPRs, contributors }
+ */
+export async function getRepoActivity(accessToken, owner, repo) {
+  try {
+    const octokit = createOctokitClient(accessToken);
+    
+    // 计算 30 天前的日期
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const since = thirtyDaysAgo.toISOString();
+
+    // 并行获取多个数据
+    const [commitsResponse, issuesResponse, pullsResponse, contributorsResponse] = await Promise.allSettled([
+      // 获取最近 30 天的 commits
+      octokit.repos.listCommits({
+        owner,
+        repo,
+        since,
+        per_page: 100,
+      }),
+      // 获取 open issues（不包括 PRs）
+      octokit.issues.listForRepo({
+        owner,
+        repo,
+        state: 'open',
+        per_page: 1, // 只需要 count
+      }),
+      // 获取 open PRs
+      octokit.pulls.list({
+        owner,
+        repo,
+        state: 'open',
+        per_page: 1,
+      }),
+      // 获取贡献者数量
+      octokit.repos.listContributors({
+        owner,
+        repo,
+        per_page: 100,
+      }),
+    ]);
+
+    // 处理结果
+    const commitsLast30Days = commitsResponse.status === 'fulfilled' 
+      ? commitsResponse.value.data.length 
+      : 0;
+
+    const openIssues = issuesResponse.status === 'fulfilled'
+      ? parseInt(issuesResponse.value.headers['link']?.match(/page=(\d+)>; rel="last"/)?.[1] || '1') * 100 || issuesResponse.value.data.length
+      : 0;
+
+    const openPRs = pullsResponse.status === 'fulfilled'
+      ? parseInt(pullsResponse.value.headers['link']?.match(/page=(\d+)>; rel="last"/)?.[1] || '1') * 100 || pullsResponse.value.data.length
+      : 0;
+
+    const contributors = contributorsResponse.status === 'fulfilled'
+      ? contributorsResponse.value.data.length
+      : 0;
+
+    return {
+      commitsLast30Days,
+      openIssues,
+      openPRs,
+      contributors,
+    };
+  } catch (error) {
+    console.error('获取仓库活跃度失败:', error);
+    // 返回默认值而不是抛出错误
+    return {
+      commitsLast30Days: 0,
+      openIssues: 0,
+      openPRs: 0,
+      contributors: 0,
+    };
+  }
+}
+
+/**
+ * 获取仓库的 CI/CD 状态（GitHub Actions）
+ * @param {string} accessToken
+ * @param {string} owner
+ * @param {string} repo
+ * @returns {Promise<Object>} - { hasCI, latestWorkflowRun }
+ */
+export async function getRepoCIStatus(accessToken, owner, repo) {
+  try {
+    const octokit = createOctokitClient(accessToken);
+    
+    // 获取最新的 workflow runs
+    const { data: { workflow_runs } } = await octokit.actions.listWorkflowRunsForRepo({
+      owner,
+      repo,
+      per_page: 1,
+    });
+
+    if (workflow_runs.length === 0) {
+      return {
+        hasCI: false,
+        latestWorkflowRun: null,
+      };
+    }
+
+    const latestRun = workflow_runs[0];
+    return {
+      hasCI: true,
+      latestWorkflowRun: {
+        status: latestRun.status, // completed, in_progress, queued
+        conclusion: latestRun.conclusion, // success, failure, cancelled, etc.
+        createdAt: latestRun.created_at,
+        htmlUrl: latestRun.html_url,
+      },
+    };
+  } catch (error) {
+    // 如果没有 Actions 权限或仓库没有 Actions，返回 false
+    if (error.status === 404 || error.status === 403) {
+      return {
+        hasCI: false,
+        latestWorkflowRun: null,
+      };
+    }
+    console.error('获取 CI 状态失败:', error);
+    return {
+      hasCI: false,
+      latestWorkflowRun: null,
+    };
+  }
+}
+
 export default {
   createOctokitClient,
   getCurrentUser,
@@ -397,4 +577,8 @@ export default {
   updateMetadataGist,
   getMetadataGist,
   getPublicGist,
+  // 健康度分析相关
+  getRepoReleases,
+  getRepoActivity,
+  getRepoCIStatus,
 };
