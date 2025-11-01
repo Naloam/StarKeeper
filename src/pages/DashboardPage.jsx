@@ -11,7 +11,8 @@ import {
   Share2, 
   Sparkles, 
   Activity,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
