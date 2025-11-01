@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import CallbackPage from './pages/CallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import CleanupPage from './pages/CleanupPage';
+import DeduplicationPage from './pages/DeduplicationPage';
 import SharePage from './pages/SharePage';
 import { useEffect, useState } from 'react';
 import { validateGitHubToken } from './utils/auth';
@@ -90,6 +91,10 @@ function App() {
         <Route
           path="/cleanup"
           element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/deduplication"
+          element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
         />
         <Route path="/share/:shareId" element={<SharePage />} />
         <Route path="*" element={<Navigate to="/" />} />
