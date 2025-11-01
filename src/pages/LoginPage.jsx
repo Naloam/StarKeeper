@@ -51,12 +51,8 @@ export default function LoginPage() {
 
       const user = await response.json();
 
-      // 登录成功 - 注意参数顺序: login(user, accessToken, gistId)
-      // Store token to localStorage for persistence
-      const { storeToken } = await import('../utils/auth');
-      storeToken(token.trim());
-      
-      // 调用 login 更新 store
+      // 登录成功 - 只使用 zustand store 存储
+      // 不再使用 localStorage 的 github_token，避免双重存储
       login(user, token.trim());
       
       // 强制刷新页面以确保使用新的 token

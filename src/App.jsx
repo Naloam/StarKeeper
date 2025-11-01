@@ -6,21 +6,22 @@ import DashboardPage from './pages/DashboardPage';
 import CleanupPage from './pages/CleanupPage';
 import SharePage from './pages/SharePage';
 import { useEffect, useState } from 'react';
-import { getStoredToken, clearStoredToken, validateGitHubToken } from './utils/auth';
+import { validateGitHubToken } from './utils/auth';
 
 function App() {
-  const { isAuthenticated, login, logout } = useAuthStore();
+  const { isAuthenticated, accessToken, login, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
 
   console.log('🚀 App 组件已加载');
   console.log('🔑 认证状态:', isAuthenticated);
 
-  // 应用启动时检查本地存储的 token
+  // 应用启动时检查 store 中的 token
   useEffect(() => {
     console.log('⚡ useEffect 执行 - 检查 token');
     const initAuth = async () => {
-      const token = getStoredToken();
-      console.log('🎫 存储的 token:', token ? '存在' : '不存在');
+      // 从 zustand store 获取 token（已经 persist）
+      const token = accessToken;
+      console.log('🎫 Store 中的 token:', token ? '存在' : '不存在');
       
       if (token) {
         try {
@@ -29,11 +30,13 @@ function App() {
           
           if (result.valid) {
             console.log('✅ Token 验证成功:', result.user.login);
-            login(result.user, token);
+            // Token 有效，更新用户信息（如果需要）
+            if (!isAuthenticated) {
+              login(result.user, token);
+            }
           } else {
             console.warn('❌ Token 验证失败:', result.error);
             // Token 无效，清除所有数据
-            clearStoredToken();
             logout();
             
             // 清除 zustand persist 数据
@@ -47,8 +50,8 @@ function App() {
         } catch (error) {
           console.error('❌ Token 验证异常:', error);
           // 验证失败，清除 token
-          clearStoredToken();
           logout();
+          localStorage.removeItem('starkeeper-auth');
         }
       }
       
@@ -56,7 +59,7 @@ function App() {
     };
     
     initAuth();
-  }, [login, logout]);
+  }, []); // 只在组件挂载时运行一次
 
   console.log('📍 准备渲染路由，isAuthenticated:', isAuthenticated);
 
