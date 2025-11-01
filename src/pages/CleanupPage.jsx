@@ -13,8 +13,7 @@ import {
   ArrowLeft,
   Sparkles
 } from 'lucide-react';
-import useStarsStore from '../store';
-import { useAuthStore } from '../store';
+import { useStarsStore, useAuthStore } from '../store';
 import { 
   generateCleanupSuggestions,
   archiveRepos,
