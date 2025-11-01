@@ -12,7 +12,8 @@ import {
   Sparkles, 
   Activity,
   Trash2,
-  Loader2
+  Loader2,
+  Zap
 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
