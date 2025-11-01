@@ -1,12 +1,35 @@
-# GitHub Codespaces ♥️ React
+# StarKeeper ⭐
 
-Welcome to your shiny new Codespace running React! We've got everything fired up and running for you to explore React.
+> GitHub Stars 智能管理工具 - 让每个 star 都有价值
 
-You've got a blank canvas to work on from a git perspective as well. There's a single initial commit with the what you're seeing right now - where you go from here is up to you!
+基于 AI 增强的 GitHub Stars 管理应用，通过自动摘要、健康度分析、智能清理等功能，帮助开发者高效管理和利用已收藏的开源项目。
 
-Everything you do here is contained within this one codespace. There is no repository on GitHub yet. If and when you’re ready you can click "Publish Branch" and we’ll create your repository and push up your project. If you were just exploring then and have no further need for this code then you can simply delete your codespace and it's gone forever.
+[![Version](https://img.shields.io/badge/version-0.2.0--alpha-blue)](https://github.com/Naloam/StarKeeper)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![React](https://img.shields.io/badge/React-18.2.0-61dafb)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-4.5.0-646cff)](https://vitejs.dev/)
 
-This project was bootstrapped for you with [Vite](https://vitejs.dev/).
+## ✨ 核心功能
+
+- 🤖 **AI 自动摘要** - 一键生成项目洞察（技术栈/功能/适用场景）
+- 📊 **健康度分析** - 评估项目活跃度和维护状态
+- 🏷️ **智能标签** - 自定义标签 + 自动补全
+- 🔍 **多维搜索** - 关键词/语言/标签多条件过滤
+- 🧹 **智能清理** - 自动检测废弃/重复项目
+- 📤 **导入导出** - JSON/Markdown 格式
+- 🔒 **隐私优先** - 数据存储在你的 GitHub Gist
+
+## 📚 项目文档
+
+- 📋 [开发计划](./PROJECT_PLAN.md) - 完整的开发路线图和任务拆解
+- 🗺️ [路线图](./ROADMAP.md) - 简洁的功能规划概览
+- 📊 [开发看板](./SPRINT.md) - 当前冲刺任务和进度
+- 📖 [项目上下文](./PROJECT_CONTEXT.md) - 技术架构和实现细节
+- 📝 [历史任务](./tasks.md) - 参考的历史任务计划
+
+## 🚀 快速开始
+
+This project was bootstrapped with [Vite](https://vitejs.dev/).
 
 ## Available Scripts
 
