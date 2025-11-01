@@ -13,7 +13,8 @@ import {
   Activity,
   Trash2,
   Loader2,
-  Zap
+  Zap,
+  Copy
 } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 import { useAuthStore, useStarsStore, useUIStore } from '../store';
@@ -581,6 +582,14 @@ export default function DashboardPage() {
             >
               <Trash2 className="w-4 h-4" />
               <span>智能清理</span>
+            </button>
+            <button
+              onClick={() => navigate('/deduplication')}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
+              title="智能去重，识别和清理相似项目"
+            >
+              <Copy className="w-4 h-4" />
+              <span>智能去重</span>
             </button>
             <button
               onClick={() => setShowShareModal(true)}
