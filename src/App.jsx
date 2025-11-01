@@ -3,6 +3,7 @@ import { useAuthStore } from './store';
 import LoginPage from './pages/LoginPage';
 import CallbackPage from './pages/CallbackPage';
 import DashboardPage from './pages/DashboardPage';
+import CleanupPage from './pages/CleanupPage';
 import SharePage from './pages/SharePage';
 import { useEffect } from 'react';
 import { getStoredToken } from './utils/auth';
@@ -50,6 +51,10 @@ function App() {
         <Route
           path="/dashboard"
           element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/cleanup"
+          element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
         />
         <Route path="/share/:shareId" element={<SharePage />} />
         <Route path="*" element={<Navigate to="/" />} />
