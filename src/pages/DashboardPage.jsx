@@ -28,6 +28,8 @@ import ExportModal from '../components/common/ExportModal';
 import ShareModal from '../components/common/ShareModal';
 import HealthBadge from '../components/common/HealthBadge';
 import HealthDetailModal from '../components/common/HealthDetailModal';
+import LazyImage from '../components/common/LazyImage';
+import { useDebounce } from '../utils/performance';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,

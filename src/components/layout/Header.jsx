@@ -1,6 +1,7 @@
 import { Star, Github, LogOut, Settings, Menu, X } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../store';
 import { APP_CONFIG } from '../../config';
+import LazyImage from '../common/LazyImage';
 
 export default function Header() {
   const { user, logout } = useAuthStore();
@@ -39,7 +40,7 @@ export default function Header() {
           {user && (
             <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <img
+                <LazyImage
                   src={user.avatarUrl}
                   alt={user.name || user.login}
                   className="w-8 h-8 rounded-full"

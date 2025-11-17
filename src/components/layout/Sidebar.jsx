@@ -1,6 +1,7 @@
 import { Search, Filter, Tag, Grid, List, SortAsc, SortDesc, Star, Calendar, Type, X } from 'lucide-react';
 import { useStarsStore, useUIStore } from '../../store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useDebounce } from '../../utils/performance';
 
 export default function Sidebar() {
   const {
@@ -21,8 +22,28 @@ export default function Sidebar() {
 
   const { sidebarOpen, setSidebarOpen, viewMode, setViewMode } = useUIStore();
 
+  // 本地搜索输入状态
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+
   const languages = getAllLanguages();
   const tags = getAllTags();
+
+  // 防抖更新搜索查询
+  const debouncedSetSearch = useDebounce((value) => {
+    setSearchQuery(value);
+  }, 300);
+
+  // 处理搜索输入变化
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    debouncedSetSearch(value);
+  };
+
+  // 同步外部 searchQuery 变化
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
 
   // 处理窗口大小变化
   useEffect(() => {
@@ -99,8 +120,8 @@ export default function Sidebar() {
           <input
             type="text"
             placeholder="搜索 repositories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={localSearchQuery}
+            onChange={handleSearchChange}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
