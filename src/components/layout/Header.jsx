@@ -18,22 +18,18 @@ export default function Header() {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* 左侧：Logo + 菜单按钮 */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              aria-label="Toggle sidebar"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hover:bg-transparent"
+              aria-label="切换侧边栏"
             >
-              {sidebarOpen ? (
-                <X className="w-5 h-5 text-gray-600" />
-              ) : (
-                <Menu className="w-5 h-5 text-gray-600" />
-              )}
+              <Menu className="w-5 h-5 text-gray-600" />
             </button>
             
             <div className="flex items-center space-x-2">
-              <Star className="w-8 h-8 text-primary-600 fill-primary-600" />
-              <h1 className="text-xl font-bold text-gray-900">
+              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 fill-primary-600" />
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                 {APP_CONFIG.name}
               </h1>
             </div>
@@ -41,14 +37,14 @@ export default function Header() {
 
           {/* 右侧：用户信息 */}
           {user && (
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <img
                   src={user.avatarUrl}
                   alt={user.name || user.login}
                   className="w-8 h-8 rounded-full"
                 />
-                <div className="hidden md:block text-sm">
+                <div className="hidden lg:block text-sm">
                   <p className="font-medium text-gray-900">
                     {user.name || user.login}
                   </p>
@@ -56,20 +52,20 @@ export default function Header() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <a
                   href={`https://github.com/${user.login}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="View GitHub Profile"
+                  title="查看 GitHub 主页"
                 >
                   <Github className="w-5 h-5 text-gray-600" />
                 </a>
 
                 <button
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Settings"
+                  className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  title="设置"
                 >
                   <Settings className="w-5 h-5 text-gray-600" />
                 </button>
@@ -77,7 +73,7 @@ export default function Header() {
                 <button
                   onClick={handleLogout}
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Logout"
+                  title="退出登录"
                 >
                   <LogOut className="w-5 h-5 text-gray-600" />
                 </button>

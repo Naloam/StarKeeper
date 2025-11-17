@@ -267,7 +267,7 @@ export const useStarsStore = create((set, get) => ({
  */
 export const useUIStore = create((set) => ({
   // 状态
-  sidebarOpen: true,
+  sidebarOpen: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,
   viewMode: 'grid', // grid | list
   theme: 'light', // light | dark
   

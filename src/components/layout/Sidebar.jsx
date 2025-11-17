@@ -1,5 +1,6 @@
-import { Search, Filter, Tag, Grid, List, SortAsc, SortDesc, Star, Calendar, Type } from 'lucide-react';
+import { Search, Filter, Tag, Grid, List, SortAsc, SortDesc, Star, Calendar, Type, X } from 'lucide-react';
 import { useStarsStore, useUIStore } from '../../store';
+import { useEffect } from 'react';
 
 export default function Sidebar() {
   const {
@@ -18,10 +19,35 @@ export default function Sidebar() {
     filteredStars,
   } = useStarsStore();
 
-  const { sidebarOpen, viewMode, setViewMode } = useUIStore();
+  const { sidebarOpen, setSidebarOpen, viewMode, setViewMode } = useUIStore();
 
   const languages = getAllLanguages();
   const tags = getAllTags();
+
+  // 处理窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      // 桌面端自动打开侧边栏
+      if (window.innerWidth >= 1024 && !sidebarOpen) {
+        setSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [sidebarOpen, setSidebarOpen]);
+
+  // 移动端点击遮罩关闭侧边栏
+  const handleOverlayClick = () => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
+
+  // 阻止触摸滑动时关闭
+  const handleSidebarClick = (e) => {
+    e.stopPropagation();
+  };
 
   const toggleLanguage = (lang) => {
     if (selectedLanguages.includes(lang)) {
@@ -42,7 +68,30 @@ export default function Sidebar() {
   if (!sidebarOpen) return null;
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <>
+      {/* 移动端遮罩层 */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+      />
+
+      {/* 侧边栏 */}
+      <aside
+        className="fixed lg:static top-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col h-screen lg:h-[calc(100vh-4rem)] overflow-hidden z-50 lg:z-auto transform transition-transform duration-300 ease-in-out lg:transform-none"
+        onClick={handleSidebarClick}
+      >
+        {/* 移动端关闭按钮 */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">筛选</h2>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="关闭侧边栏"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
       {/* 搜索框 */}
       <div className="p-4 border-b border-gray-200">
         <div className="relative">
@@ -212,6 +261,7 @@ export default function Sidebar() {
           </div>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
