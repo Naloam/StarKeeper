@@ -28,6 +28,8 @@ import ExportModal from '../components/common/ExportModal';
 import ShareModal from '../components/common/ShareModal';
 import HealthBadge from '../components/common/HealthBadge';
 import HealthDetailModal from '../components/common/HealthDetailModal';
+import LazyImage from '../components/common/LazyImage';
+import { useDebounce } from '../utils/performance';
 import { 
   findOrCreateMetadataGist, 
   loadMetadataFromGist,
@@ -527,80 +529,86 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="p-6">
+      <div>
         {/* Toolbar */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
               我的 Stars
             </h2>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               共 {stars.length} 个项目 · 显示 {filteredStars.length} 个
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={handleBatchGenerateSummary}
               disabled={batchGenerating || loading}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               title="为当前显示的所有项目批量生成 AI 摘要"
             >
               {batchGenerating ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>生成中 {batchProgress.current}/{batchProgress.total}</span>
+                  <span className="hidden sm:inline">生成中 {batchProgress.current}/{batchProgress.total}</span>
+                  <span className="sm:hidden">生成中</span>
                 </>
               ) : (
                 <>
                   <Zap className="w-4 h-4" />
-                  <span>批量生成摘要</span>
+                  <span className="hidden sm:inline">批量生成摘要</span>
+                  <span className="sm:hidden">批量摘要</span>
                 </>
               )}
             </button>
             <button
               onClick={handleBatchAnalyzeHealth}
               disabled={batchAnalyzing || loading}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               title="为当前显示的所有项目批量分析健康度"
             >
               {batchAnalyzing ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>分析中 {healthAnalysisProgress.current}/{healthAnalysisProgress.total}</span>
+                  <span className="hidden sm:inline">分析中 {healthAnalysisProgress.current}/{healthAnalysisProgress.total}</span>
+                  <span className="sm:hidden">分析中</span>
                 </>
               ) : (
                 <>
                   <Activity className="w-4 h-4" />
-                  <span>批量分析健康度</span>
+                  <span className="hidden sm:inline">批量分析健康度</span>
+                  <span className="sm:hidden">批量健康</span>
                 </>
               )}
             </button>
             <button
               onClick={() => navigate('/cleanup')}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all text-sm"
               title="智能清理建议，帮你整理无效或重复的 Stars"
             >
               <Trash2 className="w-4 h-4" />
-              <span>智能清理</span>
+              <span className="hidden sm:inline">智能清理</span>
+              <span className="sm:hidden">清理</span>
             </button>
             <button
               onClick={() => navigate('/deduplication')}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
               title="智能去重，识别和清理相似项目"
             >
               <Copy className="w-4 h-4" />
-              <span>智能去重</span>
+              <span className="hidden sm:inline">智能去重</span>
+              <span className="sm:hidden">去重</span>
             </button>
             <button
               onClick={() => setShowShareModal(true)}
-              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
             >
               <Share2 className="w-4 h-4" />
               <span>分享</span>
             </button>
             <button
               onClick={() => setShowExportModal(true)}
-              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
             >
               <Download className="w-4 h-4" />
               <span>导出</span>
@@ -608,7 +616,7 @@ export default function DashboardPage() {
             <button
               onClick={loadStars}
               disabled={loading}
-              className="inline-flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>刷新</span>
@@ -682,7 +690,7 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
 
   if (viewMode === 'grid') {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {stars.map((star) => (
           <StarCard 
             key={star.id} 
