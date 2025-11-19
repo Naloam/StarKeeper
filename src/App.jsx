@@ -8,6 +8,8 @@ import CleanupPage from './pages/CleanupPage';
 import DeduplicationPage from './pages/DeduplicationPage';
 import SharePage from './pages/SharePage';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
+import OfflineIndicator from './components/common/OfflineIndicator';
 import { useEffect, useState } from 'react';
 import { validateGitHubToken } from './utils/auth';
 import { setupNetworkListener } from './utils/toast';
@@ -109,6 +111,12 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
+      
+      {/* PWA 安装提示 */}
+      <PWAInstallPrompt />
+      
+      {/* 离线状态指示器 */}
+      <OfflineIndicator />
       
       {/* Toast 通知组件 */}
       <Toaster
