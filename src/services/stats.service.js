@@ -23,13 +23,22 @@ export function calculateBasicStats(stars, metadata) {
   
   // 统计有笔记的项目数
   const withNotes = Object.values(metadata).filter(meta => 
-    meta.notes && meta.notes.trim().length > 0
+    meta.notes && typeof meta.notes === 'string' && meta.notes.trim().length > 0
   ).length;
   
   // 统计有 AI 摘要的项目数
-  const withAISummary = Object.values(metadata).filter(meta => 
-    meta.aiSummary && meta.aiSummary.trim().length > 0
-  ).length;
+  const withAISummary = Object.values(metadata).filter(meta => {
+    if (!meta.aiSummary) return false;
+    // 支持字符串格式
+    if (typeof meta.aiSummary === 'string') {
+      return meta.aiSummary.trim().length > 0;
+    }
+    // 支持对象格式
+    if (typeof meta.aiSummary === 'object') {
+      return meta.aiSummary.summary && meta.aiSummary.summary.trim().length > 0;
+    }
+    return false;
+  }).length;
   
   return {
     totalStars,

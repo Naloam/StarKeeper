@@ -20,80 +20,70 @@ const StatsPanel = ({ stats }) => {
   const { basic, health } = stats;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <BarChart3 className="w-5 h-5 text-primary-600" />
+    <div className="card mb-6">
+      <h2 className="text-h2 text-text-primary mb-4 flex items-center gap-2">
+        <BarChart3 className="w-6 h-6 text-text-secondary" strokeWidth={1.5} />
         数据概览
       </h2>
 
-      {/* 基础统计卡片 */}
+      {/* Basic Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard
-          icon={<Star className="w-5 h-5" />}
+          icon={<Star className="w-5 h-5" strokeWidth={1.5} />}
           label="总 Stars"
           value={basic.totalStars}
-          color="blue"
         />
         <StatCard
-          icon={<Tag className="w-5 h-5" />}
+          icon={<Tag className="w-5 h-5" strokeWidth={1.5} />}
           label="标签数"
           value={basic.totalTags}
-          color="purple"
         />
         <StatCard
-          icon={<FileText className="w-5 h-5" />}
+          icon={<FileText className="w-5 h-5" strokeWidth={1.5} />}
           label="有笔记"
           value={basic.withNotes}
           subtitle={`${basic.notesPercentage}%`}
-          color="green"
         />
         <StatCard
-          icon={<Sparkles className="w-5 h-5" />}
+          icon={<Sparkles className="w-5 h-5" strokeWidth={1.5} />}
           label="AI 摘要"
           value={basic.withAISummary}
           subtitle={`${basic.aiSummaryPercentage}%`}
-          color="yellow"
         />
       </div>
 
-      {/* 健康度统计 */}
+      {/* Health Statistics */}
       {health.analyzedCount > 0 && (
-        <div className="border-t border-gray-200 pt-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Activity className="w-4 h-4" />
+        <div className="border-t border-border pt-4">
+          <h3 className="text-body-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Activity className="w-4 h-4" strokeWidth={1.5} />
             健康度分析
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <HealthStatItem 
               label="平均健康度" 
               value={`${health.averageScore}分`}
-              color="text-blue-600"
             />
             <HealthStatItem 
               label="已分析" 
               value={`${health.analyzedCount}项`}
               subtitle={`${health.analyzedPercentage}%`}
-              color="text-gray-600"
             />
             <HealthStatItem 
               label="优秀" 
               value={health.distribution.excellent}
-              color="text-green-600"
             />
             <HealthStatItem 
               label="良好" 
               value={health.distribution.good}
-              color="text-blue-600"
             />
             <HealthStatItem 
               label="一般" 
               value={health.distribution.fair}
-              color="text-yellow-600"
             />
             <HealthStatItem 
               label="需关注" 
               value={health.distribution.poor + health.distribution.critical}
-              color="text-red-600"
             />
           </div>
         </div>
@@ -105,24 +95,16 @@ const StatsPanel = ({ stats }) => {
 /**
  * 统计卡片组件
  */
-const StatCard = ({ icon, label, value, subtitle, color = 'blue' }) => {
-  const colorClasses = {
-    blue: 'from-blue-50 to-blue-100 text-blue-600',
-    purple: 'from-purple-50 to-purple-100 text-purple-600',
-    green: 'from-green-50 to-green-100 text-green-600',
-    yellow: 'from-yellow-50 to-yellow-100 text-yellow-600',
-    red: 'from-red-50 to-red-100 text-red-600',
-  };
-
+const StatCard = ({ icon, label, value, subtitle }) => {
   return (
-    <div className={`bg-gradient-to-br ${colorClasses[color]} rounded-lg p-4`}>
+    <div className="bg-surface rounded-xl p-4 border border-border transition-fast hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-2">
-        <span className="opacity-80">{icon}</span>
+        <span className="text-text-secondary">{icon}</span>
       </div>
-      <div className="text-2xl font-bold mb-1">{value}</div>
-      <div className="text-sm opacity-75">{label}</div>
+      <div className="text-2xl font-semibold text-text-primary mb-1">{value}</div>
+      <div className="text-body-sm text-text-secondary">{label}</div>
       {subtitle && (
-        <div className="text-xs opacity-60 mt-1">{subtitle}</div>
+        <div className="text-caption text-text-tertiary mt-1">{subtitle}</div>
       )}
     </div>
   );
@@ -131,13 +113,13 @@ const StatCard = ({ icon, label, value, subtitle, color = 'blue' }) => {
 /**
  * 健康度统计项组件
  */
-const HealthStatItem = ({ label, value, subtitle, color }) => {
+const HealthStatItem = ({ label, value, subtitle }) => {
   return (
-    <div className="bg-gray-50 rounded p-3">
-      <div className="text-xs text-gray-600 mb-1">{label}</div>
-      <div className={`text-lg font-bold ${color}`}>{value}</div>
+    <div className="bg-surface rounded-lg p-3 border border-border-light">
+      <div className="text-caption text-text-secondary mb-1">{label}</div>
+      <div className="text-h4 text-text-primary">{value}</div>
       {subtitle && (
-        <div className="text-xs text-gray-500 mt-0.5">{subtitle}</div>
+        <div className="text-caption text-text-tertiary mt-0.5">{subtitle}</div>
       )}
     </div>
   );
@@ -153,9 +135,9 @@ export const LanguageDistribution = ({ languages }) => {
   const maxCount = topLanguages[0]?.count || 1;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <PieChart className="w-5 h-5 text-primary-600" />
+    <div className="card">
+      <h3 className="text-h3 text-text-primary mb-4 flex items-center gap-2">
+        <PieChart className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
         语言分布
       </h3>
       <div className="space-y-3">
@@ -183,29 +165,17 @@ export const LanguageDistribution = ({ languages }) => {
  * 语言条形图组件
  */
 const LanguageBar = ({ language, count, percentage, maxCount, index }) => {
-  const colors = [
-    'bg-blue-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-green-500',
-    'bg-yellow-500',
-    'bg-red-500',
-    'bg-indigo-500',
-    'bg-teal-500',
-  ];
-
-  const barColor = colors[index % colors.length];
   const width = (count / maxCount) * 100;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-medium text-gray-700">{language}</span>
-        <span className="text-xs text-gray-500">{count} ({percentage}%)</span>
+        <span className="text-body-sm font-medium text-text-primary">{language}</span>
+        <span className="text-caption text-text-secondary">{count} ({percentage}%)</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-surface rounded-full h-2">
         <div 
-          className={`${barColor} h-2 rounded-full transition-all duration-300`}
+          className="bg-primary h-2 rounded-full transition-all duration-180 ease-out"
           style={{ width: `${width}%` }}
         />
       </div>
@@ -229,16 +199,16 @@ export const TagCloud = ({ tags }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <Tag className="w-5 h-5 text-primary-600" />
+    <div className="card">
+      <h3 className="text-h3 text-text-primary mb-4 flex items-center gap-2">
+        <Tag className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
         热门标签
       </h3>
       <div className="flex flex-wrap gap-2">
         {topTags.map((tag, index) => (
           <span
             key={tag.tag}
-            className="inline-block px-3 py-1 bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors cursor-pointer"
+            className="inline-block px-3 py-1 bg-surface text-text-primary rounded-full hover:bg-surface-darker transition-fast cursor-pointer border border-border"
             style={{ fontSize: getFontSize(tag.count) }}
             title={`${tag.count} 个项目`}
           >
@@ -247,7 +217,7 @@ export const TagCloud = ({ tags }) => {
         ))}
       </div>
       {tags.length > 20 && (
-        <div className="mt-3 text-xs text-gray-500 text-center">
+        <div className="mt-3 text-caption text-text-secondary text-center">
           还有 {tags.length - 20} 个其他标签
         </div>
       )}
@@ -262,9 +232,9 @@ export const RecentlyActiveRepos = ({ repos }) => {
   if (!repos || repos.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-primary-600" />
+    <div className="card">
+      <h3 className="text-h3 text-text-primary mb-4 flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
         最近活跃
       </h3>
       <div className="space-y-3">
@@ -287,19 +257,19 @@ const RepoItem = ({ repo }) => {
       href={repo.htmlUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-start justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors group"
+      className="flex items-start justify-between p-3 hover:bg-surface rounded-lg transition-fast group border border-transparent hover:border-border"
     >
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900 group-hover:text-primary-600 truncate">
+        <div className="font-medium text-text-primary group-hover:text-primary truncate">
           {repo.name}
         </div>
-        <div className="text-sm text-gray-500">@{repo.owner}</div>
+        <div className="text-body-sm text-text-secondary">@{repo.owner}</div>
       </div>
       <div className="text-right ml-4">
         {repo.language && (
-          <div className="text-xs text-gray-600 mb-1">{repo.language}</div>
+          <div className="text-caption text-text-secondary mb-1">{repo.language}</div>
         )}
-        <div className="text-xs text-gray-500">{timeAgo}</div>
+        <div className="text-caption text-text-tertiary">{timeAgo}</div>
       </div>
     </a>
   );

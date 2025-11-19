@@ -15,68 +15,68 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-white/95">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* 左侧：Logo + 菜单按钮 */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Logo + Menu Button */}
+          <div className="flex items-center space-x-3">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hover:bg-transparent"
+              className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
               aria-label="切换侧边栏"
             >
-              <Menu className="w-5 h-5 text-gray-600" />
+              <Menu className="w-5 h-5 text-text-secondary" />
             </button>
             
             <div className="flex items-center space-x-2">
-              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 fill-primary-600" />
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+              <Star className="w-6 h-6 text-primary" strokeWidth={1.5} />
+              <h1 className="text-h3 text-text-primary">
                 {APP_CONFIG.name}
               </h1>
             </div>
           </div>
 
-          {/* 右侧：用户信息 */}
+          {/* User Info */}
           {user && (
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <LazyImage
                   src={user.avatarUrl}
                   alt={user.name || user.login}
-                  className="w-8 h-8 rounded-full"
+                  className="w-8 h-8 rounded-full ring-1 ring-border"
                 />
-                <div className="hidden lg:block text-sm">
-                  <p className="font-medium text-gray-900">
+                <div className="hidden lg:block">
+                  <p className="text-body-sm font-medium text-text-primary">
                     {user.name || user.login}
                   </p>
-                  <p className="text-gray-500">@{user.login}</p>
+                  <p className="text-caption text-text-secondary">@{user.login}</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1 sm:space-x-2">
+              <div className="flex items-center space-x-1">
                 <a
                   href={`https://github.com/${user.login}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
                   title="查看 GitHub 主页"
                 >
-                  <Github className="w-5 h-5 text-gray-600" />
+                  <Github className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
                 </a>
 
                 <button
-                  className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="hidden sm:block p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
                   title="设置"
                 >
-                  <Settings className="w-5 h-5 text-gray-600" />
+                  <Settings className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
                   title="退出登录"
                 >
-                  <LogOut className="w-5 h-5 text-gray-600" />
+                  <LogOut className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
                 </button>
               </div>
             </div>

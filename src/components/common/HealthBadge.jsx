@@ -14,55 +14,55 @@ const HealthBadge = ({ healthScore, size = 'md', showScore = true, onClick }) =>
     switch (level) {
       case 'excellent':
         return {
-          color: 'bg-green-500',
-          textColor: 'text-green-700',
-          bgLight: 'bg-green-50',
-          borderColor: 'border-green-200',
+          color: 'bg-surface',
+          textColor: 'text-success',
+          bgLight: 'bg-surface',
+          borderColor: 'border-success-light',
           icon: '🟢',
           label: '优秀',
         };
       case 'good':
         return {
-          color: 'bg-blue-500',
-          textColor: 'text-blue-700',
-          bgLight: 'bg-blue-50',
-          borderColor: 'border-blue-200',
+          color: 'bg-surface',
+          textColor: 'text-primary',
+          bgLight: 'bg-surface',
+          borderColor: 'border-primary/20',
           icon: '🔵',
           label: '良好',
         };
       case 'fair':
         return {
-          color: 'bg-yellow-500',
-          textColor: 'text-yellow-700',
-          bgLight: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
+          color: 'bg-surface',
+          textColor: 'text-warning',
+          bgLight: 'bg-surface',
+          borderColor: 'border-warning-light',
           icon: '🟡',
           label: '一般',
         };
       case 'poor':
         return {
-          color: 'bg-orange-500',
-          textColor: 'text-orange-700',
-          bgLight: 'bg-orange-50',
-          borderColor: 'border-orange-200',
+          color: 'bg-surface',
+          textColor: 'text-warning',
+          bgLight: 'bg-surface',
+          borderColor: 'border-warning-light',
           icon: '🟠',
           label: '较差',
         };
       case 'critical':
         return {
-          color: 'bg-red-500',
-          textColor: 'text-red-700',
-          bgLight: 'bg-red-50',
-          borderColor: 'border-red-200',
+          color: 'bg-surface',
+          textColor: 'text-danger',
+          bgLight: 'bg-surface',
+          borderColor: 'border-danger-light',
           icon: '🔴',
           label: '危险',
         };
       default:
         return {
-          color: 'bg-gray-500',
-          textColor: 'text-gray-700',
-          bgLight: 'bg-gray-50',
-          borderColor: 'border-gray-200',
+          color: 'bg-surface',
+          textColor: 'text-text-secondary',
+          bgLight: 'bg-surface',
+          borderColor: 'border-border',
           icon: '⚪',
           label: '未知',
         };
@@ -91,7 +91,7 @@ const HealthBadge = ({ healthScore, size = 'md', showScore = true, onClick }) =>
         inline-flex items-center gap-1.5 rounded-full
         ${config.bgLight} ${config.borderColor} border
         ${sizeClasses[size]}
-        ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}
+        ${onClick ? 'cursor-pointer hover:shadow-card-hover transition-fast' : ''}
       `}
       onClick={handleClick}
       title={`健康度评分: ${score}分 (${config.label})`}
@@ -114,24 +114,24 @@ const HealthBadge = ({ healthScore, size = 'md', showScore = true, onClick }) =>
  */
 export const HealthProgressBar = ({ score, showLabel = true }) => {
   const getColor = (score) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 60) return 'bg-blue-500';
-    if (score >= 40) return 'bg-yellow-500';
-    if (score >= 20) return 'bg-orange-500';
-    return 'bg-red-500';
+    if (score >= 80) return 'bg-success';
+    if (score >= 60) return 'bg-primary';
+    if (score >= 40) return 'bg-warning';
+    if (score >= 20) return 'bg-warning';
+    return 'bg-danger';
   };
 
   return (
     <div className="w-full">
       {showLabel && (
-        <div className="flex justify-between text-xs text-gray-600 mb-1">
+        <div className="flex justify-between text-caption text-text-secondary mb-1">
           <span>健康度</span>
           <span className="font-semibold">{score}分</span>
         </div>
       )}
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-surface rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${getColor(score)}`}
+          className={`h-2 rounded-full transition-all duration-180 ${getColor(score)}`}
           style={{ width: `${score}%` }}
         />
       </div>

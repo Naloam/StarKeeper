@@ -558,7 +558,7 @@ export default function DashboardPage() {
             <button
               onClick={handleBatchGenerateSummary}
               disabled={batchGenerating || loading}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="btn flex-1 sm:flex-none bg-primary text-white hover:bg-primary/90 text-body-sm"
               title="为当前显示的所有项目批量生成 AI 摘要"
             >
               {batchGenerating ? (
@@ -578,7 +578,7 @@ export default function DashboardPage() {
             <button
               onClick={handleBatchAnalyzeHealth}
               disabled={batchAnalyzing || loading}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="btn flex-1 sm:flex-none bg-success text-white hover:bg-success/90 text-body-sm"
               title="为当前显示的所有项目批量分析健康度"
             >
               {batchAnalyzing ? (
@@ -597,7 +597,7 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => navigate('/cleanup')}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all text-sm"
+              className="btn flex-1 sm:flex-none bg-danger text-white hover:bg-danger/90 text-body-sm"
               title="智能清理建议，帮你整理无效或重复的 Stars"
             >
               <Trash2 className="w-4 h-4" />
@@ -606,7 +606,7 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => navigate('/deduplication')}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
+              className="btn flex-1 sm:flex-none bg-warning text-white hover:bg-warning/90 text-body-sm"
               title="智能去重，识别和清理相似项目"
             >
               <Copy className="w-4 h-4" />
@@ -615,7 +615,7 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => setShowShareModal(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              className="btn flex-1 sm:flex-none bg-white border border-border text-text-primary hover:bg-surface text-body-sm"
             >
               <Share2 className="w-4 h-4" />
               <span>分享</span>
