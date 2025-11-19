@@ -4,6 +4,7 @@ import {
   updateMetadataGist, 
   getMetadataGist 
 } from './github.service';
+import { addToSyncQueue } from '../components/common/OfflineIndicator';
 
 /**
  * 元数据管理服务
@@ -54,11 +55,32 @@ export async function findOrCreateMetadataGist(accessToken) {
  */
 export async function loadMetadataFromGist(accessToken, gistId) {
   try {
+    // 如果离线，从本地缓存加载
+    if (!navigator.onLine) {
+      console.log('⚠️ 离线状态，从本地缓存加载');
+      const cachedMetadata = localStorage.getItem('metadata-cache');
+      if (cachedMetadata) {
+        return JSON.parse(cachedMetadata);
+      }
+    }
+
     const metadata = await getMetadataGist(accessToken, gistId);
+    
+    // 更新本地缓存
+    localStorage.setItem('metadata-cache', JSON.stringify(metadata));
+    
     return metadata;
   } catch (error) {
     console.error('加载元数据失败:', error);
-    // 如果加载失败，返回空的元数据结构
+    
+    // 尝试从本地缓存加载
+    const cachedMetadata = localStorage.getItem('metadata-cache');
+    if (cachedMetadata) {
+      console.log('📦 从本地缓存恢复元数据');
+      return JSON.parse(cachedMetadata);
+    }
+    
+    // 如果加载失败且没有缓存，返回空的元数据结构
     return {
       version: '1.0',
       repositories: {},
@@ -77,6 +99,14 @@ export async function loadMetadataFromGist(accessToken, gistId) {
  */
 export async function saveMetadataToGist(accessToken, gistId, metadata) {
   try {
+    // 如果离线，将操作加入同步队列
+    if (!navigator.onLine) {
+      console.log('⚠️ 离线状态，保存到本地缓存');
+      localStorage.setItem('metadata-cache', JSON.stringify(metadata));
+      addToSyncQueue('save-metadata', { gistId, metadata });
+      return;
+    }
+
     const updatedMetadata = {
       ...metadata,
       updatedAt: new Date().toISOString(),
@@ -84,8 +114,14 @@ export async function saveMetadataToGist(accessToken, gistId, metadata) {
 
     await updateMetadataGist(accessToken, gistId, updatedMetadata);
     console.log('元数据已保存到 Gist:', gistId);
+    
+    // 同时更新本地缓存
+    localStorage.setItem('metadata-cache', JSON.stringify(updatedMetadata));
   } catch (error) {
     console.error('保存元数据失败:', error);
+    // 保存失败时，保存到本地缓存
+    localStorage.setItem('metadata-cache', JSON.stringify(metadata));
+    addToSyncQueue('save-metadata', { gistId, metadata });
     throw error;
   }
 }
