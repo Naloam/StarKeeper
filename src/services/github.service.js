@@ -136,35 +136,40 @@ export async function getAllStarredRepos(accessToken, onProgress) {
     const perPage = 100;
 
     while (true) {
+      // 使用 star+json 格式以获取 starred_at 时间戳
       const { data } = await octokit.activity.listReposStarredByAuthenticatedUser({
         per_page: perPage,
         page: page,
+        headers: {
+          accept: 'application/vnd.github.v3.star+json',
+        },
       });
 
       if (data.length === 0) break;
 
-      const formatted = data.map(repo => ({
-        id: repo.id,
-        nodeId: repo.node_id,
-        name: repo.name,
-        fullName: repo.full_name,
+      const formatted = data.map(item => ({
+        id: item.repo.id,
+        nodeId: item.repo.node_id,
+        name: item.repo.name,
+        fullName: item.repo.full_name,
         owner: {
-          login: repo.owner.login,
-          avatarUrl: repo.owner.avatar_url,
+          login: item.repo.owner.login,
+          avatarUrl: item.repo.owner.avatar_url,
         },
-        description: repo.description,
-        htmlUrl: repo.html_url,
-        homepage: repo.homepage,
-        language: repo.language,
-        stargazersCount: repo.stargazers_count,
-        forksCount: repo.forks_count,
-        openIssuesCount: repo.open_issues_count,
-        topics: repo.topics || [],
-        license: repo.license?.name,
-        createdAt: repo.created_at,
-        updatedAt: repo.updated_at,
-        pushedAt: repo.pushed_at,
-        archived: repo.archived,
+        description: item.repo.description,
+        htmlUrl: item.repo.html_url,
+        homepage: item.repo.homepage,
+        language: item.repo.language,
+        stargazersCount: item.repo.stargazers_count,
+        forksCount: item.repo.forks_count,
+        openIssuesCount: item.repo.open_issues_count,
+        topics: item.repo.topics || [],
+        license: item.repo.license?.name,
+        createdAt: item.repo.created_at,
+        updatedAt: item.repo.updated_at,
+        pushedAt: item.repo.pushed_at,
+        archived: item.repo.archived,
+        starredAt: item.starred_at, // ⭐ 新增: Star 时间戳
       }));
 
       allRepos = [...allRepos, ...formatted];

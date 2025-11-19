@@ -30,6 +30,8 @@ import ShareModal from '../components/common/ShareModal';
 import HealthBadge from '../components/common/HealthBadge';
 import HealthDetailModal from '../components/common/HealthDetailModal';
 import StatsPanel, { LanguageDistribution, TagCloud, RecentlyActiveRepos } from '../components/common/StatsPanel';
+import StatsVisualization from '../components/common/StatsVisualization';
+import CustomStatsFilter from '../components/common/CustomStatsFilter';
 import LazyImage from '../components/common/LazyImage';
 import { useDebounce } from '../utils/performance';
 import { 
@@ -64,6 +66,10 @@ export default function DashboardPage() {
   // 统计数据状态
   const [stats, setStats] = useState(null);
   const [showStats, setShowStats] = useState(true);
+  
+  // 自定义过滤状态
+  const [customFilteredStars, setCustomFilteredStars] = useState(null);
+  const [activeFilters, setActiveFilters] = useState([]);
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -114,6 +120,21 @@ export default function DashboardPage() {
       setStats(statsReport);
     }
   }, [stars, metadata]);
+
+  // 处理自定义过滤
+  const handleApplyCustomFilter = (filteredData, filters) => {
+    setCustomFilteredStars(filteredData);
+    setActiveFilters(filters);
+    
+    // 使用过滤后的数据重新生成统计
+    if (filteredData.length > 0) {
+      const statsReport = generateStatsReport(filteredData, metadata);
+      setStats(statsReport);
+    }
+  };
+
+  // 确定要显示的数据
+  const displayStars = customFilteredStars || filteredStars;
 
   const loadStars = async () => {
     setLoading(true);
@@ -651,9 +672,52 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 自定义统计维度过滤器 */}
+        <CustomStatsFilter 
+          stars={filteredStars}
+          metadata={metadata}
+          onApplyFilter={handleApplyCustomFilter}
+        />
+
+        {/* 数据可视化 */}
+        {stats && (
+          <StatsVisualization 
+            stars={customFilteredStars || filteredStars}
+            metadata={metadata}
+            healthStats={stats.health}
+          />
+        )}
+
+        {/* 显示当前过滤条件 */}
+        {activeFilters.length > 0 && (
+          <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-body-sm text-text-primary font-medium">
+                  已应用 {activeFilters.length} 个过滤条件
+                </span>
+                <span className="text-caption text-text-secondary">
+                  显示 {displayStars.length} / {filteredStars.length} 个项目
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setCustomFilteredStars(null);
+                  setActiveFilters([]);
+                  const statsReport = generateStatsReport(filteredStars, metadata);
+                  setStats(statsReport);
+                }}
+                className="text-body-sm text-primary hover:text-primary/80"
+              >
+                清除过滤
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Stars Grid/List */}
         <StarsList 
-          stars={filteredStars} 
+          stars={displayStars} 
           onOpenTagModal={handleOpenTagModal}
           onGenerateSummary={handleGenerateSummary}
           onSaveSummary={handleSaveSummary}

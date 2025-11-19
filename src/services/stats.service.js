@@ -334,6 +334,193 @@ function getLanguageColor(language, index) {
   return colorMap[language] || defaultColors[index % defaultColors.length];
 }
 
+/**
+ * 生成 Stars 增长趋势图表数据
+ * @param {Array} stars - 项目列表
+ * @param {string} period - 时间周期：'month', 'quarter', 'year'
+ * @returns {Object} Chart.js 格式的数据
+ */
+export function getStarsGrowthChartData(stars, period = 'month') {
+  const trend = calculateStarsGrowthTrend(stars);
+  
+  // 根据周期聚合数据
+  let aggregatedData = trend;
+  if (period === 'quarter') {
+    aggregatedData = aggregateByQuarter(trend);
+  } else if (period === 'year') {
+    aggregatedData = aggregateByYear(trend);
+  }
+  
+  return {
+    labels: aggregatedData.map(item => item.month),
+    datasets: [
+      {
+        label: '新增 Stars',
+        data: aggregatedData.map(item => item.count),
+        borderColor: '#C8956E',
+        backgroundColor: 'rgba(200, 149, 110, 0.1)',
+        fill: true,
+        tension: 0.3
+      },
+      {
+        label: '累计 Stars',
+        data: aggregatedData.map(item => item.cumulative),
+        borderColor: '#7A9B76',
+        backgroundColor: 'rgba(122, 155, 118, 0.1)',
+        fill: true,
+        tension: 0.3
+      }
+    ]
+  };
+}
+
+/**
+ * 生成语言分布饼图数据
+ * @param {Array} stars - 项目列表
+ * @returns {Object} Chart.js 格式的数据
+ */
+export function getLanguagePieChartData(stars) {
+  const languages = calculateLanguageStats(stars);
+  const topLanguages = languages.slice(0, 8);
+  
+  // 自然色系配色
+  const naturalColors = [
+    '#C8956E', // 暖棕
+    '#7A9B76', // 苔绿
+    '#B8A99A', // 沙色
+    '#8B9D9B', // 烟蓝
+    '#D4B5A0', // 浅卡其
+    '#9CA89E', // 橄榄灰
+    '#C5B8A8', // 月白
+    '#A8B5A7', // 淡绿灰
+  ];
+  
+  return {
+    labels: topLanguages.map(item => item.language),
+    datasets: [{
+      data: topLanguages.map(item => item.count),
+      backgroundColor: naturalColors,
+      borderColor: '#FAF8F3',
+      borderWidth: 3
+    }]
+  };
+}
+
+/**
+ * 生成健康度分布柱状图数据
+ * @param {Object} healthStats - 健康度统计数据
+ * @returns {Object} Chart.js 格式的数据
+ */
+export function getHealthDistributionChartData(healthStats) {
+  const { distribution } = healthStats;
+  
+  return {
+    labels: ['优秀', '良好', '一般', '需关注', '未分析'],
+    datasets: [{
+      label: '项目数量',
+      data: [
+        distribution.excellent || 0,
+        distribution.good || 0,
+        distribution.fair || 0,
+        (distribution.poor || 0) + (distribution.critical || 0),
+        distribution.unknown || 0
+      ],
+      backgroundColor: [
+        'rgba(122, 155, 118, 0.8)', // 苔绿
+        'rgba(184, 169, 154, 0.8)', // 沙色
+        'rgba(200, 149, 110, 0.8)', // 暖棕
+        'rgba(139, 157, 155, 0.8)', // 烟蓝
+        'rgba(155, 150, 142, 0.8)'  // 灰色
+      ],
+      borderColor: '#FAF8F3',
+      borderWidth: 2,
+      borderRadius: 8
+    }]
+  };
+}
+
+/**
+ * 生成标签使用趋势数据
+ * @param {Array} stars - 项目列表
+ * @param {Object} metadata - 元数据
+ * @returns {Object} Chart.js 格式的数据
+ */
+export function getTagTrendChartData(stars, metadata) {
+  const tags = calculateTagStats(stars, metadata);
+  const topTags = tags.slice(0, 10);
+  
+  return {
+    labels: topTags.map(item => item.tag),
+    datasets: [{
+      label: '使用次数',
+      data: topTags.map(item => item.count),
+      backgroundColor: 'rgba(200, 149, 110, 0.8)',
+      borderColor: '#C8956E',
+      borderWidth: 2,
+      borderRadius: 8
+    }]
+  };
+}
+
+/**
+ * 按季度聚合数据
+ */
+function aggregateByQuarter(monthlyData) {
+  const quarterMap = {};
+  
+  monthlyData.forEach(item => {
+    const [year, month] = item.month.split('-');
+    const quarter = Math.ceil(parseInt(month) / 3);
+    const quarterKey = `${year}-Q${quarter}`;
+    
+    if (!quarterMap[quarterKey]) {
+      quarterMap[quarterKey] = { month: quarterKey, count: 0, cumulative: item.cumulative };
+    }
+    quarterMap[quarterKey].count += item.count;
+  });
+  
+  return Object.values(quarterMap).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+/**
+ * 按年度聚合数据
+ */
+function aggregateByYear(monthlyData) {
+  const yearMap = {};
+  
+  monthlyData.forEach(item => {
+    const year = item.month.split('-')[0];
+    
+    if (!yearMap[year]) {
+      yearMap[year] = { month: year, count: 0, cumulative: item.cumulative };
+    }
+    yearMap[year].count += item.count;
+  });
+  
+  return Object.values(yearMap).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+/**
+ * 生成活跃度热力图数据
+ * @param {Array} stars - 项目列表
+ * @returns {Array} 活跃度数据
+ */
+export function getActivityHeatmapData(stars) {
+  const activityMap = {};
+  
+  stars.forEach(star => {
+    if (star.pushedAt) {
+      const date = new Date(star.pushedAt);
+      const dateKey = date.toISOString().split('T')[0];
+      activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
+    }
+  });
+  
+  return Object.entries(activityMap)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export default {
   calculateBasicStats,
   calculateHealthStats,
@@ -346,4 +533,9 @@ export default {
   generateStatsReport,
   getHealthChartData,
   getLanguageChartData,
+  getStarsGrowthChartData,
+  getLanguagePieChartData,
+  getHealthDistributionChartData,
+  getTagTrendChartData,
+  getActivityHeatmapData,
 };

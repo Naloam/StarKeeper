@@ -277,3 +277,182 @@ export function getExportStats(stars, metadata) {
     totalTags: allTags.size,
   };
 }
+
+/**
+ * 导出统计报告为 Markdown
+ * @param {Object} statsData - 统计数据
+ * @param {Array} stars - Stars 数据
+ * @param {Object} metadata - 元数据
+ * @returns {string} Markdown 格式的统计报告
+ */
+export function exportStatsReport(statsData, stars, metadata) {
+  const { basic, health, languages, tags, growth } = statsData;
+  
+  let markdown = `# StarKeeper 统计报告\n\n`;
+  markdown += `> 生成时间: ${new Date().toLocaleString('zh-CN')}\n`;
+  markdown += `> 报告版本: v1.0\n\n`;
+  markdown += `---\n\n`;
+  
+  // 基础统计
+  markdown += `## 📊 基础统计\n\n`;
+  markdown += `| 指标 | 数值 | 占比 |\n`;
+  markdown += `|------|------|------|\n`;
+  markdown += `| 总 Stars 数 | ${basic.totalStars} | 100% |\n`;
+  markdown += `| 标签数 | ${basic.totalTags} | - |\n`;
+  markdown += `| 有笔记 | ${basic.withNotes} | ${basic.notesPercentage}% |\n`;
+  markdown += `| 有 AI 摘要 | ${basic.withAISummary} | ${basic.aiSummaryPercentage}% |\n\n`;
+  
+  // 健康度分析
+  if (health && health.analyzedCount > 0) {
+    markdown += `## 🏥 健康度分析\n\n`;
+    markdown += `**平均健康度:** ${health.averageScore} 分\n\n`;
+    markdown += `**已分析项目:** ${health.analyzedCount} / ${basic.totalStars} (${health.analyzedPercentage}%)\n\n`;
+    markdown += `| 等级 | 数量 | 占比 |\n`;
+    markdown += `|------|------|------|\n`;
+    markdown += `| 优秀 (80-100) | ${health.distribution.excellent || 0} | ${((health.distribution.excellent || 0) / basic.totalStars * 100).toFixed(1)}% |\n`;
+    markdown += `| 良好 (60-79) | ${health.distribution.good || 0} | ${((health.distribution.good || 0) / basic.totalStars * 100).toFixed(1)}% |\n`;
+    markdown += `| 一般 (40-59) | ${health.distribution.fair || 0} | ${((health.distribution.fair || 0) / basic.totalStars * 100).toFixed(1)}% |\n`;
+    markdown += `| 较差 (20-39) | ${health.distribution.poor || 0} | ${((health.distribution.poor || 0) / basic.totalStars * 100).toFixed(1)}% |\n`;
+    markdown += `| 严重 (0-19) | ${health.distribution.critical || 0} | ${((health.distribution.critical || 0) / basic.totalStars * 100).toFixed(1)}% |\n`;
+    markdown += `| 未分析 | ${health.distribution.unknown || 0} | ${((health.distribution.unknown || 0) / basic.totalStars * 100).toFixed(1)}% |\n\n`;
+  }
+  
+  // 语言分布
+  if (languages && languages.length > 0) {
+    markdown += `## 💻 编程语言分布 (Top 10)\n\n`;
+    markdown += `| 排名 | 语言 | 项目数 | 占比 |\n`;
+    markdown += `|------|------|--------|------|\n`;
+    languages.slice(0, 10).forEach((lang, index) => {
+      markdown += `| ${index + 1} | ${lang.language} | ${lang.count} | ${lang.percentage}% |\n`;
+    });
+    markdown += `\n`;
+  }
+  
+  // 标签统计
+  if (tags && tags.length > 0) {
+    markdown += `## 🏷️ 热门标签 (Top 15)\n\n`;
+    markdown += `| 排名 | 标签 | 使用次数 | 占比 |\n`;
+    markdown += `|------|------|----------|------|\n`;
+    tags.slice(0, 15).forEach((tag, index) => {
+      markdown += `| ${index + 1} | ${tag.tag} | ${tag.count} | ${tag.percentage}% |\n`;
+    });
+    markdown += `\n`;
+  }
+  
+  // Stars 增长趋势
+  if (growth && growth.length > 0) {
+    markdown += `## 📈 Stars 增长趋势\n\n`;
+    markdown += `**总时间跨度:** ${growth[0].month} ~ ${growth[growth.length - 1].month}\n\n`;
+    
+    // 最近6个月
+    const recent6Months = growth.slice(-6);
+    markdown += `### 最近 6 个月趋势\n\n`;
+    markdown += `| 月份 | 新增 | 累计 |\n`;
+    markdown += `|------|------|------|\n`;
+    recent6Months.forEach(item => {
+      markdown += `| ${item.month} | ${item.count} | ${item.cumulative} |\n`;
+    });
+    markdown += `\n`;
+    
+    // 增长率分析
+    if (growth.length >= 2) {
+      const latestMonth = growth[growth.length - 1];
+      const previousMonth = growth[growth.length - 2];
+      const monthlyGrowth = latestMonth.count;
+      const growthRate = previousMonth.count > 0 
+        ? ((latestMonth.count - previousMonth.count) / previousMonth.count * 100).toFixed(1)
+        : 'N/A';
+      
+      markdown += `**上月新增:** ${monthlyGrowth} 个项目\n`;
+      markdown += `**环比增长:** ${growthRate}%\n\n`;
+    }
+  }
+  
+  // 活跃度分析
+  const recentlyActive = stars
+    .filter(star => star.pushedAt)
+    .sort((a, b) => new Date(b.pushedAt) - new Date(a.pushedAt))
+    .slice(0, 10);
+  
+  if (recentlyActive.length > 0) {
+    markdown += `## 🔥 最近活跃项目 (Top 10)\n\n`;
+    markdown += `| 项目 | 语言 | Stars | 最后更新 |\n`;
+    markdown += `|------|------|-------|----------|\n`;
+    recentlyActive.forEach(star => {
+      const lastUpdate = new Date(star.pushedAt).toLocaleDateString('zh-CN');
+      markdown += `| [${star.name}](${star.htmlUrl}) | ${star.language || 'N/A'} | ⭐ ${star.stargazersCount.toLocaleString()} | ${lastUpdate} |\n`;
+    });
+    markdown += `\n`;
+  }
+  
+  // 高 Star 项目
+  const topStarred = stars
+    .sort((a, b) => b.stargazersCount - a.stargazersCount)
+    .slice(0, 10);
+  
+  if (topStarred.length > 0) {
+    markdown += `## ⭐ 最受欢迎项目 (Top 10)\n\n`;
+    markdown += `| 排名 | 项目 | 语言 | Stars | Forks |\n`;
+    markdown += `|------|------|------|-------|-------|\n`;
+    topStarred.forEach((star, index) => {
+      markdown += `| ${index + 1} | [${star.name}](${star.htmlUrl}) | ${star.language || 'N/A'} | ⭐ ${star.stargazersCount.toLocaleString()} | 🔀 ${star.forksCount.toLocaleString()} |\n`;
+    });
+    markdown += `\n`;
+  }
+  
+  markdown += `---\n\n`;
+  markdown += `*报告由 StarKeeper 自动生成*\n`;
+  
+  return markdown;
+}
+
+/**
+ * 导出统计报告为 JSON
+ * @param {Object} statsData - 统计数据
+ * @returns {string} JSON 字符串
+ */
+export function exportStatsJSON(statsData) {
+  return JSON.stringify(statsData, null, 2);
+}
+
+/**
+ * 导出统计报告为 CSV
+ * @param {Object} statsData - 统计数据
+ * @returns {string} CSV 文本
+ */
+export function exportStatsCSV(statsData) {
+  const { basic, health, languages, tags } = statsData;
+  
+  let csv = `统计类型,指标,数值,占比\n`;
+  
+  // 基础统计
+  csv += `基础统计,总 Stars 数,${basic.totalStars},100%\n`;
+  csv += `基础统计,标签数,${basic.totalTags},-\n`;
+  csv += `基础统计,有笔记,${basic.withNotes},${basic.notesPercentage}%\n`;
+  csv += `基础统计,有 AI 摘要,${basic.withAISummary},${basic.aiSummaryPercentage}%\n`;
+  
+  // 健康度
+  if (health) {
+    csv += `\n健康度,平均分,${health.averageScore},-\n`;
+    csv += `健康度,已分析,${health.analyzedCount},${health.analyzedPercentage}%\n`;
+  }
+  
+  // 语言分布
+  if (languages && languages.length > 0) {
+    csv += `\n`;
+    languages.slice(0, 10).forEach(lang => {
+      csv += `语言分布,${lang.language},${lang.count},${lang.percentage}%\n`;
+    });
+  }
+  
+  // 标签统计
+  if (tags && tags.length > 0) {
+    csv += `\n`;
+    tags.slice(0, 10).forEach(tag => {
+      csv += `标签统计,${tag.tag},${tag.count},${tag.percentage}%\n`;
+    });
+  }
+  
+  return csv;
+}
+
