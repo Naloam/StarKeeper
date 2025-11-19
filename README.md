@@ -4,7 +4,7 @@
 
 基于 AI 增强的 GitHub Stars 管理应用，通过自动摘要、健康度分析、智能清理等功能，帮助开发者高效管理和利用已收藏的开源项目。
 
-[![Version](https://img.shields.io/badge/version-0.2.0--alpha-blue)](https://github.com/Naloam/StarKeeper)
+[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue)](https://github.com/Naloam/StarKeeper)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 [![React](https://img.shields.io/badge/React-18.2.0-61dafb)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-4.5.0-646cff)](https://vitejs.dev/)
@@ -12,42 +12,161 @@
 ## ✨ 核心功能
 
 - 🤖 **AI 自动摘要** - 一键生成项目洞察（技术栈/功能/适用场景）
-- 📊 **健康度分析** - 评估项目活跃度和维护状态
-- 🏷️ **智能标签** - 自定义标签 + 自动补全
+- 📊 **健康度分析** - 评估项目活跃度和维护状态（0-100分）
+- 🏷️ **智能标签** - 自定义标签 + 自动补全 + 笔记功能
 - 🔍 **多维搜索** - 关键词/语言/标签多条件过滤
-- 🧹 **智能清理** - 自动检测废弃/重复项目
-- 📤 **导入导出** - JSON/Markdown 格式
+- 🧹 **智能清理** - 自动检测废弃/相似/低交互项目
+- 🔄 **智能去重** - 相似项目聚类和对比分析
+- 📤 **导入导出** - JSON/Markdown/CSV 格式支持
+- 📱 **PWA 支持** - 离线访问 + 桌面安装
 - 🔒 **隐私优先** - 数据存储在你的 GitHub Gist
 
 ## 📚 项目文档
 
-- 📋 [开发计划](./PROJECT_PLAN.md) - 完整的开发路线图和任务拆解
-- 🗺️ [路线图](./ROADMAP.md) - 简洁的功能规划概览
-- 📊 [开发看板](./SPRINT.md) - 当前冲刺任务和进度
-- 📖 [项目上下文](./PROJECT_CONTEXT.md) - 技术架构和实现细节
-- 📝 [历史任务](./tasks.md) - 参考的历史任务计划
+- 📋 [项目计划](./PROJECT_PLAN.md) - 完整的开发计划和架构说明
 
 ## 🚀 快速开始
 
-This project was bootstrapped with [Vite](https://vitejs.dev/).
+### 开发环境
 
-## Available Scripts
+```bash
+# 安装依赖
+npm install
 
-In the project directory, you can run:
+# 启动开发服务器
+npm start
+# 访问 http://localhost:3000
 
-### `npm start`
+# 构建生产版本
+npm build
 
-We've already run this for you in the `Codespaces: server` terminal window below. If you need to stop the server for any reason you can just run `npm start` again to bring it back online.
+# 预览生产构建
+npm preview
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000/](http://localhost:3000/) in the built-in Simple Browser (`Cmd/Ctrl + Shift + P > Simple Browser: Show`) to view your running application.
+### 环境变量
 
-The page will reload automatically when you make changes.\
-You may also see any lint errors in the console.
+创建 `.env` 文件：
 
-### `npm test`
+```env
+# GitHub OAuth（可选，用于生产环境）
+VITE_GITHUB_CLIENT_ID=your_client_id
+VITE_GITHUB_REDIRECT_URI=http://localhost:3000/callback
 
-Launches the test runner in the interactive watch mode.\
+# 阿里云 DashScope API
+VITE_DASHSCOPE_API_KEY=your_api_key
+
+# PWA（开发模式可选启用）
+VITE_PWA_DEV=false
+```
+
+### GitHub Personal Access Token
+
+开发模式下，可以直接使用 Personal Access Token：
+
+1. 访问 https://github.com/settings/tokens
+2. 生成 token（勾选 `repo`, `gist` 权限）
+3. 登录页面输入 token
+
+## 📦 技术栈
+
+- **框架**: React 18.2 + Vite 4.5
+- **状态管理**: Zustand 4.5
+- **样式**: Tailwind CSS 3.3
+- **路由**: React Router 6.30
+- **图标**: Lucide React
+- **API**: Octokit.js (GitHub), Axios
+- **PWA**: vite-plugin-pwa + Workbox
+- **性能**: React Window (虚拟滚动)
+
+## 📁 项目结构
+
+```
+src/
+├── components/    # 组件
+│   ├── common/    # 通用组件（12个）
+│   ├── layout/    # 布局组件
+│   └── tags/      # 标签组件
+├── pages/         # 页面（6个）
+├── services/      # 服务层（7个）
+├── store/         # Zustand stores
+├── utils/         # 工具函数
+└── config/        # 配置
+```
+
+## 🎯 功能特性
+
+### 1. AI 自动摘要
+- 基于 README 和描述生成项目摘要
+- 自动提取技术栈、功能、适用场景
+- 支持批量生成和缓存
+
+### 2. 健康度分析
+- **综合评分**（0-100分）
+  - 活跃度 40分：commits/release/更新时间
+  - 社区健康 30分：issue响应/PR合并率/contributors
+  - 维护状态 30分：archived/CI/README更新
+- 5个等级徽章：优秀/良好/一般/较差/危险
+- 批量分析支持
+
+### 3. 智能清理
+- 废弃项目检测（健康度低 + 长期未更新）
+- 相似项目检测（名称/语言/描述相似）
+- 低交互项目检测（无标签/无笔记）
+- 安全归档机制（30天内可恢复）
+
+### 4. 智能去重
+- 相似度计算（编辑距离 + topics 匹配）
+- 项目聚类和对比分析
+- 推荐最佳选择
+
+### 5. PWA 离线支持
+- Service Worker 缓存策略
+- 离线访问已加载数据
+- 离线编辑自动同步
+- 支持桌面安装
+
+## 🔐 隐私说明
+
+- 所有元数据（标签/笔记/配置）存储在用户自己的 GitHub Gist
+- 不收集任何用户数据
+- 完全开源，代码透明
+
+## 📝 开发计划
+
+查看 [PROJECT_PLAN.md](./PROJECT_PLAN.md) 了解：
+- 已完成功能（13个PR）
+- 未来规划（语义搜索、学习路径等）
+- 技术架构详情
+
+## 🤝 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+### Git 提交规范
+```
+feat: 新功能
+fix: Bug 修复
+docs: 文档更新
+refactor: 重构
+perf: 性能优化
+```
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](./LICENSE)
+
+## 🙏 致谢
+
+- [React](https://reactjs.org/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [GitHub REST API](https://docs.github.com/rest)
+- [阿里云通义千问](https://dashscope.aliyun.com/)
+
+---
+
+**Star 这个项目** 如果你觉得它有用！⭐
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
