@@ -21,6 +21,7 @@ import { useAuthStore, useStarsStore, useUIStore } from '../store';
 import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
 import { generateSummary } from '../services/dashscope.service';
 import { calculateHealthScore, batchCalculateHealthScore } from '../services/health.service';
+import { generateStatsReport } from '../services/stats.service';
 import TagModal from '../components/tags/TagModal';
 import TagBadge from '../components/tags/TagBadge';
 import AISummary from '../components/common/AISummary';
@@ -28,6 +29,7 @@ import ExportModal from '../components/common/ExportModal';
 import ShareModal from '../components/common/ShareModal';
 import HealthBadge from '../components/common/HealthBadge';
 import HealthDetailModal from '../components/common/HealthDetailModal';
+import StatsPanel, { LanguageDistribution, TagCloud, RecentlyActiveRepos } from '../components/common/StatsPanel';
 import LazyImage from '../components/common/LazyImage';
 import { useDebounce } from '../utils/performance';
 import { 
@@ -58,6 +60,10 @@ export default function DashboardPage() {
   const [healthAnalysisProgress, setHealthAnalysisProgress] = useState({ current: 0, total: 0 });
   const [selectedHealthRepo, setSelectedHealthRepo] = useState(null);
   const [showHealthModal, setShowHealthModal] = useState(false);
+  
+  // 统计数据状态
+  const [stats, setStats] = useState(null);
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -100,6 +106,14 @@ export default function DashboardPage() {
       console.error('加载元数据失败:', error);
     }
   };
+
+  // 生成统计数据
+  useEffect(() => {
+    if (stars.length > 0) {
+      const statsReport = generateStatsReport(stars, metadata);
+      setStats(statsReport);
+    }
+  }, [stars, metadata]);
 
   const loadStars = async () => {
     setLoading(true);
@@ -623,6 +637,19 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* 统计面板 */}
+        {showStats && stats && (
+          <div className="mb-6">
+            <StatsPanel stats={stats} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              <LanguageDistribution languages={stats.languages} />
+              <TagCloud tags={stats.tags} />
+              <RecentlyActiveRepos repos={stats.recentlyActive} />
+            </div>
+          </div>
+        )}
 
         {/* Stars Grid/List */}
         <StarsList 
