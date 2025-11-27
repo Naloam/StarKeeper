@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -9,62 +10,62 @@ export default {
       colors: {
         // Natural paper-texture color system
         primary: {
-          DEFAULT: '#7A8B7F', // 橄榄灰 - 自然主色
-          50: '#F5F7F6',
-          100: '#E8EBE9',
-          200: '#D1D7D3',
-          300: '#BAC3BD',
-          400: '#A3AFA7',
-          500: '#7A8B7F',
-          600: '#627066',
-          700: '#49544D',
-          800: '#313833',
-          900: '#181C1A',
+          DEFAULT: 'var(--color-primary)', // 橄榄灰 - 自然主色
+          50: 'var(--color-primary-50)',
+          100: 'var(--color-primary-100)',
+          200: 'var(--color-primary-200)',
+          300: 'var(--color-primary-300)',
+          400: 'var(--color-primary-400)',
+          500: 'var(--color-primary-500)',
+          600: 'var(--color-primary-600)',
+          700: 'var(--color-primary-700)',
+          800: 'var(--color-primary-800)',
+          900: 'var(--color-primary-900)',
         },
         surface: {
-          DEFAULT: '#FAF9F7', // 浅米色纸张
-          darker: '#F5F3F0', // 稍深米色
-          card: '#FEFDFB', // 卡片纸张白
+          DEFAULT: 'var(--color-surface)', // 浅米色纸张
+          darker: 'var(--color-surface-darker)', // 稍深米色
+          card: 'var(--color-surface-card)', // 卡片纸张白
         },
         text: {
-          primary: '#2B2B2B', // 柔和黑
-          secondary: '#6B6B6B', // 柔灰
-          tertiary: '#9B9B9B', // 淡灰
-          muted: '#B8B8B8', // 极淡灰
+          primary: 'var(--color-text-primary)', // 柔和黑
+          secondary: 'var(--color-text-secondary)', // 柔灰
+          tertiary: 'var(--color-text-tertiary)', // 淡灰
+          muted: 'var(--color-text-muted)', // 极淡灰
         },
         border: {
-          DEFAULT: '#E8E6E3', // 纸张边缘
-          light: '#F0EEEB',
-          dark: '#D6D4D1',
+          DEFAULT: 'var(--color-border)', // 纸张边缘
+          light: 'var(--color-border-light)',
+          dark: 'var(--color-border-dark)',
         },
         // Natural accent colors
         accent: {
-          sand: '#D4C5B3', // 沙色
-          olive: '#A8B5A0', // 橄榄
-          smoke: '#B8C5D0', // 烟蓝
-          wheat: '#E8D8C0', // 浅卡其
-          stone: '#C8BFBA', // 石灰
+          sand: 'var(--color-accent-sand)', // 沙色
+          olive: 'var(--color-accent-olive)', // 橄榄
+          smoke: 'var(--color-accent-smoke)', // 烟蓝
+          wheat: 'var(--color-accent-wheat)', // 浅卡其
+          stone: 'var(--color-accent-stone)', // 石灰
         },
         // Semantic colors (natural, low saturation)
         success: {
-          DEFAULT: '#6B8E6F', // 自然绿
-          light: '#E8F0E9',
-          text: '#4A6B4D',
+          DEFAULT: 'var(--color-success)', // 自然绿
+          light: 'var(--color-success-light)',
+          text: 'var(--color-success-text)',
         },
         warning: {
-          DEFAULT: '#C9A66B', // 自然黄
-          light: '#F7F0E6',
-          text: '#8B7447',
+          DEFAULT: 'var(--color-warning)', // 自然黄
+          light: 'var(--color-warning-light)',
+          text: 'var(--color-warning-text)',
         },
         danger: {
-          DEFAULT: '#B87A7A', // 柔和红
-          light: '#F5EDED',
-          text: '#8B5656',
+          DEFAULT: 'var(--color-danger)', // 柔和红
+          light: 'var(--color-danger-light)',
+          text: 'var(--color-danger-text)',
         },
         info: {
-          DEFAULT: '#7A8B9F', // 烟蓝
-          light: '#E9EDF1',
-          text: '#5A6B7F',
+          DEFAULT: 'var(--color-info)', // 烟蓝
+          light: 'var(--color-info-light)',
+          text: 'var(--color-info-text)',
         },
       },
       fontFamily: {

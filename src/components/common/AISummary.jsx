@@ -45,7 +45,7 @@ export default function AISummary({
       <div className="bg-surface rounded-xl p-4 border border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="p-1.5 bg-white border border-border rounded-lg">
+            <div className="p-1.5 bg-surface-card border border-border rounded-lg">
               <Sparkles className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
             </div>
             <div>
@@ -70,7 +70,7 @@ export default function AISummary({
     return (
       <div className="bg-surface rounded-xl p-4 border border-border">
         <div className="flex items-center space-x-3 mb-3">
-          <div className="p-1.5 bg-white border border-border rounded-lg">
+          <div className="p-1.5 bg-surface-card border border-border rounded-lg">
             <RefreshCw className="w-4 h-4 text-text-secondary animate-spin" strokeWidth={1.5} />
           </div>
           <div className="flex-1">
@@ -146,7 +146,7 @@ export default function AISummary({
         <textarea
           value={editedSummary}
           onChange={(e) => setEditedSummary(e.target.value)}
-          className="w-full p-3 text-body-sm text-text-primary bg-white border border-border rounded-lg focus-ring resize-none"
+          className="w-full p-3 text-body-sm text-text-primary bg-surface-card border border-border rounded-lg focus-ring resize-none"
           rows={2}
           placeholder="编辑项目摘要..."
         />

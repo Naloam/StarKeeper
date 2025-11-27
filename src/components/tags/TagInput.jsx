@@ -53,7 +53,7 @@ export default function TagInput({ suggestions = [], onAdd, placeholder = '输�
 
       {/* 建议列表 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-surface-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {filteredSuggestions.map((tag) => (
             <button
               key={tag}

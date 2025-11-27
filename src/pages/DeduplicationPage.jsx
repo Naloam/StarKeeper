@@ -224,7 +224,7 @@ export default function DeduplicationPage() {
         </div>
 
         {/* 相似度阈值调整 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+        <div className="bg-surface-card rounded-lg border border-border p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -254,7 +254,7 @@ export default function DeduplicationPage() {
 
         {/* 内容区域 */}
         {report.duplicateGroups === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className="bg-surface-card rounded-lg border border-border p-12 text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               太棒了！没有发现重复项目
@@ -287,7 +287,7 @@ export default function DeduplicationPage() {
                 <div className="absolute -top-3 right-4 z-10">
                   <button
                     onClick={() => handleSelectAllInGroup(group)}
-                    className="px-3 py-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 rounded-full shadow-sm transition-colors"
+                    className="px-3 py-1 text-xs bg-surface-card border border-border hover:bg-surface-darker rounded-full shadow-sm transition-colors"
                   >
                     快速选择非推荐项
                   </button>
