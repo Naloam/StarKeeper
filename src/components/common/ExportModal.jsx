@@ -79,53 +79,53 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface-card rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
               <Download className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">导出 Stars 数据</h2>
-              <p className="text-sm text-gray-500">选择导出格式并下载</p>
+              <h2 className="text-xl font-bold text-text-primary">导出 Stars 数据</h2>
+              <p className="text-sm text-text-secondary">选择导出格式并下载</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-text-muted hover:text-text-secondary transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Stats */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
+        <div className="p-6 bg-gray-50 border-b border-border">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">数据统计</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-600">项目总数</p>
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
+              <p className="text-2xl font-bold text-text-primary">{stats.total}</p>
+              <p className="text-xs text-text-secondary">项目总数</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
               <p className="text-2xl font-bold text-primary-600">{stats.tagged}</p>
-              <p className="text-xs text-gray-600">已添加标签</p>
+              <p className="text-xs text-text-secondary">已添加标签</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
               <p className="text-2xl font-bold text-purple-600">{stats.withAISummary}</p>
-              <p className="text-xs text-gray-600">有 AI 摘要</p>
+              <p className="text-xs text-text-secondary">有 AI 摘要</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
               <p className="text-2xl font-bold text-green-600">{stats.withNotes}</p>
-              <p className="text-xs text-gray-600">有笔记</p>
+              <p className="text-xs text-text-secondary">有笔记</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
               <p className="text-2xl font-bold text-orange-600">{stats.totalTags}</p>
-              <p className="text-xs text-gray-600">标签总数</p>
+              <p className="text-xs text-text-secondary">标签总数</p>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-gray-200">
-              <p className="text-2xl font-bold text-gray-400">{stats.untagged}</p>
-              <p className="text-xs text-gray-600">未分类</p>
+            <div className="bg-surface-card rounded-lg p-3 border border-border">
+              <p className="text-2xl font-bold text-text-muted">{stats.untagged}</p>
+              <p className="text-xs text-text-secondary">未分类</p>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
                   className={`w-full flex items-start space-x-4 p-4 rounded-lg border-2 transition-all ${
                     isSelected
                       ? `border-${format.color}-500 bg-${format.color}-50`
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                      : 'border-border hover:border-text-secondary bg-surface-card'
                   }`}
                 >
                   <div
@@ -159,16 +159,16 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
                       className={`w-5 h-5 ${
                         isSelected
                           ? `text-${format.color}-600`
-                          : 'text-gray-600'
+                          : 'text-text-secondary'
                       }`}
                     />
                   </div>
                   <div className="flex-1 text-left">
                     <div className="flex items-center space-x-2">
-                      <h4 className="font-semibold text-gray-900">{format.name}</h4>
-                      <span className="text-xs text-gray-500">{format.extension}</span>
+                      <h4 className="font-semibold text-text-primary">{format.name}</h4>
+                      <span className="text-xs text-text-secondary">{format.extension}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{format.description}</p>
+                    <p className="text-sm text-text-secondary mt-1">{format.description}</p>
                   </div>
                   {isSelected && (
                     <div className="flex-shrink-0">
@@ -190,8 +190,8 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-          <p className="text-xs text-gray-500">
+        <div className="flex items-center justify-between p-6 border-t border-border bg-gray-50">
+          <p className="text-xs text-text-secondary">
             导出文件名: github-stars-{new Date().toISOString().split('T')[0]}
             {formats.find(f => f.id === selectedFormat)?.extension}
           </p>

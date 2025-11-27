@@ -58,27 +58,27 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Share2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-info-light rounded-lg">
+              <Share2 className="w-5 h-5 text-info-text" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-bold text-text-primary">
                 分享 Collection
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-text-secondary">
                 让其他人看到你精心整理的项目收藏
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-surface-darker rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-text-secondary" />
           </button>
         </div>
 
@@ -86,7 +86,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
         <div className="p-6 space-y-6">
           {/* 公开/私有切换 */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-text-primary">
               分享状态
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -94,16 +94,16 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
                 onClick={() => setIsPublic(false)}
                 className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                   !isPublic
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    ? 'border-info bg-info-light'
+                    : 'border-border hover:border-text-secondary'
                 }`}
               >
-                <Lock className={`w-5 h-5 ${!isPublic ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Lock className={`w-5 h-5 ${!isPublic ? 'text-info-text' : 'text-text-muted'}`} />
                 <div className="text-left">
-                  <div className={`font-medium ${!isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <div className={`font-medium ${!isPublic ? 'text-info-text' : 'text-text-primary'}`}>
                     私有
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-text-secondary">
                     只有你可以访问
                   </div>
                 </div>
@@ -113,16 +113,16 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
                 onClick={() => setIsPublic(true)}
                 className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                   isPublic
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    ? 'border-info bg-info-light'
+                    : 'border-border hover:border-text-secondary'
                 }`}
               >
-                <Globe className={`w-5 h-5 ${isPublic ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Globe className={`w-5 h-5 ${isPublic ? 'text-info-text' : 'text-text-muted'}`} />
                 <div className="text-left">
-                  <div className={`font-medium ${isPublic ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-gray-300'}`}>
+                  <div className={`font-medium ${isPublic ? 'text-info-text' : 'text-text-primary'}`}>
                     公开
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-text-secondary">
                     任何人都可以查看
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
           {/* 分享标题 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-text-primary">
               Collection 标题
             </label>
             <input
@@ -140,13 +140,13 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
               value={shareTitle}
               onChange={(e) => setShareTitle(e.target.value)}
               placeholder="例如：我的前端开发工具箱"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-info focus:border-transparent bg-surface text-text-primary"
             />
           </div>
 
           {/* 分享描述 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-text-primary">
               描述（可选）
             </label>
             <textarea

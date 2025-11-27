@@ -54,8 +54,8 @@ class ErrorBoundary extends React.Component {
       const isDevelopment = import.meta.env.DEV;
 
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full bg-surface-card rounded-2xl shadow-2xl overflow-hidden">
             {/* 错误图标区域 */}
             <div className="bg-gradient-to-r from-red-500 to-orange-500 p-8 text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-4">
@@ -72,10 +72,10 @@ class ErrorBoundary extends React.Component {
             {/* 错误详情区域 */}
             <div className="p-8">
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                <h2 className="text-xl font-semibold text-text-primary mb-3">
                   发生了什么？
                 </h2>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-text-secondary leading-relaxed">
                   我们的应用遇到了一个意外的问题。这可能是由于网络问题、数据加载失败或程序错误导致的。
                   您可以尝试刷新页面或返回首页。
                 </p>
@@ -84,27 +84,27 @@ class ErrorBoundary extends React.Component {
               {/* 错误信息（开发环境显示） */}
               {isDevelopment && error && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  <h3 className="text-lg font-semibold text-text-primary mb-2">
                     错误详情 (开发模式)
                   </h3>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 overflow-auto max-h-64">
+                  <div className="bg-danger-light border border-danger rounded-lg p-4 overflow-auto max-h-64">
                     <div className="mb-3">
-                      <p className="text-sm font-mono text-red-800 font-semibold">
+                      <p className="text-sm font-mono text-danger-text font-semibold">
                         {error.toString()}
                       </p>
                     </div>
                     {errorInfo && errorInfo.componentStack && (
                       <div>
-                        <p className="text-xs text-red-600 mb-2 font-semibold">
+                        <p className="text-xs text-danger-text mb-2 font-semibold">
                           组件堆栈：
                         </p>
-                        <pre className="text-xs text-red-700 font-mono whitespace-pre-wrap">
+                        <pre className="text-xs text-danger-text font-mono whitespace-pre-wrap">
                           {errorInfo.componentStack}
                         </pre>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-text-muted mt-2">
                     错误次数: {errorCount}
                   </p>
                 </div>
@@ -121,7 +121,7 @@ class ErrorBoundary extends React.Component {
                 </button>
                 <button
                   onClick={this.handleGoHome}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-surface border-2 border-border text-text-primary rounded-lg hover:border-text-secondary hover:bg-surface-darker transition-all duration-200"
                 >
                   <Home className="w-5 h-5" />
                   返回首页

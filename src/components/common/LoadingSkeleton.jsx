@@ -8,7 +8,7 @@ import React from 'react';
 // 基础骨架屏元素
 export const SkeletonBox = ({ className = '', width, height, rounded = 'rounded' }) => (
   <div
-    className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] ${rounded} ${className}`}
+    className={`animate-pulse bg-gradient-to-r from-border-light via-border to-border-light bg-[length:200%_100%] ${rounded} ${className}`}
     style={{ width, height }}
   />
 );
@@ -34,7 +34,7 @@ export const SkeletonCircle = ({ size = '40px', className = '' }) => (
 
 // 仓库卡片骨架屏
 export const RepoCardSkeleton = () => (
-  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+  <div className="bg-surface-card rounded-lg border border-border p-6 shadow-sm">
     {/* 标题区域 */}
     <div className="flex items-start justify-between mb-4">
       <div className="flex-1">
@@ -110,7 +110,7 @@ export const SidebarSkeleton = () => (
 
 // 统计卡片骨架屏
 export const StatsCardSkeleton = () => (
-  <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+  <div className="bg-surface-card rounded-lg border border-border p-6 shadow-sm">
     <div className="flex items-center justify-between mb-4">
       <SkeletonBox height="20px" width="100px" />
       <SkeletonCircle size="40px" />
@@ -122,7 +122,7 @@ export const StatsCardSkeleton = () => (
 
 // 用户信息骨架屏
 export const UserInfoSkeleton = () => (
-  <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+  <div className="flex items-center gap-4 p-4 bg-surface-card rounded-lg border border-border">
     <SkeletonCircle size="48px" />
     <div className="flex-1">
       <SkeletonBox height="20px" width="150px" className="mb-2" />
@@ -133,9 +133,9 @@ export const UserInfoSkeleton = () => (
 
 // 表格骨架屏
 export const TableSkeleton = ({ rows = 5, columns = 4 }) => (
-  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
     {/* 表头 */}
-    <div className="bg-gray-50 border-b border-gray-200 p-4">
+    <div className="bg-surface-darker border-b border-border p-4">
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {Array.from({ length: columns }).map((_, index) => (
           <SkeletonBox key={index} height="20px" />
@@ -143,7 +143,7 @@ export const TableSkeleton = ({ rows = 5, columns = 4 }) => (
       </div>
     </div>
     {/* 表格行 */}
-    <div className="divide-y divide-gray-200">
+    <div className="divide-y divide-border">
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div key={rowIndex} className="p-4">
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
@@ -159,9 +159,9 @@ export const TableSkeleton = ({ rows = 5, columns = 4 }) => (
 
 // 页面加载骨架屏（完整页面）
 export const PageSkeleton = () => (
-  <div className="min-h-screen bg-gray-50">
+  <div className="min-h-screen bg-surface">
     {/* 头部 */}
-    <div className="bg-white border-b border-gray-200 p-4">
+    <div className="bg-surface-card border-b border-border p-4">
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
           <SkeletonBox height="32px" width="150px" />
@@ -201,17 +201,17 @@ export const PageSkeleton = () => (
 // 加载遮罩层
 export const LoadingOverlay = ({ message = '加载中...' }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white rounded-lg p-8 shadow-2xl max-w-sm w-full mx-4">
+    <div className="bg-surface-card rounded-lg p-8 shadow-2xl max-w-sm w-full mx-4">
       <div className="flex flex-col items-center">
         {/* 加载动画 */}
         <div className="relative w-16 h-16 mb-4">
-          <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+          <div className="absolute inset-0 border-4 border-info-light rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-info rounded-full border-t-transparent animate-spin"></div>
         </div>
         
         {/* 加载文本 */}
-        <p className="text-lg font-medium text-gray-800">{message}</p>
-        <p className="text-sm text-gray-500 mt-2">请稍候...</p>
+        <p className="text-lg font-medium text-text-primary">{message}</p>
+        <p className="text-sm text-text-secondary mt-2">请稍候...</p>
       </div>
     </div>
   </div>
@@ -220,9 +220,9 @@ export const LoadingOverlay = ({ message = '加载中...' }) => (
 // 空状态骨架屏
 export const EmptySkeleton = ({ icon, title, description, action }) => (
   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-    {icon && <div className="w-24 h-24 mb-6 text-gray-300">{icon}</div>}
-    {title && <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>}
-    {description && <p className="text-gray-600 mb-6 max-w-md">{description}</p>}
+    {icon && <div className="w-24 h-24 mb-6 text-text-muted">{icon}</div>}
+    {title && <h3 className="text-xl font-semibold text-text-primary mb-2">{title}</h3>}
+    {description && <p className="text-text-secondary mb-6 max-w-md">{description}</p>}
     {action && action}
   </div>
 );

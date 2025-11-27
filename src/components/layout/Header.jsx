@@ -1,11 +1,13 @@
-import { Star, Github, LogOut, Settings, Menu, X } from 'lucide-react';
+import { Star, Github, LogOut, Settings, Menu, X, Sun, Moon } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../../store';
 import { APP_CONFIG } from '../../config';
 import LazyImage from '../common/LazyImage';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function Header() {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     if (window.confirm('确定要退出登录吗？')) {
@@ -15,14 +17,14 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+    <header className="bg-surface border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-surface/95">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo + Menu Button */}
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
+              className="p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
               aria-label="切换侧边栏"
             >
               <Menu className="w-5 h-5 text-text-secondary" />
@@ -54,18 +56,30 @@ export default function Header() {
               </div>
 
               <div className="flex items-center space-x-1">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
+                  title={theme === 'dark' ? '切换到亮色模式' : '切换到深色模式'}
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+                  ) : (
+                    <Moon className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+                  )}
+                </button>
+
                 <a
                   href={`https://github.com/${user.login}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
+                  className="p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
                   title="查看 GitHub 主页"
                 >
                   <Github className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
                 </a>
 
                 <button
-                  className="hidden sm:block p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
+                  className="hidden sm:block p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
                   title="设置"
                 >
                   <Settings className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
@@ -73,7 +87,7 @@ export default function Header() {
 
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-lg hover:bg-surface transition-fast focus-ring"
+                  className="p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
                   title="退出登录"
                 >
                   <LogOut className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />

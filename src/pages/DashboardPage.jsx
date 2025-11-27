@@ -554,11 +554,11 @@ export default function DashboardPage() {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-text-primary mb-2">
               正在加载你的 Stars...
             </h2>
             {progress.current > 0 && (
-              <p className="text-gray-600">
+              <p className="text-text-secondary">
                 已加载 {progress.current} 个项目
                 {progress.hasMore && '...'}
               </p>
@@ -575,12 +575,12 @@ export default function DashboardPage() {
         <div className="flex items-center justify-center h-full">
           <div className="text-center max-w-md">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-12 h-12 text-gray-400" />
+              <Sparkles className="w-12 h-12 text-text-muted" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-text-primary mb-2">
               还没有 Star 任何项目
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-text-secondary mb-6">
               去 GitHub 上 star 一些有趣的项目吧！
             </p>
             <button
@@ -602,10 +602,10 @@ export default function DashboardPage() {
         {/* Toolbar */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
               我的 Stars
             </h2>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm sm:text-base text-text-secondary">
               共 {stars.length} 个项目 · 显示 {filteredStars.length} 个
             </p>
           </div>
@@ -670,14 +670,14 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => setShowShareModal(true)}
-              className="btn flex-1 sm:flex-none bg-white border border-border text-text-primary hover:bg-surface text-body-sm"
+              className="btn flex-1 sm:flex-none bg-surface-card border border-border text-text-primary hover:bg-surface-darker text-body-sm"
             >
               <Share2 className="w-4 h-4" />
               <span>分享</span>
             </button>
             <button
               onClick={() => setShowExportModal(true)}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-surface-card border border-border text-text-primary px-3 sm:px-4 py-2 rounded-lg hover:bg-surface-darker transition-colors text-sm"
             >
               <Download className="w-4 h-4" />
               <span>导出</span>
@@ -685,7 +685,7 @@ export default function DashboardPage() {
             <button
               onClick={loadStars}
               disabled={loading}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-surface-card border border-border text-text-primary px-3 sm:px-4 py-2 rounded-lg hover:bg-surface-darker transition-colors disabled:opacity-50 text-sm"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span>刷新</span>
@@ -820,7 +820,7 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
   if (stars.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">没有匹配的项目</p>
+        <p className="text-text-secondary">没有匹配的项目</p>
       </div>
     );
   }
@@ -874,15 +874,15 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
   const healthScore = repoMeta.healthScore;
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-surface-card rounded-lg border border-border p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 hover:text-primary-600 mb-1">
+          <h3 className="font-semibold text-text-primary hover:text-primary-600 mb-1">
             <a href={star.htmlUrl} target="_blank" rel="noopener noreferrer">
               {star.name}
             </a>
           </h3>
-          <p className="text-sm text-gray-500">@{star.owner.login}</p>
+          <p className="text-sm text-text-secondary">@{star.owner.login}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           {star.language && (
@@ -898,14 +898,14 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
               onClick={() => onShowHealthDetail(star)}
             />
           ) : isAnalyzing ? (
-            <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
+            <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-text-secondary">
               <RefreshCw className="w-3 h-3 animate-spin" />
               <span>分析中...</span>
             </div>
           ) : (
             <button
               onClick={() => onAnalyzeHealth(star)}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-text-primary transition-colors"
               title="分析健康度"
             >
               <Activity className="w-3 h-3" />
@@ -915,7 +915,7 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
         </div>
       </div>
 
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+      <p className="text-sm text-text-secondary mb-4 line-clamp-2">
         {star.description || '暂无描述'}
       </p>
 
@@ -938,14 +938,14 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
             <TagBadge key={tag} tag={tag} color={color} size="sm" />
           ))}
           {tags.length > 3 && (
-            <span className="px-2 py-0.5 text-xs text-gray-500">
+            <span className="px-2 py-0.5 text-xs text-text-secondary">
               +{tags.length - 3}
             </span>
           )}
         </div>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-500">
+      <div className="flex items-center justify-between text-sm text-text-secondary">
         <div className="flex items-center space-x-4">
           <span>⭐ {star.stargazersCount.toLocaleString()}</span>
           {star.forksCount > 0 && (
@@ -973,11 +973,11 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
   const healthScore = repoMeta.healthScore;
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-surface-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h3 className="font-semibold text-gray-900 hover:text-primary-600">
+            <h3 className="font-semibold text-text-primary hover:text-primary-600">
               <a href={star.htmlUrl} target="_blank" rel="noopener noreferrer">
                 {star.fullName}
               </a>
@@ -995,14 +995,14 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
                 onClick={() => onShowHealthDetail(star)}
               />
             ) : isAnalyzing ? (
-              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
+              <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-text-secondary">
                 <RefreshCw className="w-3 h-3 animate-spin" />
                 <span>分析中...</span>
               </div>
             ) : (
               <button
                 onClick={() => onAnalyzeHealth(star)}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-text-primary transition-colors"
                 title="分析健康度"
               >
                 <Activity className="w-3 h-3" />
@@ -1010,7 +1010,7 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
               </button>
             )}
           </div>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-text-secondary mb-3">
             {star.description || '暂无描述'}
           </p>
           
@@ -1035,7 +1035,7 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
             </div>
           )}
           
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <div className="flex items-center space-x-4 text-sm text-text-secondary">
             <span>⭐ {star.stargazersCount.toLocaleString()}</span>
             <span>🔀 {star.forksCount.toLocaleString()}</span>
             <span>更新于 {new Date(star.updatedAt).toLocaleDateString('zh-CN')}</span>

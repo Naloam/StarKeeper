@@ -5,18 +5,55 @@
 /* Design Tokens: Natural paper-texture minimal system */
 :root {
   /* Natural Colors */
-  --color-primary: #7A8B7F; /* 橄榄灰 */
-  --color-background: #FAF9F7; /* 浅米色纸张 */
-  --color-surface: #FEFDFB; /* 卡片纸张白 */
-  --color-text-primary: #2B2B2B; /* 柔和黑 */
-  --color-text-secondary: #6B6B6B; /* 柔灰 */
-  --color-border: #E8E6E3; /* 纸张边缘 */
+  --color-primary: #7A8B7F;
+  --color-primary-50: #F5F7F6;
+  --color-primary-100: #E8EBE9;
+  --color-primary-200: #D1D7D3;
+  --color-primary-300: #BAC3BD;
+  --color-primary-400: #A3AFA7;
+  --color-primary-500: #7A8B7F;
+  --color-primary-600: #627066;
+  --color-primary-700: #49544D;
+  --color-primary-800: #313833;
+  --color-primary-900: #181C1A;
+
+  --color-surface: #FAF9F7;
+  --color-background: #FAF9F7;
+  --color-surface-darker: #F5F3F0;
+  --color-surface-card: #FEFDFB;
+
+  --color-text-primary: #2B2B2B;
+  --color-text-secondary: #6B6B6B;
+  --color-text-tertiary: #9B9B9B;
+  --color-text-muted: #B8B8B8;
+
+  --color-border: #E8E6E3;
+  --color-border-light: #F0EEEB;
+  --color-border-dark: #D6D4D1;
   
   /* Natural Accents */
   --color-accent-sand: #D4C5B3;
   --color-accent-olive: #A8B5A0;
   --color-accent-smoke: #B8C5D0;
   --color-accent-wheat: #E8D8C0;
+  --color-accent-stone: #C8BFBA;
+
+  /* Semantic Colors */
+  --color-success: #6B8E6F;
+  --color-success-light: #E8F0E9;
+  --color-success-text: #4A6B4D;
+
+  --color-warning: #C9A66B;
+  --color-warning-light: #F7F0E6;
+  --color-warning-text: #8B7447;
+
+  --color-danger: #B87A7A;
+  --color-danger-light: #F5EDED;
+  --color-danger-text: #8B5656;
+
+  --color-info: #7A8B9F;
+  --color-info-light: #E9EDF1;
+  --color-info-text: #5A6B7F;
   
   /* Shadows - soft and natural */
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -33,6 +70,64 @@
   --radius-gentle: 20px;
   --radius-paper: 8px;
   --border-width: 1px;
+}
+
+.dark {
+  /* Dark Mode Colors */
+  --color-primary: #7A8B7F;
+  --color-primary-50: #181C1A;
+  --color-primary-100: #313833;
+  --color-primary-200: #49544D;
+  --color-primary-300: #627066;
+  --color-primary-400: #7A8B7F;
+  --color-primary-500: #A3AFA7;
+  --color-primary-600: #BAC3BD;
+  --color-primary-700: #D1D7D3;
+  --color-primary-800: #E8EBE9;
+  --color-primary-900: #F5F7F6;
+
+  --color-surface: #121212;
+  --color-background: #121212;
+  --color-surface-darker: #0A0A0A;
+  --color-surface-card: #1E1E1E;
+
+  --color-text-primary: #E0E0E0;
+  --color-text-secondary: #A0A0A0;
+  --color-text-tertiary: #707070;
+  --color-text-muted: #505050;
+
+  --color-border: #333333;
+  --color-border-light: #2A2A2A;
+  --color-border-dark: #444444;
+
+  /* Accents */
+  --color-accent-sand: #8D8377;
+  --color-accent-olive: #70796B;
+  --color-accent-smoke: #7A838A;
+  --color-accent-wheat: #9A9080;
+  --color-accent-stone: #857F7C;
+
+  /* Semantic Colors */
+  --color-success: #6B8E6F;
+  --color-success-light: #1E2A20;
+  --color-success-text: #A3CFA7;
+
+  --color-warning: #C9A66B;
+  --color-warning-light: #2A2418;
+  --color-warning-text: #E0C899;
+
+  --color-danger: #B87A7A;
+  --color-danger-light: #2A1C1C;
+  --color-danger-text: #E0A0A0;
+
+  --color-info: #7A8B9F;
+  --color-info-light: #1C222A;
+  --color-info-text: #A0B5CF;
+
+  /* Shadows */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-paper: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 @layer base {
@@ -105,7 +200,7 @@
 @layer components {
   /* Focus ring - natural and accessible */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 transition-shadow duration-120;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 focus:ring-offset-2 transition-shadow duration-120;
   }
 
   /* Card component - paper feel */

@@ -240,7 +240,7 @@ function renderFilterInput(filter, languageOptions, tagOptions, updateValue) {
           <select
             value={filter.value || ''}
             onChange={(e) => updateValue(filter.id, e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-white text-body-sm focus-ring"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-body-sm focus-ring"
           >
             <option value="">全部语言</option>
             {languageOptions.map(lang => (
@@ -253,7 +253,7 @@ function renderFilterInput(filter, languageOptions, tagOptions, updateValue) {
           <select
             value={filter.value || ''}
             onChange={(e) => updateValue(filter.id, e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-white text-body-sm focus-ring"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-body-sm focus-ring"
           >
             <option value="">全部等级</option>
             <option value="excellent">优秀</option>
@@ -322,7 +322,7 @@ function renderFilterInput(filter, languageOptions, tagOptions, updateValue) {
             const selected = Array.from(e.target.selectedOptions, option => option.value);
             updateValue(filter.id, selected);
           }}
-          className="w-full px-3 py-2 border border-border rounded-lg bg-white text-body-sm focus-ring h-32"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-body-sm focus-ring h-32"
         >
           {tagOptions.map(tag => (
             <option key={tag} value={tag}>{tag}</option>
