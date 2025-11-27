@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, Star, GitFork, ExternalLink, Tag } from 'lucide-react';
 import { getPublicGist } from '../services/github.service';
-import { getStoredToken } from '../utils/auth';
+import { useAuthStore } from '../store';
 import TagBadge from '../components/tags/TagBadge';
 
 /**
@@ -12,6 +12,7 @@ import TagBadge from '../components/tags/TagBadge';
 export default function SharePage() {
   const { shareId } = useParams();
   const navigate = useNavigate();
+  const { accessToken } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareData, setShareData] = useState(null);
@@ -38,7 +39,6 @@ export default function SharePage() {
 
       // 尝试获取当前用户的 token（如果已登录）
       // 使用 token 可以避免 API 速率限制
-      const accessToken = getStoredToken();
       console.log('🔑 用户登录状态:', accessToken ? '已登录' : '未登录');
 
       // 从 Gist 加载分享数据（传入 token 避免速率限制）
@@ -163,7 +163,7 @@ export default function SharePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-surface-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -195,7 +195,7 @@ export default function SharePage() {
         <div className="flex gap-8">
           {/* Sidebar */}
           <div className="w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sticky top-8">
+            <div className="bg-surface-card rounded-lg border border-border p-4 sticky top-8">
               {/* 搜索 */}
               <div className="mb-6">
                 <input
@@ -270,7 +270,7 @@ export default function SharePage() {
                   return (
                     <div
                       key={star.id}
-                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow"
+                      className="bg-surface-card rounded-lg border border-border p-6 hover:shadow-lg transition-shadow"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -344,7 +344,7 @@ export default function SharePage() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-200 dark:border-gray-700 mt-12">
+      <div className="border-t border-border mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Powered by <span className="font-semibold text-blue-600">StarKeeper</span>
