@@ -41,8 +41,7 @@ export function cosineSimilarity(vec1, vec2) {
 export function generateSearchText(repo, metadata) {
   const parts = [];
 
-  // 1. 项目名称（重复3次增加权重）
-  parts.push(repo.name);
+  // 1. 项目名称（重复2次增加权重）
   parts.push(repo.name);
   parts.push(repo.name);
   
@@ -51,15 +50,14 @@ export function generateSearchText(repo, metadata) {
     parts.push(repo.full_name);
   }
   
-  // 3. 描述（重复2次增加权重）
+  // 3. 描述（最重要的特征，重复2次）
   if (repo.description) {
     parts.push(repo.description);
     parts.push(repo.description);
   }
   
-  // 4. 语言（重复3次，语言是重要特征）
+  // 4. 语言（重复2次，语言是重要特征）
   if (repo.language) {
-    parts.push(repo.language);
     parts.push(repo.language);
     parts.push(repo.language);
     // 添加常见的语言相关词汇
@@ -84,10 +82,9 @@ export function generateSearchText(repo, metadata) {
     }
   }
   
-  // 5. 主题标签（GitHub topics，重复2次）
+  // 5. 主题标签（GitHub topics，只加一次，topics 本身已经很精确）
   if (repo.topics && Array.isArray(repo.topics)) {
     const topicsStr = repo.topics.join(' ');
-    parts.push(topicsStr);
     parts.push(topicsStr);
   }
   
@@ -106,15 +103,13 @@ export function generateSearchText(repo, metadata) {
       if (metadata.aiSummary.techStack && Array.isArray(metadata.aiSummary.techStack)) {
         const techStack = metadata.aiSummary.techStack.join(' ');
         parts.push(techStack);
-        parts.push(techStack); // 技术栈很重要，重复一次
       }
     }
   }
 
-  // 7. 用户标签（重复2次）
+  // 7. 用户标签（只加一次）
   if (metadata?.tags && Array.isArray(metadata.tags)) {
     const tagsStr = metadata.tags.join(' ');
-    parts.push(tagsStr);
     parts.push(tagsStr);
   }
 
@@ -228,12 +223,12 @@ export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress
  * @param {Array<Object>} repos - GitHub 仓库数组
  * @param {Object} embeddingsMap - embedding 映射 {repoId: embedding}
  * @param {Object} options - 搜索选项
- * @param {number} options.topK - 返回前 K 个结果，默认 10
- * @param {number} options.threshold - 最小相似度阈值，默认 0.3
- * @returns {Promise<Array<Object>>} 搜索结果 [{repo, score}]
+ * @param {number} options.topK - 返回前 K 个结果，默认 10（动态调整）
+ * @param {number} options.threshold - 最小相似度阈值，默认 0.4
+ * @returns {Promise<Array<Object>>} 搜索结果 [{repo, score, relevance}]
  */
 export async function semanticSearch(query, repos, embeddingsMap, options = {}) {
-  const { topK = 20, threshold = 0.15 } = options;
+  const { topK = 10, threshold = 0.4 } = options;
 
   if (!query || !query.trim()) {
     return [];
@@ -252,9 +247,18 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
       const score = cosineSimilarity(queryEmbedding, repoEmbedding);
       
       if (score >= threshold) {
+        // 确定相关度等级
+        let relevance = 'low';
+        if (score >= 0.7) {
+          relevance = 'high';
+        } else if (score >= 0.55) {
+          relevance = 'medium';
+        }
+
         results.push({
           repo,
-          score: Math.round(score * 100) / 100 // 保留两位小数
+          score: Math.round(score * 100) / 100, // 保留两位小数
+          relevance
         });
       }
     } catch (error) {
@@ -265,8 +269,36 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
   // 按相似度降序排序
   results.sort((a, b) => b.score - a.score);
 
-  // 返回 topK 个结果
-  return results.slice(0, topK);
+  // 动态调整结果数量
+  // 如果有高相关度结果，优先返回高相关度的
+  const highRelevance = results.filter(r => r.relevance === 'high');
+  const mediumRelevance = results.filter(r => r.relevance === 'medium');
+  const lowRelevance = results.filter(r => r.relevance === 'low');
+
+  let finalResults = [];
+  
+  // 策略：优先返回高相关度，如果不足再补充中等相关度
+  if (highRelevance.length >= 3) {
+    // 如果有足够的高相关度结果，主要返回高相关度
+    finalResults = [...highRelevance.slice(0, Math.min(highRelevance.length, topK))];
+    const remaining = topK - finalResults.length;
+    if (remaining > 0 && mediumRelevance.length > 0) {
+      finalResults.push(...mediumRelevance.slice(0, Math.min(remaining, 3)));
+    }
+  } else {
+    // 混合返回
+    finalResults = [...highRelevance];
+    const remaining = topK - finalResults.length;
+    if (remaining > 0) {
+      finalResults.push(...mediumRelevance.slice(0, Math.min(remaining, Math.ceil(remaining * 0.6))));
+    }
+    const stillRemaining = topK - finalResults.length;
+    if (stillRemaining > 0) {
+      finalResults.push(...lowRelevance.slice(0, Math.min(stillRemaining, 5)));
+    }
+  }
+
+  return finalResults;
 }
 
 /**

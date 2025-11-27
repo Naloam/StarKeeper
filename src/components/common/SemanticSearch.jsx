@@ -103,8 +103,8 @@ export default function SemanticSearch({
         stars,
         embeddings,
         {
-          topK: 20,
-          threshold: 0.15
+          topK: 12,
+          threshold: 0.4
         }
       );
 
@@ -114,7 +114,17 @@ export default function SemanticSearch({
       if (searchResults.length === 0) {
         toast('未找到相关项目，请尝试其他关键词', { icon: '🔍' });
       } else {
-        toast.success(`找到 ${searchResults.length} 个相关项目`);
+        const highCount = searchResults.filter(r => r.relevance === 'high').length;
+        const mediumCount = searchResults.filter(r => r.relevance === 'medium').length;
+        
+        let message = `找到 ${searchResults.length} 个相关项目`;
+        if (highCount > 0) {
+          message += `（${highCount} 个高度相关`;
+          if (mediumCount > 0) message += `，${mediumCount} 个中度相关`;
+          message += '）';
+        }
+        
+        toast.success(message);
       }
     } catch (err) {
       console.error('搜索失败:', err);
@@ -272,20 +282,33 @@ export default function SemanticSearch({
 
           {/* 结果列表 */}
           <div className="space-y-3 max-h-[600px] overflow-y-auto">
-            {results.map(({ repo, score }) => (
+            {results.map(({ repo, score, relevance }) => (
               <a
                 key={repo.id}
                 href={repo.html_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-4 bg-white border border-border rounded-lg hover:shadow-card-hover hover:border-primary/30 transition-all group"
+                className="block p-4 bg-surface-card border border-border rounded-lg hover:shadow-card-hover hover:border-primary/30 transition-all group"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* 项目名称 */}
-                    <h4 className="text-body font-semibold text-text-primary group-hover:text-primary transition-fast truncate mb-1 cursor-pointer underline-offset-2 group-hover:underline">
-                      {repo.full_name || repo.name}
-                    </h4>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-body font-semibold text-text-primary group-hover:text-primary transition-fast truncate cursor-pointer underline-offset-2 group-hover:underline">
+                        {repo.full_name || repo.name}
+                      </h4>
+                      {/* 相关度标识 */}
+                      {relevance === 'high' && (
+                        <span className="px-2 py-0.5 bg-success/20 text-success text-xs font-medium rounded flex-shrink-0">
+                          高度相关
+                        </span>
+                      )}
+                      {relevance === 'medium' && (
+                        <span className="px-2 py-0.5 bg-warning/20 text-warning text-xs font-medium rounded flex-shrink-0">
+                          中度相关
+                        </span>
+                      )}
+                    </div>
                     
                     {/* 描述 */}
                     {repo.description && (
@@ -326,7 +349,13 @@ export default function SemanticSearch({
                   
                   {/* 相似度分数 */}
                   <div className="flex-shrink-0">
-                    <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-caption font-medium">
+                    <div className={`px-3 py-1 rounded-full text-caption font-medium ${
+                      relevance === 'high' 
+                        ? 'bg-success/10 text-success' 
+                        : relevance === 'medium'
+                        ? 'bg-warning/10 text-warning'
+                        : 'bg-primary/10 text-primary'
+                    }`}>
                       {(score * 100).toFixed(0)}%
                     </div>
                   </div>
@@ -346,7 +375,8 @@ export default function SemanticSearch({
             <ul className="space-y-1 list-disc list-inside">
               <li>用自然语言描述需求，如"前端状态管理库"</li>
               <li>可以搜索技术栈、功能特性、使用场景等</li>
-              <li>系统会基于项目描述、README、标签等内容进行智能匹配</li>
+              <li>系统会优先返回高度相关的项目（70%+ 相似度）</li>
+              <li>相似度阈值为 40%，确保结果精确且相关</li>
             </ul>
           </div>
         </div>
