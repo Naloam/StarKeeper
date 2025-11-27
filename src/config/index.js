@@ -19,6 +19,8 @@ export const DASHSCOPE_CONFIG = {
   embedding: {
     model: 'text-embedding-v2',
     dimension: 1536,          // 向量维度（与 OpenAI 兼容）
+    // Embedding API 使用独立的端点路径
+    endpoint: '/text-embedding/text-embedding',
   },
   
   // 价格（人民币/千tokens）

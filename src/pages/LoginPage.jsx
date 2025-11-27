@@ -9,7 +9,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

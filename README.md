@@ -4,7 +4,7 @@
 
 基于 AI 增强的 GitHub Stars 管理应用，通过自动摘要、健康度分析、智能清理等功能，帮助开发者高效管理和利用已收藏的开源项目。
 
-[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue)](https://github.com/Naloam/StarKeeper)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/Naloam/StarKeeper)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 [![React](https://img.shields.io/badge/React-18.2.0-61dafb)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-4.5.0-646cff)](https://vitejs.dev/)
@@ -12,6 +12,7 @@
 ## ✨ 核心功能
 
 - 🤖 **AI 自动摘要** - 一键生成项目洞察（技术栈/功能/适用场景）
+- 🔍 **AI 语义搜索** - 自然语言搜索，基于 embedding 向量智能匹配
 - 📊 **健康度分析** - 评估项目活跃度和维护状态（0-100分）
 - 🏷️ **智能标签** - 自定义标签 + 自动补全 + 笔记功能
 - 🔍 **多维搜索** - 关键词/语言/标签多条件过滤
@@ -98,6 +99,23 @@ src/
 
 ### 1. AI 自动摘要
 - 基于 README 和描述生成项目摘要
+
+### 2. AI 语义搜索
+- 自然语言搜索，无需精确关键词
+- 基于 DashScope Embedding API 生成向量
+- 余弦相似度计算，智能匹配相关项目
+- 向量缓存到 Gist，加速后续搜索
+- 支持搜索项目描述、README、标签、笔记等内容
+- **优化版**：智能权重分配、领域识别、多语言支持
+- 搜索结果直接展示项目卡片，可点击跳转
+
+**使用技巧**：
+- 🎯 使用领域词汇："React 组件库" 比 "库" 效果更好
+- 🔤 中英文混合："Python 机器学习" 效果更佳
+- 📊 相似度 >30% 为高度相关，20-30% 为相关
+- 💡 返回最多 20 个结果，阈值设置为 15%
+
+### 3. 数据可视化
 - 自动提取技术栈、功能、适用场景
 - 支持批量生成和缓存
 

@@ -132,8 +132,19 @@ export async function generateEmbedding(text) {
     // 截取文本（避免超过限制）
     const truncatedText = text.slice(0, 2000);
     
+    // 使用正确的 Embedding API 路径
+    const embeddingUrl = import.meta.env.DEV
+      ? '/api/dashscope/api/v1/services/embeddings/text-embedding/text-embedding'
+      : 'https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding';
+    
+    console.log('📤 Embedding API 请求:', {
+      url: embeddingUrl,
+      model: DASHSCOPE_CONFIG.embedding.model,
+      textLength: truncatedText.length
+    });
+    
     const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}/text-embedding/text-embedding`,
+      embeddingUrl,
       {
         model: DASHSCOPE_CONFIG.embedding.model,
         input: {
@@ -148,12 +159,36 @@ export async function generateEmbedding(text) {
       }
     );
 
+    console.log('✅ Embedding API 响应:', response.status);
+    
+    if (!response.data || !response.data.output || !response.data.output.embeddings) {
+      console.error('❌ API 响应格式错误:', response.data);
+      throw new Error('API 响应格式不正确');
+    }
+    
     const embedding = response.data.output.embeddings[0].embedding;
+    console.log('✅ Embedding 生成成功，维度:', embedding.length);
     return embedding;
     
   } catch (error) {
-    console.error('Embedding 生成失败:', error);
-    throw error;
+    console.error('❌ Embedding 生成失败:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url
+    });
+    
+    // 提供更有用的错误信息
+    if (error.response?.status === 400) {
+      throw new Error(`API 请求错误 (400): ${error.response?.data?.message || '请求参数不正确'}`);
+    } else if (error.response?.status === 401) {
+      throw new Error('API Key 无效或已过期');
+    } else if (error.response?.status === 429) {
+      throw new Error('API 调用频率过高，请稍后再试');
+    } else {
+      throw new Error(`Embedding 生成失败: ${error.message}`);
+    }
   }
 }
 
@@ -166,13 +201,20 @@ export async function batchGenerateEmbeddings(texts) {
   try {
     const embeddings = [];
     
+    // 使用正确的 Embedding API 路径
+    const embeddingUrl = import.meta.env.DEV
+      ? '/api/dashscope/api/v1/services/embeddings/text-embedding/text-embedding'
+      : 'https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding';
+    
     // 分批处理，每次最多 25 个（API 限制）
     const batchSize = 25;
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize).map(t => t.slice(0, 2000));
       
+      console.log(`📤 批量 Embedding 请求 (${i + 1}-${Math.min(i + batchSize, texts.length)}/${texts.length})`);
+      
       const response = await axios.post(
-        `${DASHSCOPE_CONFIG.baseUrl}/text-embedding/text-embedding`,
+        embeddingUrl,
         {
           model: DASHSCOPE_CONFIG.embedding.model,
           input: {

@@ -32,6 +32,7 @@ import HealthDetailModal from '../components/common/HealthDetailModal';
 import StatsPanel, { LanguageDistribution, TagCloud, RecentlyActiveRepos } from '../components/common/StatsPanel';
 import StatsVisualization from '../components/common/StatsVisualization';
 import CustomStatsFilter from '../components/common/CustomStatsFilter';
+import SemanticSearch from '../components/common/SemanticSearch';
 import LazyImage from '../components/common/LazyImage';
 import { useDebounce } from '../utils/performance';
 import { 
@@ -70,6 +71,9 @@ export default function DashboardPage() {
   // 自定义过滤状态
   const [customFilteredStars, setCustomFilteredStars] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
+  
+  // 语义搜索状态
+  const [semanticSearchResults, setSemanticSearchResults] = useState(null);
 
   useEffect(() => {
     if (accessToken && stars.length === 0) {
@@ -133,8 +137,38 @@ export default function DashboardPage() {
     }
   };
 
-  // 确定要显示的数据
-  const displayStars = customFilteredStars || filteredStars;
+  // 确定要显示的数据 - 如果有语义搜索结果，需要与侧边栏筛选取交集
+  const displayStars = (() => {
+    if (semanticSearchResults) {
+      // 有语义搜索结果时，与 filteredStars 取交集
+      const semanticRepoIds = new Set(semanticSearchResults.map(r => r.repo.id));
+      return filteredStars.filter(star => semanticRepoIds.has(star.id));
+    }
+    // 否则使用自定义过滤或默认的侧边栏筛选结果
+    return customFilteredStars || filteredStars;
+  })();
+  
+  // 处理语义搜索结果
+  const handleSemanticSearchResults = (results) => {
+    setSemanticSearchResults(results);
+    if (results) {
+      // 更新过滤标签，但不直接设置 customFilteredStars
+      // 让 displayStars 逻辑自动计算交集
+      const semanticFilters = [{
+        type: 'semantic-search',
+        label: `AI 搜索结果`,
+        count: results.length
+      }];
+      // 保留原有的自定义过滤标签
+      setActiveFilters(prev => {
+        const nonSemanticFilters = prev.filter(f => f.type !== 'semantic-search');
+        return [...nonSemanticFilters, ...semanticFilters];
+      });
+    } else {
+      // 清除语义搜索标签
+      setActiveFilters(prev => prev.filter(f => f.type !== 'semantic-search'));
+    }
+  };
 
   const loadStars = async () => {
     setLoading(true);
@@ -672,6 +706,17 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* AI 语义搜索 */}
+        {gistId && (
+          <SemanticSearch
+            stars={stars}
+            metadata={metadata}
+            gistId={gistId}
+            accessToken={accessToken}
+            onResults={handleSemanticSearchResults}
+          />
+        )}
+
         {/* 自定义统计维度过滤器 */}
         <CustomStatsFilter 
           stars={filteredStars}
@@ -682,7 +727,7 @@ export default function DashboardPage() {
         {/* 数据可视化 */}
         {stats && (
           <StatsVisualization 
-            stars={customFilteredStars || filteredStars}
+            stars={displayStars}
             metadata={metadata}
             healthStats={stats.health}
           />
@@ -704,6 +749,7 @@ export default function DashboardPage() {
                 onClick={() => {
                   setCustomFilteredStars(null);
                   setActiveFilters([]);
+                  setSemanticSearchResults(null); // 同时清除语义搜索结果
                   const statsReport = generateStatsReport(filteredStars, metadata);
                   setStats(statsReport);
                 }}
