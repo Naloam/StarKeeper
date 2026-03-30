@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from "react";
 
 /**
  * 防抖 Hook - 延迟执行函数，直到停止调用一段时间后才执行
@@ -34,7 +34,7 @@ export function useDebounce(callback, delay = 300) {
         callbackRef.current(...args);
       }, delay);
     },
-    [delay]
+    [delay],
   );
 }
 
@@ -84,7 +84,7 @@ export function useThrottle(callback, delay = 300) {
         }, delay - timeSinceLastRun);
       }
     },
-    [delay]
+    [delay],
   );
 }
 

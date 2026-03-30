@@ -14,11 +14,11 @@ export function detectAbandonedRepos(stars, metadata) {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   return stars
-    .filter(star => {
+    .filter((star) => {
       const meta = metadata[star.id] || {};
       const healthScore = meta.healthScore;
       const lastUpdate = new Date(star.updatedAt);
-      
+
       // 规则：健康度 < 30 且 1年以上未更新
       const isLowHealth = healthScore && healthScore.score < 30;
       const isOutdated = lastUpdate < oneYearAgo;
@@ -26,21 +26,21 @@ export function detectAbandonedRepos(stars, metadata) {
 
       return (isLowHealth && isOutdated) || isArchived;
     })
-    .map(star => {
+    .map((star) => {
       const meta = metadata[star.id] || {};
       const lastUpdate = new Date(star.updatedAt);
       const daysSinceUpdate = Math.floor((Date.now() - lastUpdate) / (1000 * 60 * 60 * 24));
-      
+
       return {
         ...star,
-        reason: star.archived 
-          ? '项目已被归档，不再维护'
+        reason: star.archived
+          ? "项目已被归档，不再维护"
           : `健康度低 (${meta.healthScore?.score || 0}分)，${daysSinceUpdate}天未更新`,
-        severity: star.archived ? 'high' : (daysSinceUpdate > 730 ? 'high' : 'medium'),
-        recommendation: star.archived 
-          ? '建议取消 Star，寻找活跃的替代项目'
-          : '建议评估是否仍需关注此项目',
-        daysSinceUpdate
+        severity: star.archived ? "high" : daysSinceUpdate > 730 ? "high" : "medium",
+        recommendation: star.archived
+          ? "建议取消 Star，寻找活跃的替代项目"
+          : "建议评估是否仍需关注此项目",
+        daysSinceUpdate,
       };
     })
     .sort((a, b) => b.daysSinceUpdate - a.daysSinceUpdate);
@@ -54,12 +54,12 @@ export function detectAbandonedRepos(stars, metadata) {
  */
 function calculateStringSimilarity(str1, str2) {
   if (!str1 || !str2) return 0;
-  
+
   const s1 = str1.toLowerCase();
   const s2 = str2.toLowerCase();
-  
+
   if (s1 === s2) return 100;
-  
+
   // 计算 Levenshtein 距离
   const matrix = [];
   const n = s1.length;
@@ -80,7 +80,7 @@ function calculateStringSimilarity(str1, str2) {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1,
           matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
+          matrix[i - 1][j] + 1,
         );
       }
     }
@@ -98,15 +98,35 @@ function calculateStringSimilarity(str1, str2) {
  */
 function extractKeywords(text) {
   if (!text) return new Set();
-  
-  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were']);
-  
+
+  const stopWords = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "are",
+    "was",
+    "were",
+  ]);
+
   return new Set(
     text
       .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
+      .replace(/[^\w\s]/g, " ")
       .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word))
+      .filter((word) => word.length > 2 && !stopWords.has(word)),
   );
 }
 
@@ -139,10 +159,10 @@ function calculateRepoSimilarity(repo1, repo2) {
   if (repo1.description && repo2.description) {
     const descKeywords1 = extractKeywords(repo1.description);
     const descKeywords2 = extractKeywords(repo2.description);
-    
-    const intersection = new Set([...descKeywords1].filter(x => descKeywords2.has(x)));
+
+    const intersection = new Set([...descKeywords1].filter((x) => descKeywords2.has(x)));
     const union = new Set([...descKeywords1, ...descKeywords2]);
-    
+
     const descSimilarity = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
     details.descriptionSimilarity = Math.round(descSimilarity);
     totalScore += descSimilarity * 0.25;
@@ -153,10 +173,10 @@ function calculateRepoSimilarity(repo1, repo2) {
   if (repo1.topics && repo2.topics && repo1.topics.length > 0 && repo2.topics.length > 0) {
     const topics1 = new Set(repo1.topics);
     const topics2 = new Set(repo2.topics);
-    
-    const intersection = new Set([...topics1].filter(x => topics2.has(x)));
+
+    const intersection = new Set([...topics1].filter((x) => topics2.has(x)));
     const union = new Set([...topics1, ...topics2]);
-    
+
     const topicsSimilarity = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
     details.topicsSimilarity = Math.round(topicsSimilarity);
     totalScore += topicsSimilarity * 0.25;
@@ -167,7 +187,7 @@ function calculateRepoSimilarity(repo1, repo2) {
 
   return {
     score: finalScore,
-    details
+    details,
   };
 }
 
@@ -198,7 +218,7 @@ export function detectSimilarRepos(stars, metadata, threshold = 60) {
         similarRepos.push({
           ...repo2,
           similarityScore: similarity.score,
-          similarityDetails: similarity.details
+          similarityDetails: similarity.details,
         });
         processed.add(repo2.id);
       }
@@ -207,16 +227,16 @@ export function detectSimilarRepos(stars, metadata, threshold = 60) {
     if (similarRepos.length > 1) {
       // 标记主仓库（推荐保留的）
       processed.add(repo1.id);
-      
+
       // 按健康度和 stars 数排序，推荐最优项目
-      const reposWithScore = similarRepos.map(repo => {
+      const reposWithScore = similarRepos.map((repo) => {
         const meta = metadata[repo.id] || {};
         const healthScore = meta.healthScore?.score || 0;
         const stars = repo.stargazersCount || 0;
-        
+
         return {
           ...repo,
-          recommendScore: healthScore * 0.7 + Math.min(stars / 100, 30) // 健康度70% + stars 30%
+          recommendScore: healthScore * 0.7 + Math.min(stars / 100, 30), // 健康度70% + stars 30%
         };
       });
 
@@ -228,9 +248,9 @@ export function detectSimilarRepos(stars, metadata, threshold = 60) {
         recommended: reposWithScore[0], // 推荐保留的项目
         reason: `发现 ${reposWithScore.length} 个功能相似的项目`,
         avgSimilarity: Math.round(
-          reposWithScore.slice(1).reduce((sum, r) => sum + (r.similarityScore || 0), 0) / 
-          (reposWithScore.length - 1)
-        )
+          reposWithScore.slice(1).reduce((sum, r) => sum + (r.similarityScore || 0), 0) /
+            (reposWithScore.length - 1),
+        ),
       });
     }
   }
@@ -249,28 +269,28 @@ export function detectLowEngagementRepos(stars, metadata) {
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
   return stars
-    .filter(star => {
+    .filter((star) => {
       const meta = metadata[star.id] || {};
       const starredAt = new Date(star.starredAt || star.updatedAt);
-      
+
       // 规则：6个月前 star + 无标签 + 无AI摘要 + 无笔记
       const isOldStar = starredAt < sixMonthsAgo;
       const hasNoTags = !meta.tags || meta.tags.length === 0;
       const hasNoSummary = !meta.aiSummary;
       const hasNoNotes = !meta.notes;
-      
+
       return isOldStar && hasNoTags && hasNoSummary && hasNoNotes;
     })
-    .map(star => {
+    .map((star) => {
       const starredAt = new Date(star.starredAt || star.updatedAt);
       const daysSinceStarred = Math.floor((Date.now() - starredAt) / (1000 * 60 * 60 * 24));
-      
+
       return {
         ...star,
         reason: `${daysSinceStarred}天前收藏，从未整理或查看`,
-        severity: 'low',
-        recommendation: '建议添加标签分类，或考虑取消 Star',
-        daysSinceStarred
+        severity: "low",
+        recommendation: "建议添加标签分类，或考虑取消 Star",
+        daysSinceStarred,
       };
     })
     .sort((a, b) => b.daysSinceStarred - a.daysSinceStarred);
@@ -288,8 +308,8 @@ export function generateCleanupSuggestions(stars, metadata) {
   const lowEngagement = detectLowEngagementRepos(stars, metadata);
 
   // 计算可清理的总数
-  const potentialCleanupCount = 
-    abandoned.length + 
+  const potentialCleanupCount =
+    abandoned.length +
     similar.reduce((sum, group) => sum + group.repos.length - 1, 0) + // 每组保留1个
     Math.floor(lowEngagement.length * 0.5); // 假设50%真的不需要
 
@@ -301,33 +321,33 @@ export function generateCleanupSuggestions(stars, metadata) {
       similarReposCount: similar.reduce((sum, group) => sum + group.repos.length, 0),
       lowEngagementCount: lowEngagement.length,
       potentialCleanupCount,
-      cleanupPercentage: Math.round((potentialCleanupCount / stars.length) * 100)
+      cleanupPercentage: Math.round((potentialCleanupCount / stars.length) * 100),
     },
     categories: {
       abandoned,
       similar,
-      lowEngagement
+      lowEngagement,
     },
     recommendations: [
       {
-        type: 'abandoned',
-        priority: 'high',
+        type: "abandoned",
+        priority: "high",
         title: `清理 ${abandoned.length} 个废弃项目`,
-        description: '这些项目长期未更新或已被归档，建议取消 Star'
+        description: "这些项目长期未更新或已被归档，建议取消 Star",
       },
       {
-        type: 'similar',
-        priority: 'medium',
+        type: "similar",
+        priority: "medium",
         title: `整理 ${similar.length} 组相似项目`,
-        description: '发现功能重复的项目，建议保留最优选择'
+        description: "发现功能重复的项目，建议保留最优选择",
       },
       {
-        type: 'lowEngagement',
-        priority: 'low',
+        type: "lowEngagement",
+        priority: "low",
         title: `审查 ${lowEngagement.length} 个低交互项目`,
-        description: '这些项目收藏已久但从未整理，建议重新评估价值'
-      }
-    ].filter(rec => rec.title.match(/\d+/)[0] !== '0') // 过滤掉数量为0的建议
+        description: "这些项目收藏已久但从未整理，建议重新评估价值",
+      },
+    ].filter((rec) => rec.title.match(/\d+/)[0] !== "0"), // 过滤掉数量为0的建议
   };
 }
 
@@ -341,15 +361,15 @@ export function archiveRepos(repoIds, metadata) {
   const now = Date.now();
   const updatedMetadata = { ...metadata };
 
-  repoIds.forEach(repoId => {
+  repoIds.forEach((repoId) => {
     if (!updatedMetadata[repoId]) {
       updatedMetadata[repoId] = {};
     }
-    
+
     updatedMetadata[repoId].archived = {
       archivedAt: now,
-      expiresAt: now + (30 * 24 * 60 * 60 * 1000), // 30天后过期
-      canRestore: true
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000, // 30天后过期
+      canRestore: true,
     };
   });
 
@@ -365,7 +385,7 @@ export function archiveRepos(repoIds, metadata) {
 export function restoreArchivedRepos(repoIds, metadata) {
   const updatedMetadata = { ...metadata };
 
-  repoIds.forEach(repoId => {
+  repoIds.forEach((repoId) => {
     if (updatedMetadata[repoId]?.archived) {
       delete updatedMetadata[repoId].archived;
     }
@@ -382,19 +402,19 @@ export function restoreArchivedRepos(repoIds, metadata) {
  */
 export function getArchivedRepos(stars, metadata) {
   const now = Date.now();
-  
+
   return stars
-    .filter(star => metadata[star.id]?.archived)
-    .map(star => {
+    .filter((star) => metadata[star.id]?.archived)
+    .map((star) => {
       const archived = metadata[star.id].archived;
       const daysRemaining = Math.ceil((archived.expiresAt - now) / (1000 * 60 * 60 * 24));
-      
+
       return {
         ...star,
         archivedAt: archived.archivedAt,
         expiresAt: archived.expiresAt,
         daysRemaining: Math.max(0, daysRemaining),
-        canRestore: archived.canRestore && daysRemaining > 0
+        canRestore: archived.canRestore && daysRemaining > 0,
       };
     })
     .sort((a, b) => a.daysRemaining - b.daysRemaining);

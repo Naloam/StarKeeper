@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from "lucide-react";
 
 /**
  * 分享功能 Modal
@@ -7,16 +7,16 @@ import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from 'lucide-react'
  */
 export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare }) {
   const [isPublic, setIsPublic] = useState(shareConfig?.isPublic || false);
-  const [shareTitle, setShareTitle] = useState(shareConfig?.shareTitle || '');
-  const [shareDescription, setShareDescription] = useState(shareConfig?.shareDescription || '');
+  const [shareTitle, setShareTitle] = useState(shareConfig?.shareTitle || "");
+  const [shareDescription, setShareDescription] = useState(shareConfig?.shareDescription || "");
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setIsPublic(shareConfig?.isPublic || false);
-      setShareTitle(shareConfig?.shareTitle || '');
-      setShareDescription(shareConfig?.shareDescription || '');
+      setShareTitle(shareConfig?.shareTitle || "");
+      setShareDescription(shareConfig?.shareDescription || "");
       setCopied(false);
     }
   }, [isOpen, shareConfig]);
@@ -25,7 +25,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   const shareUrl = shareConfig?.shareId
     ? `${window.location.origin}/share/${shareConfig.shareId}`
-    : '';
+    : "";
 
   const handleCopy = async () => {
     try {
@@ -33,7 +33,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -42,7 +42,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
     try {
       await onUpdateShare({
         isPublic,
-        shareTitle: shareTitle.trim() || 'My Stars Collection',
+        shareTitle: shareTitle.trim() || "My Stars Collection",
         shareDescription: shareDescription.trim(),
       });
     } finally {
@@ -52,7 +52,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   const handleOpenShare = () => {
     if (shareUrl) {
-      window.open(shareUrl, '_blank');
+      window.open(shareUrl, "_blank");
     }
   };
 
@@ -66,12 +66,8 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
               <Share2 className="w-5 h-5 text-info-text" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-text-primary">
-                分享 Collection
-              </h2>
-              <p className="text-sm text-text-secondary">
-                让其他人看到你精心整理的项目收藏
-              </p>
+              <h2 className="text-xl font-bold text-text-primary">分享 Collection</h2>
+              <p className="text-sm text-text-secondary">让其他人看到你精心整理的项目收藏</p>
             </div>
           </div>
           <button
@@ -86,26 +82,24 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
         <div className="p-6 space-y-6">
           {/* 公开/私有切换 */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-text-primary">
-              分享状态
-            </label>
+            <label className="text-sm font-medium text-text-primary">分享状态</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setIsPublic(false)}
                 className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                   !isPublic
-                    ? 'border-info bg-info-light'
-                    : 'border-border hover:border-text-secondary'
+                    ? "border-info bg-info-light"
+                    : "border-border hover:border-text-secondary"
                 }`}
               >
-                <Lock className={`w-5 h-5 ${!isPublic ? 'text-info-text' : 'text-text-muted'}`} />
+                <Lock className={`w-5 h-5 ${!isPublic ? "text-info-text" : "text-text-muted"}`} />
                 <div className="text-left">
-                  <div className={`font-medium ${!isPublic ? 'text-info-text' : 'text-text-primary'}`}>
+                  <div
+                    className={`font-medium ${!isPublic ? "text-info-text" : "text-text-primary"}`}
+                  >
                     私有
                   </div>
-                  <div className="text-xs text-text-secondary">
-                    只有你可以访问
-                  </div>
+                  <div className="text-xs text-text-secondary">只有你可以访问</div>
                 </div>
               </button>
 
@@ -113,18 +107,18 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
                 onClick={() => setIsPublic(true)}
                 className={`flex items-center gap-3 p-4 border-2 rounded-lg transition-all ${
                   isPublic
-                    ? 'border-info bg-info-light'
-                    : 'border-border hover:border-text-secondary'
+                    ? "border-info bg-info-light"
+                    : "border-border hover:border-text-secondary"
                 }`}
               >
-                <Globe className={`w-5 h-5 ${isPublic ? 'text-info-text' : 'text-text-muted'}`} />
+                <Globe className={`w-5 h-5 ${isPublic ? "text-info-text" : "text-text-muted"}`} />
                 <div className="text-left">
-                  <div className={`font-medium ${isPublic ? 'text-info-text' : 'text-text-primary'}`}>
+                  <div
+                    className={`font-medium ${isPublic ? "text-info-text" : "text-text-primary"}`}
+                  >
                     公开
                   </div>
-                  <div className="text-xs text-text-secondary">
-                    任何人都可以查看
-                  </div>
+                  <div className="text-xs text-text-secondary">任何人都可以查看</div>
                 </div>
               </button>
             </div>
@@ -132,9 +126,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
           {/* 分享标题 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-primary">
-              Collection 标题
-            </label>
+            <label className="text-sm font-medium text-text-primary">Collection 标题</label>
             <input
               type="text"
               value={shareTitle}
@@ -146,9 +138,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
           {/* 分享描述 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-primary">
-              描述（可选）
-            </label>
+            <label className="text-sm font-medium text-text-primary">描述（可选）</label>
             <textarea
               value={shareDescription}
               onChange={(e) => setShareDescription(e.target.value)}
@@ -195,9 +185,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
                   <span className="text-sm">预览</span>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                💡 链接将在保存后生成
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">💡 链接将在保存后生成</p>
             </div>
           )}
 

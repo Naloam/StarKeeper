@@ -1,89 +1,89 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { VitePWA } from 'vite-plugin-pwa';
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],
       manifest: {
-        name: 'StarKeeper - GitHub Stars Manager',
-        short_name: 'StarKeeper',
-        description: 'Intelligent GitHub Stars management tool with AI-powered features',
-        theme_color: '#6366f1',
-        background_color: '#1e293b',
-        display: 'standalone',
-        scope: '/',
-        start_url: '/',
-        orientation: 'portrait-primary',
+        name: "StarKeeper - GitHub Stars Manager",
+        short_name: "StarKeeper",
+        description: "Intelligent GitHub Stars management tool with AI-powered features",
+        theme_color: "#6366f1",
+        background_color: "#1e293b",
+        display: "standalone",
+        scope: "/",
+        start_url: "/",
+        orientation: "portrait-primary",
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
+            src: "pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
+            src: "pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.github\.com\/.*/i,
-            handler: 'NetworkFirst',
+            handler: "NetworkFirst",
             options: {
-              cacheName: 'github-api-cache',
+              cacheName: "github-api-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 天
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 天
               },
               cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
+                statuses: [0, 200],
+              },
+            },
           },
           {
             urlPattern: /^https:\/\/avatars\.githubusercontent\.com\/.*/i,
-            handler: 'CacheFirst',
+            handler: "CacheFirst",
             options: {
-              cacheName: 'github-avatars-cache',
+              cacheName: "github-avatars-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 天
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 天
               },
               cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
+                statuses: [0, 200],
+              },
+            },
           },
           {
             urlPattern: /^https:\/\/dashscope\.aliyuncs\.com\/.*/i,
-            handler: 'NetworkOnly',
+            handler: "NetworkOnly",
             options: {
-              cacheName: 'dashscope-api-cache'
-            }
-          }
-        ]
+              cacheName: "dashscope-api-cache",
+            },
+          },
+        ],
       },
       devOptions: {
-        enabled: process.env.VITE_PWA_DEV === 'true', // 通过环境变量控制
-        type: 'module'
-      }
-    })
+        enabled: process.env.VITE_PWA_DEV === "true", // 通过环境变量控制
+        type: "module",
+      },
+    }),
   ],
   server: {
     host: true, // 允许外部访问
@@ -94,21 +94,20 @@ export default defineConfig({
     },
     proxy: {
       // 代理 DashScope API 请求
-      '/api/dashscope': {
-        target: 'https://dashscope.aliyuncs.com',
+      "/api/dashscope": {
+        target: "https://dashscope.aliyuncs.com",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/dashscope/, ''),
+        rewrite: (path) => path.replace(/^\/api\/dashscope/, ""),
         configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            // 添加必要的请求头
-            console.log('🔄 代理请求:', req.method, req.url);
+          proxy.on("proxyReq", (proxyReq, req, res) => {
+            // Proxy request
           });
-        }
-      }
-    }
+        },
+      },
+    },
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: "jsdom",
   },
-})
+});

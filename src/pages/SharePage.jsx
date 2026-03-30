@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle, Star, GitFork, ExternalLink, Tag } from 'lucide-react';
-import { getPublicGist } from '../services/github.service';
-import { useAuthStore } from '../store';
-import TagBadge from '../components/tags/TagBadge';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Loader2, AlertCircle, Star, GitFork, ExternalLink, Tag } from "lucide-react";
+import { getPublicGist } from "../services/github.service";
+import { useAuthStore } from "../store";
+import TagBadge from "../components/tags/TagBadge";
 
 /**
  * 公开分享页面
@@ -14,11 +14,11 @@ export default function SharePage() {
   const navigate = useNavigate();
   const { accessToken } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [shareData, setShareData] = useState(null);
   const [filteredStars, setFilteredStars] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadShareData();
@@ -33,35 +33,35 @@ export default function SharePage() {
   const loadShareData = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
-      console.log('🔍 加载分享数据，ShareId:', shareId);
+      console.log("🔍 加载分享数据，ShareId:", shareId);
 
       // 尝试获取当前用户的 token（如果已登录）
       // 使用 token 可以避免 API 速率限制
-      console.log('🔑 用户登录状态:', accessToken ? '已登录' : '未登录');
+      console.log("🔑 用户登录状态:", accessToken ? "已登录" : "未登录");
 
       // 从 Gist 加载分享数据（传入 token 避免速率限制）
       const gist = await getPublicGist(shareId, accessToken);
-      
-      console.log('📦 获取到的 Gist:', gist);
 
-      if (!gist || !gist.files['starkeeper-metadata.json']) {
-        console.error('❌ Gist 中找不到 starkeeper-metadata.json 文件');
-        setError('找不到该分享的 Collection');
+      console.log("📦 获取到的 Gist:", gist);
+
+      if (!gist || !gist.files["starkeeper-metadata.json"]) {
+        console.error("❌ Gist 中找不到 starkeeper-metadata.json 文件");
+        setError("找不到该分享的 Collection");
         return;
       }
 
-      const content = JSON.parse(gist.files['starkeeper-metadata.json'].content);
-      
-      console.log('📄 Gist 内容:', content);
-      console.log('🔧 ShareConfig:', content.shareConfig);
-      console.log('📊 SharedStars 数量:', content.sharedStars?.length || 0);
-      
+      const content = JSON.parse(gist.files["starkeeper-metadata.json"].content);
+
+      console.log("📄 Gist 内容:", content);
+      console.log("🔧 ShareConfig:", content.shareConfig);
+      console.log("📊 SharedStars 数量:", content.sharedStars?.length || 0);
+
       // 检查是否公开
       if (!content.shareConfig?.isPublic) {
-        console.error('❌ Collection 未公开');
-        setError('该 Collection 未公开分享');
+        console.error("❌ Collection 未公开");
+        setError("该 Collection 未公开分享");
         return;
       }
 
@@ -71,13 +71,12 @@ export default function SharePage() {
         metadata: content.repositories || {},
         stars: content.sharedStars || [],
       };
-      
-      console.log('✅ 分享数据加载成功:', shareData);
+
+      console.log("✅ 分享数据加载成功:", shareData);
       setShareData(shareData);
-      
     } catch (err) {
-      console.error('❌ 加载分享数据失败:', err);
-      setError('加载分享数据失败: ' + err.message);
+      console.error("❌ 加载分享数据失败:", err);
+      setError("加载分享数据失败: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -88,20 +87,21 @@ export default function SharePage() {
 
     // 按标签筛选
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(star => {
+      filtered = filtered.filter((star) => {
         const metadata = shareData.metadata[star.id];
         if (!metadata || !metadata.tags) return false;
-        return selectedTags.some(tag => metadata.tags.includes(tag));
+        return selectedTags.some((tag) => metadata.tags.includes(tag));
       });
     }
 
     // 按关键词搜索
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(star => 
-        star.name.toLowerCase().includes(query) ||
-        star.fullName.toLowerCase().includes(query) ||
-        (star.description && star.description.toLowerCase().includes(query))
+      filtered = filtered.filter(
+        (star) =>
+          star.name.toLowerCase().includes(query) ||
+          star.fullName.toLowerCase().includes(query) ||
+          (star.description && star.description.toLowerCase().includes(query)),
       );
     }
 
@@ -109,18 +109,16 @@ export default function SharePage() {
   };
 
   const toggleTag = (tag) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
   const getAllTags = () => {
     if (!shareData) return [];
     const tags = new Set();
-    Object.values(shareData.metadata || {}).forEach(m => {
-      m.tags?.forEach(tag => tags.add(tag));
+    Object.values(shareData.metadata || {}).forEach((m) => {
+      m.tags?.forEach((tag) => tags.add(tag));
     });
     return Array.from(tags).sort();
   };
@@ -144,11 +142,9 @@ export default function SharePage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             无法加载 Collection
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {error}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
           >
             返回首页
@@ -168,7 +164,7 @@ export default function SharePage() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {shareData?.shareConfig?.shareTitle || 'Stars Collection'}
+                {shareData?.shareConfig?.shareTitle || "Stars Collection"}
               </h1>
               {shareData?.shareConfig?.shareDescription && (
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -181,7 +177,7 @@ export default function SharePage() {
               </div>
             </div>
             <button
-              onClick={() => window.open('/', '_blank')}
+              onClick={() => window.open("/", "_blank")}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <span>创建我的 Collection</span>
@@ -215,21 +211,21 @@ export default function SharePage() {
                     按标签筛选
                   </h3>
                   <div className="space-y-2">
-                    {allTags.map(tag => {
-                      const metadata = Object.values(shareData.metadata || {}).find(m => 
-                        m.tags?.includes(tag)
+                    {allTags.map((tag) => {
+                      const metadata = Object.values(shareData.metadata || {}).find((m) =>
+                        m.tags?.includes(tag),
                       );
-                      const color = metadata?.color || '#3B82F6';
+                      const color = metadata?.color || "#3B82F6";
                       const isSelected = selectedTags.includes(tag);
-                      
+
                       return (
                         <button
                           key={tag}
                           onClick={() => toggleTag(tag)}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                             isSelected
-                              ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500'
-                              : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
+                              ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500"
+                              : "bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300"
                           }`}
                         >
                           <TagBadge tag={tag} color={color} size="sm" />
@@ -256,17 +252,17 @@ export default function SharePage() {
               <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400">
                   {searchQuery || selectedTags.length > 0
-                    ? '没有匹配的项目'
-                    : '该 Collection 还没有项目'}
+                    ? "没有匹配的项目"
+                    : "该 Collection 还没有项目"}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredStars.map(star => {
+                {filteredStars.map((star) => {
                   const metadata = shareData.metadata[star.id] || {};
                   const tags = metadata.tags || [];
-                  const color = metadata.color || '#3B82F6';
-                  
+                  const color = metadata.color || "#3B82F6";
+
                   return (
                     <div
                       key={star.id}
@@ -291,13 +287,13 @@ export default function SharePage() {
                       </div>
 
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                        {star.description || '暂无描述'}
+                        {star.description || "暂无描述"}
                       </p>
 
                       {/* 标签 */}
                       {tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {tags.map(tag => (
+                          {tags.map((tag) => (
                             <TagBadge key={tag} tag={tag} color={color} size="sm" />
                           ))}
                         </div>

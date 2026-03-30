@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 
 /**
  * 标签徽章组件
@@ -9,18 +9,18 @@ import { X } from 'lucide-react';
  * @param {Function} props.onRemove - 删除回调
  * @param {string} props.size - 尺寸 (sm | md | lg)
  */
-export default function TagBadge({ 
-  tag, 
-  color = '#3B82F6', 
-  removable = false, 
+export default function TagBadge({
+  tag,
+  color = "#3B82F6",
+  removable = false,
   onRemove,
-  size = 'md',
-  className = ''
+  size = "md",
+  className = "",
 }) {
   const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-2.5 py-1',
-    lg: 'text-base px-3 py-1.5',
+    sm: "text-xs px-2 py-0.5",
+    md: "text-sm px-2.5 py-1",
+    lg: "text-base px-3 py-1.5",
   };
 
   return (
@@ -30,7 +30,7 @@ export default function TagBadge({
         backgroundColor: `${color}20`,
         color: color,
         borderColor: `${color}40`,
-        borderWidth: '1px',
+        borderWidth: "1px",
       }}
     >
       <span>{tag}</span>

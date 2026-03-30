@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Tag, Check } from 'lucide-react';
+import { useState } from "react";
+import { Tag, Check } from "lucide-react";
 
 /**
  * 标签输入组件
@@ -7,27 +7,27 @@ import { Tag, Check } from 'lucide-react';
  * @param {Array<string>} props.suggestions - 建议的标签列表
  * @param {Function} props.onAdd - 添加标签回调
  */
-export default function TagInput({ suggestions = [], onAdd, placeholder = '输入标签...' }) {
-  const [input, setInput] = useState('');
+export default function TagInput({ suggestions = [], onAdd, placeholder = "输入标签..." }) {
+  const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const filteredSuggestions = suggestions.filter(tag =>
-    tag.toLowerCase().includes(input.toLowerCase()) && input.length > 0
+  const filteredSuggestions = suggestions.filter(
+    (tag) => tag.toLowerCase().includes(input.toLowerCase()) && input.length > 0,
   );
 
   const handleAdd = (tag) => {
     if (tag.trim()) {
       onAdd(tag.trim());
-      setInput('');
+      setInput("");
       setShowSuggestions(false);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAdd(input);
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setShowSuggestions(false);
     }
   };

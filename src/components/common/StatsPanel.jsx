@@ -1,14 +1,14 @@
-import React from 'react';
-import { 
-  TrendingUp, 
-  Star, 
-  Tag, 
-  FileText, 
+import React from "react";
+import {
+  TrendingUp,
+  Star,
+  Tag,
+  FileText,
   Sparkles,
   Activity,
   BarChart3,
-  PieChart
-} from 'lucide-react';
+  PieChart,
+} from "lucide-react";
 
 /**
  * 统计面板组件
@@ -60,29 +60,17 @@ const StatsPanel = ({ stats }) => {
             健康度分析
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <HealthStatItem 
-              label="平均健康度" 
-              value={`${health.averageScore}分`}
-            />
-            <HealthStatItem 
-              label="已分析" 
+            <HealthStatItem label="平均健康度" value={`${health.averageScore}分`} />
+            <HealthStatItem
+              label="已分析"
               value={`${health.analyzedCount}项`}
               subtitle={`${health.analyzedPercentage}%`}
             />
-            <HealthStatItem 
-              label="优秀" 
-              value={health.distribution.excellent}
-            />
-            <HealthStatItem 
-              label="良好" 
-              value={health.distribution.good}
-            />
-            <HealthStatItem 
-              label="一般" 
-              value={health.distribution.fair}
-            />
-            <HealthStatItem 
-              label="需关注" 
+            <HealthStatItem label="优秀" value={health.distribution.excellent} />
+            <HealthStatItem label="良好" value={health.distribution.good} />
+            <HealthStatItem label="一般" value={health.distribution.fair} />
+            <HealthStatItem
+              label="需关注"
               value={health.distribution.poor + health.distribution.critical}
             />
           </div>
@@ -103,9 +91,7 @@ const StatCard = ({ icon, label, value, subtitle }) => {
       </div>
       <div className="text-2xl font-semibold text-text-primary mb-1">{value}</div>
       <div className="text-body-sm text-text-secondary">{label}</div>
-      {subtitle && (
-        <div className="text-caption text-text-tertiary mt-1">{subtitle}</div>
-      )}
+      {subtitle && <div className="text-caption text-text-tertiary mt-1">{subtitle}</div>}
     </div>
   );
 };
@@ -118,9 +104,7 @@ const HealthStatItem = ({ label, value, subtitle }) => {
     <div className="bg-surface rounded-lg p-3 border border-border-light">
       <div className="text-caption text-text-secondary mb-1">{label}</div>
       <div className="text-h4 text-text-primary">{value}</div>
-      {subtitle && (
-        <div className="text-caption text-text-tertiary mt-0.5">{subtitle}</div>
-      )}
+      {subtitle && <div className="text-caption text-text-tertiary mt-0.5">{subtitle}</div>}
     </div>
   );
 };
@@ -142,7 +126,7 @@ export const LanguageDistribution = ({ languages }) => {
       </h3>
       <div className="space-y-3">
         {topLanguages.map((lang, index) => (
-          <LanguageBar 
+          <LanguageBar
             key={lang.language}
             language={lang.language}
             count={lang.count}
@@ -171,10 +155,12 @@ const LanguageBar = ({ language, count, percentage, maxCount, index }) => {
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-body-sm font-medium text-text-primary">{language}</span>
-        <span className="text-caption text-text-secondary">{count} ({percentage}%)</span>
+        <span className="text-caption text-text-secondary">
+          {count} ({percentage}%)
+        </span>
       </div>
       <div className="w-full bg-surface rounded-full h-2">
-        <div 
+        <div
           className="bg-primary h-2 rounded-full transition-all duration-180 ease-out"
           style={{ width: `${width}%` }}
         />
@@ -238,7 +224,7 @@ export const RecentlyActiveRepos = ({ repos }) => {
         最近活跃
       </h3>
       <div className="space-y-3">
-        {repos.map(repo => (
+        {repos.map((repo) => (
           <RepoItem key={repo.id} repo={repo} />
         ))}
       </div>
@@ -284,8 +270,8 @@ function getTimeAgo(dateString) {
   const diffMs = now - date;
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return '今天';
-  if (diffDays === 1) return '昨天';
+  if (diffDays === 0) return "今天";
+  if (diffDays === 1) return "昨天";
   if (diffDays < 7) return `${diffDays}天前`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)}月前`;

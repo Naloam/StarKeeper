@@ -8,13 +8,8 @@
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run-script",
-        "start"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "runtimeArgs": ["run-script", "start"],
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

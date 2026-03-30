@@ -1,52 +1,67 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  Plus, 
-  Grid3x3, 
-  List, 
-  Download, 
-  Upload, 
-  RefreshCw, 
-  Share2, 
-  Sparkles, 
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Search,
+  Plus,
+  Grid3x3,
+  List,
+  Download,
+  Upload,
+  RefreshCw,
+  Share2,
+  Sparkles,
   Activity,
   Trash2,
   Loader2,
   Zap,
-  Copy
-} from 'lucide-react';
-import MainLayout from '../components/layout/MainLayout';
-import { useAuthStore, useStarsStore, useUIStore } from '../store';
-import { getAllStarredRepos, getRepoReadme } from '../services/github.service';
-import { generateSummary } from '../services/dashscope.service';
-import { calculateHealthScore, batchCalculateHealthScore } from '../services/health.service';
-import { generateStatsReport } from '../services/stats.service';
-import TagModal from '../components/tags/TagModal';
-import TagBadge from '../components/tags/TagBadge';
-import AISummary from '../components/common/AISummary';
-import ExportModal from '../components/common/ExportModal';
-import ShareModal from '../components/common/ShareModal';
-import HealthBadge from '../components/common/HealthBadge';
-import HealthDetailModal from '../components/common/HealthDetailModal';
-import StatsPanel, { LanguageDistribution, TagCloud, RecentlyActiveRepos } from '../components/common/StatsPanel';
-import StatsVisualization from '../components/common/StatsVisualization';
-import CustomStatsFilter from '../components/common/CustomStatsFilter';
-import SemanticSearch from '../components/common/SemanticSearch';
-import LazyImage from '../components/common/LazyImage';
-import { useDebounce } from '../utils/performance';
-import { 
-  findOrCreateMetadataGist, 
+  Copy,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import MainLayout from "../components/layout/MainLayout";
+import { useAuthStore, useStarsStore, useUIStore } from "../store";
+import { getAllStarredRepos, getRepoReadme } from "../services/github.service";
+import { generateSummary } from "../services/dashscope.service";
+import { calculateHealthScore, batchCalculateHealthScore } from "../services/health.service";
+import { generateStatsReport } from "../services/stats.service";
+import TagModal from "../components/tags/TagModal";
+import TagBadge from "../components/tags/TagBadge";
+import AISummary from "../components/common/AISummary";
+import ExportModal from "../components/common/ExportModal";
+import ShareModal from "../components/common/ShareModal";
+import HealthBadge from "../components/common/HealthBadge";
+import HealthDetailModal from "../components/common/HealthDetailModal";
+import StatsPanel, {
+  LanguageDistribution,
+  TagCloud,
+  RecentlyActiveRepos,
+} from "../components/common/StatsPanel";
+import StatsVisualization from "../components/common/StatsVisualization";
+import CustomStatsFilter from "../components/common/CustomStatsFilter";
+import SemanticSearch from "../components/common/SemanticSearch";
+import LazyImage from "../components/common/LazyImage";
+import { useDebounce } from "../utils/performance";
+import {
+  findOrCreateMetadataGist,
   loadMetadataFromGist,
   updateRepoMetadata as saveRepoMetadataToGist,
   convertGistToStoreFormat,
-  updateShareConfig
-} from '../services/metadata.service';
+  updateShareConfig,
+} from "../services/metadata.service";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { accessToken, gistId, setGistId } = useAuthStore();
-  const { stars, filteredStars, setStars, setLoading, loading, updateRepoMetadata, metadata, getAllTags, setMetadata } = useStarsStore();
+  const {
+    stars,
+    filteredStars,
+    setStars,
+    setLoading,
+    loading,
+    updateRepoMetadata,
+    metadata,
+    getAllTags,
+    setMetadata,
+  } = useStarsStore();
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [showTagModal, setShowTagModal] = useState(false);
@@ -56,22 +71,25 @@ export default function DashboardPage() {
   const [generatingSummary, setGeneratingSummary] = useState({});
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
-  
+
   // 健康度分析相关状态
   const [analyzingHealth, setAnalyzingHealth] = useState({});
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
-  const [healthAnalysisProgress, setHealthAnalysisProgress] = useState({ current: 0, total: 0 });
+  const [healthAnalysisProgress, setHealthAnalysisProgress] = useState({
+    current: 0,
+    total: 0,
+  });
   const [selectedHealthRepo, setSelectedHealthRepo] = useState(null);
   const [showHealthModal, setShowHealthModal] = useState(false);
-  
+
   // 统计数据状态
   const [stats, setStats] = useState(null);
   const [showStats, setShowStats] = useState(true);
-  
+
   // 自定义过滤状态
   const [customFilteredStars, setCustomFilteredStars] = useState(null);
   const [activeFilters, setActiveFilters] = useState([]);
-  
+
   // 语义搜索状态
   const [semanticSearchResults, setSemanticSearchResults] = useState(null);
 
@@ -94,9 +112,9 @@ export default function DashboardPage() {
     try {
       const id = await findOrCreateMetadataGist(accessToken);
       setGistId(id);
-      console.log('✅ Gist ID 已初始化:', id);
+      console.log("✅ Gist ID 已初始化:", id);
     } catch (error) {
-      console.error('初始化元数据失败:', error);
+      console.error("初始化元数据失败:", error);
     }
   };
 
@@ -105,15 +123,15 @@ export default function DashboardPage() {
       const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
       const storeMetadata = convertGistToStoreFormat(gistMetadata);
       setMetadata(storeMetadata);
-      
+
       // 加载分享配置
       if (gistMetadata.shareConfig) {
         setShareConfig(gistMetadata.shareConfig);
       }
-      
-      console.log('✅ 元数据已加载，共', Object.keys(storeMetadata).length, '个仓库');
+
+      console.log("✅ 元数据已加载，共", Object.keys(storeMetadata).length, "个仓库");
     } catch (error) {
-      console.error('加载元数据失败:', error);
+      console.error("加载元数据失败:", error);
     }
   };
 
@@ -129,7 +147,7 @@ export default function DashboardPage() {
   const handleApplyCustomFilter = (filteredData, filters) => {
     setCustomFilteredStars(filteredData);
     setActiveFilters(filters);
-    
+
     // 使用过滤后的数据重新生成统计
     if (filteredData.length > 0) {
       const statsReport = generateStatsReport(filteredData, metadata);
@@ -141,32 +159,34 @@ export default function DashboardPage() {
   const displayStars = (() => {
     if (semanticSearchResults) {
       // 有语义搜索结果时，与 filteredStars 取交集
-      const semanticRepoIds = new Set(semanticSearchResults.map(r => r.repo.id));
-      return filteredStars.filter(star => semanticRepoIds.has(star.id));
+      const semanticRepoIds = new Set(semanticSearchResults.map((r) => r.repo.id));
+      return filteredStars.filter((star) => semanticRepoIds.has(star.id));
     }
     // 否则使用自定义过滤或默认的侧边栏筛选结果
     return customFilteredStars || filteredStars;
   })();
-  
+
   // 处理语义搜索结果
   const handleSemanticSearchResults = (results) => {
     setSemanticSearchResults(results);
     if (results) {
       // 更新过滤标签，但不直接设置 customFilteredStars
       // 让 displayStars 逻辑自动计算交集
-      const semanticFilters = [{
-        type: 'semantic-search',
-        label: `AI 搜索结果`,
-        count: results.length
-      }];
+      const semanticFilters = [
+        {
+          type: "semantic-search",
+          label: `AI 搜索结果`,
+          count: results.length,
+        },
+      ];
       // 保留原有的自定义过滤标签
-      setActiveFilters(prev => {
-        const nonSemanticFilters = prev.filter(f => f.type !== 'semantic-search');
+      setActiveFilters((prev) => {
+        const nonSemanticFilters = prev.filter((f) => f.type !== "semantic-search");
         return [...nonSemanticFilters, ...semanticFilters];
       });
     } else {
       // 清除语义搜索标签
-      setActiveFilters(prev => prev.filter(f => f.type !== 'semantic-search'));
+      setActiveFilters((prev) => prev.filter((f) => f.type !== "semantic-search"));
     }
   };
 
@@ -176,8 +196,8 @@ export default function DashboardPage() {
       const repos = await getAllStarredRepos(accessToken, setProgress);
       setStars(repos);
     } catch (error) {
-      console.error('加载 stars 失败:', error);
-      alert('加载失败：' + error.message);
+      console.error("加载 stars 失败:", error);
+      alert("加载失败：" + error.message);
     } finally {
       setLoading(false);
     }
@@ -189,47 +209,47 @@ export default function DashboardPage() {
   };
 
   const handleSaveTag = async (data) => {
-    console.log('💾 保存标签数据:', data);
-    console.log('📊 当前 metadata 状态:', metadata);
-    console.log('🔑 repoId:', data.repoId, 'type:', typeof data.repoId);
-    
+    console.log("💾 保存标签数据:", data);
+    console.log("📊 当前 metadata 状态:", metadata);
+    console.log("🔑 repoId:", data.repoId, "type:", typeof data.repoId);
+
     // 先更新本地状态（立即反馈）
     updateRepoMetadata(data.repoId, {
       tags: data.tags,
       notes: data.notes,
       color: data.color,
     });
-    
+
     // 立即检查更新后的状态
     setTimeout(() => {
-      console.log('✨ 更新后的 metadata:', metadata);
-      console.log('✨ 该仓库的 metadata:', metadata[data.repoId]);
+      console.log("✨ 更新后的 metadata:", metadata);
+      console.log("✨ 该仓库的 metadata:", metadata[data.repoId]);
     }, 100);
 
     // 保存到 Gist
     if (gistId) {
       try {
-        console.log('📤 上传到 Gist:', { gistId, repoId: data.repoId });
+        console.log("📤 上传到 Gist:", { gistId, repoId: data.repoId });
         await saveRepoMetadataToGist(accessToken, gistId, data.repoId, {
           tags: data.tags,
           notes: data.notes,
           color: data.color,
         });
-        console.log('✅ 标签已保存到 Gist');
-        
+        console.log("✅ 标签已保存到 Gist");
+
         // 重新加载元数据确保同步
         const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
         const storeMetadata = convertGistToStoreFormat(gistMetadata);
         setMetadata(storeMetadata);
-        console.log('✅ 元数据已重新加载，共', Object.keys(storeMetadata).length, '个仓库');
-        console.log('✅ 重新加载后该仓库的 metadata:', storeMetadata[data.repoId]);
+        console.log("✅ 元数据已重新加载，共", Object.keys(storeMetadata).length, "个仓库");
+        console.log("✅ 重新加载后该仓库的 metadata:", storeMetadata[data.repoId]);
       } catch (error) {
-        console.error('❌ 保存到 Gist 失败:', error);
-        alert('保存失败：' + error.message);
+        console.error("❌ 保存到 Gist 失败:", error);
+        alert("保存失败：" + error.message);
         throw error; // 抛出错误，阻止 Modal 关闭
       }
     } else {
-      console.warn('⚠️ gistId 不存在，无法保存到 Gist');
+      console.warn("⚠️ gistId 不存在，无法保存到 Gist");
     }
   };
 
@@ -237,58 +257,58 @@ export default function DashboardPage() {
   const handleGenerateSummary = async (repo) => {
     const repoId = `${repo.owner.login}/${repo.name}`;
     const repoMeta = metadata[repo.id] || {};
-    
+
     // 检查是否已有摘要且未过期（7天内）
     const existingSummary = repoMeta.aiSummary;
     if (existingSummary && existingSummary.timestamp) {
       const daysSinceGeneration = (Date.now() - existingSummary.timestamp) / (1000 * 60 * 60 * 24);
       if (daysSinceGeneration < 7) {
         const confirmed = window.confirm(
-          `该项目已有 AI 摘要（生成于 ${Math.floor(daysSinceGeneration)} 天前）。是否重新生成？`
+          `该项目已有 AI 摘要（生成于 ${Math.floor(daysSinceGeneration)} 天前）。是否重新生成？`,
         );
         if (!confirmed) return;
       }
     }
-    
-    setGeneratingSummary(prev => ({ ...prev, [repoId]: true }));
+
+    setGeneratingSummary((prev) => ({ ...prev, [repoId]: true }));
 
     try {
-      console.log('🚀 开始为项目生成摘要:', repoId);
-      
+      console.log("🚀 开始为项目生成摘要:", repoId);
+
       // 获取 README
       const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
-      
+
       if (!readmeContent) {
-        alert('该项目没有 README 文件');
+        alert("该项目没有 README 文件");
         return;
       }
 
-      console.log('📄 README 内容长度:', readmeContent.length);
+      console.log("📄 README 内容长度:", readmeContent.length);
 
       // 调用 AI 生成摘要
       const summary = await generateSummary(readmeContent, repo.name, repo.description);
-      
-      console.log('✅ 摘要生成成功:', summary);
-      
+
+      console.log("✅ 摘要生成成功:", summary);
+
       // 更新本地状态 - 使用 repo.id 作为 key
       updateRepoMetadata(repo.id, {
         aiSummary: summary,
       });
-      
-      console.log('💾 本地状态已更新，repo.id:', repo.id);
+
+      console.log("💾 本地状态已更新，repo.id:", repo.id);
 
       // 保存到 Gist - 使用 repoId (owner/name) 格式
       if (gistId) {
         await saveRepoMetadataToGist(accessToken, gistId, repoId, {
           aiSummary: summary,
         });
-        console.log('✅ AI 摘要已保存到 Gist');
+        console.log("✅ AI 摘要已保存到 Gist");
       }
     } catch (error) {
-      console.error('❌ 生成 AI 摘要失败:', error);
-      alert('生成失败：' + error.message);
+      console.error("❌ 生成 AI 摘要失败:", error);
+      alert("生成失败：" + error.message);
     } finally {
-      setGeneratingSummary(prev => ({ ...prev, [repoId]: false }));
+      setGeneratingSummary((prev) => ({ ...prev, [repoId]: false }));
     }
   };
 
@@ -307,10 +327,10 @@ export default function DashboardPage() {
         await saveRepoMetadataToGist(accessToken, gistId, repoId, {
           aiSummary: updatedSummary,
         });
-        console.log('✅ 编辑的摘要已保存');
+        console.log("✅ 编辑的摘要已保存");
       }
     } catch (error) {
-      console.error('保存摘要失败:', error);
+      console.error("保存摘要失败:", error);
       throw error; // 重新抛出错误，让 AISummary 组件显示错误提示
     }
   };
@@ -318,18 +338,18 @@ export default function DashboardPage() {
   // 批量生成 AI 摘要
   const handleBatchGenerateSummary = async () => {
     // 筛选出还没有 AI 摘要的项目
-    const reposWithoutSummary = filteredStars.filter(star => {
+    const reposWithoutSummary = filteredStars.filter((star) => {
       const repoMeta = metadata[star.id] || {};
       return !repoMeta.aiSummary;
     });
 
     if (reposWithoutSummary.length === 0) {
-      alert('当前显示的所有项目都已有 AI 摘要');
+      alert("当前显示的所有项目都已有 AI 摘要");
       return;
     }
 
     const confirmed = window.confirm(
-      `即将为 ${reposWithoutSummary.length} 个项目生成 AI 摘要，这可能需要一些时间。是否继续？`
+      `即将为 ${reposWithoutSummary.length} 个项目生成 AI 摘要，这可能需要一些时间。是否继续？`,
     );
 
     if (!confirmed) return;
@@ -337,25 +357,30 @@ export default function DashboardPage() {
     setBatchGenerating(true);
     setBatchProgress({ current: 0, total: reposWithoutSummary.length });
 
+    let successCount = 0;
+
     for (let i = 0; i < reposWithoutSummary.length; i++) {
       const repo = reposWithoutSummary[i];
       const repoId = `${repo.owner.login}/${repo.name}`;
 
       try {
         console.log(`📝 [${i + 1}/${reposWithoutSummary.length}] 正在为 ${repoId} 生成摘要...`);
-        
+
         // 获取 README
         const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
-        
+
         if (!readmeContent) {
           console.warn(`⚠️  ${repoId} 没有 README，跳过`);
-          setBatchProgress({ current: i + 1, total: reposWithoutSummary.length });
+          setBatchProgress({
+            current: i + 1,
+            total: reposWithoutSummary.length,
+          });
           continue;
         }
 
         // 调用 AI 生成摘要
         const summary = await generateSummary(readmeContent, repo.name, repo.description);
-        
+
         // 更新本地状态 - 使用 repo.id 作为 key
         updateRepoMetadata(repo.id, {
           aiSummary: summary,
@@ -368,14 +393,16 @@ export default function DashboardPage() {
           });
         }
 
+        successCount++;
+
         console.log(`✅ [${i + 1}/${reposWithoutSummary.length}] ${repoId} 摘要生成成功`);
-        
+
         // 更新进度
         setBatchProgress({ current: i + 1, total: reposWithoutSummary.length });
-        
+
         // 避免速率限制，每个请求之间等待 2 秒
         if (i < reposWithoutSummary.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       } catch (error) {
         console.error(`❌ ${repoId} 生成失败:`, error);
@@ -385,14 +412,14 @@ export default function DashboardPage() {
     }
 
     setBatchGenerating(false);
-    alert(`批量生成完成！成功生成 ${batchProgress.current} 个项目的摘要。`);
+    toast.success(`批量生成完成！成功生成 ${successCount} 个项目的摘要。`);
   };
 
   // 分析单个项目健康度
   const handleAnalyzeHealth = async (repo) => {
     const repoId = repo.id;
     const repoMeta = metadata[repoId] || {};
-    
+
     // 检查是否已有健康度数据且未过期（7天内）
     const existingHealth = repoMeta.healthScore;
     if (existingHealth && existingHealth.cacheExpiry) {
@@ -404,23 +431,23 @@ export default function DashboardPage() {
         return;
       }
     }
-    
-    setAnalyzingHealth(prev => ({ ...prev, [repoId]: true }));
+
+    setAnalyzingHealth((prev) => ({ ...prev, [repoId]: true }));
 
     try {
-      console.log('🏥 开始分析项目健康度:', repo.fullName);
-      
+      console.log("🏥 开始分析项目健康度:", repo.fullName);
+
       // 计算健康度
       const healthScore = await calculateHealthScore(accessToken, repo);
-      
-      console.log('✅ 健康度分析成功:', healthScore);
-      
+
+      console.log("✅ 健康度分析成功:", healthScore);
+
       // 更新本地状态
       updateRepoMetadata(repo.id, {
         healthScore: healthScore,
       });
-      
-      console.log('💾 健康度数据已更新到本地状态');
+
+      console.log("💾 健康度数据已更新到本地状态");
 
       // 保存到 Gist
       if (gistId) {
@@ -428,24 +455,24 @@ export default function DashboardPage() {
         await saveRepoMetadataToGist(accessToken, gistId, gistRepoId, {
           healthScore: healthScore,
         });
-        console.log('✅ 健康度数据已保存到 Gist');
+        console.log("✅ 健康度数据已保存到 Gist");
       }
 
       // 显示详情弹窗
       setSelectedHealthRepo({ repo, healthScore });
       setShowHealthModal(true);
     } catch (error) {
-      console.error('❌ 分析健康度失败:', error);
-      alert('分析失败：' + error.message);
+      console.error("❌ 分析健康度失败:", error);
+      alert("分析失败：" + error.message);
     } finally {
-      setAnalyzingHealth(prev => ({ ...prev, [repoId]: false }));
+      setAnalyzingHealth((prev) => ({ ...prev, [repoId]: false }));
     }
   };
 
   // 批量分析健康度
   const handleBatchAnalyzeHealth = async () => {
     // 筛选出还没有健康度数据或数据已过期的项目
-    const reposNeedingAnalysis = filteredStars.filter(star => {
+    const reposNeedingAnalysis = filteredStars.filter((star) => {
       const repoMeta = metadata[star.id] || {};
       const existingHealth = repoMeta.healthScore;
       if (!existingHealth) return true;
@@ -454,18 +481,23 @@ export default function DashboardPage() {
     });
 
     if (reposNeedingAnalysis.length === 0) {
-      alert('当前显示的所有项目都已有健康度数据（且未过期）');
+      alert("当前显示的所有项目都已有健康度数据（且未过期）");
       return;
     }
 
     const confirmed = window.confirm(
-      `即将为 ${reposNeedingAnalysis.length} 个项目分析健康度，这可能需要一些时间。是否继续？`
+      `即将为 ${reposNeedingAnalysis.length} 个项目分析健康度，这可能需要一些时间。是否继续？`,
     );
 
     if (!confirmed) return;
 
     setBatchAnalyzing(true);
-    setHealthAnalysisProgress({ current: 0, total: reposNeedingAnalysis.length });
+    setHealthAnalysisProgress({
+      current: 0,
+      total: reposNeedingAnalysis.length,
+    });
+
+    let healthSuccessCount = 0;
 
     for (let i = 0; i < reposNeedingAnalysis.length; i++) {
       const repo = reposNeedingAnalysis[i];
@@ -473,14 +505,16 @@ export default function DashboardPage() {
 
       try {
         console.log(`🏥 [${i + 1}/${reposNeedingAnalysis.length}] 正在分析 ${repoId}...`);
-        
+
         // 计算健康度
         const healthScore = await calculateHealthScore(accessToken, repo);
-        
+
         // 更新本地状态
         updateRepoMetadata(repo.id, {
           healthScore: healthScore,
         });
+
+        healthSuccessCount++;
 
         // 保存到 Gist
         if (gistId) {
@@ -489,24 +523,32 @@ export default function DashboardPage() {
           });
         }
 
-        console.log(`✅ [${i + 1}/${reposNeedingAnalysis.length}] ${repoId} 健康度: ${healthScore.score}分`);
-        
+        console.log(
+          `✅ [${i + 1}/${reposNeedingAnalysis.length}] ${repoId} 健康度: ${healthScore.score}分`,
+        );
+
         // 更新进度
-        setHealthAnalysisProgress({ current: i + 1, total: reposNeedingAnalysis.length });
-        
+        setHealthAnalysisProgress({
+          current: i + 1,
+          total: reposNeedingAnalysis.length,
+        });
+
         // 避免速率限制，每个请求之间等待 1 秒
         if (i < reposNeedingAnalysis.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (error) {
         console.error(`❌ ${repoId} 分析失败:`, error);
         // 继续处理下一个
-        setHealthAnalysisProgress({ current: i + 1, total: reposNeedingAnalysis.length });
+        setHealthAnalysisProgress({
+          current: i + 1,
+          total: reposNeedingAnalysis.length,
+        });
       }
     }
 
     setBatchAnalyzing(false);
-    alert(`批量分析完成！成功分析 ${healthAnalysisProgress.current} 个项目的健康度。`);
+    toast.success(`批量分析完成！成功分析 ${healthSuccessCount} 个项目的健康度。`);
   };
 
   // 显示健康度详情
@@ -522,28 +564,28 @@ export default function DashboardPage() {
   };
 
   const handleUpdateShare = async (newShareConfig) => {
-    console.log('🔄 开始更新分享配置:', newShareConfig);
-    
+    console.log("🔄 开始更新分享配置:", newShareConfig);
+
     try {
       // 传递当前的 stars 数据，以便在分享页面展示
       const shareId = await updateShareConfig(accessToken, gistId, newShareConfig, stars);
-      
-      console.log('✅ 收到 ShareId:', shareId);
-      
+
+      console.log("✅ 收到 ShareId:", shareId);
+
       // 更新本地状态
       const updatedConfig = {
         ...newShareConfig,
         shareId,
       };
-      
+
       setShareConfig(updatedConfig);
-      console.log('✅ 本地状态已更新:', updatedConfig);
-      
+      console.log("✅ 本地状态已更新:", updatedConfig);
+
       setShowShareModal(false);
-      alert('分享设置已更新！');
+      alert("分享设置已更新！");
     } catch (error) {
-      console.error('❌ 更新分享配置失败:', error);
-      alert('更新失败：' + error.message);
+      console.error("❌ 更新分享配置失败:", error);
+      alert("更新失败：" + error.message);
       throw error; // 重新抛出错误，防止 Modal 关闭
     }
   };
@@ -554,13 +596,11 @@ export default function DashboardPage() {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-text-primary mb-2">
-              正在加载你的 Stars...
-            </h2>
+            <h2 className="text-xl font-semibold text-text-primary mb-2">正在加载你的 Stars...</h2>
             {progress.current > 0 && (
               <p className="text-text-secondary">
                 已加载 {progress.current} 个项目
-                {progress.hasMore && '...'}
+                {progress.hasMore && "..."}
               </p>
             )}
           </div>
@@ -577,12 +617,8 @@ export default function DashboardPage() {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Sparkles className="w-12 h-12 text-text-muted" />
             </div>
-            <h2 className="text-2xl font-bold text-text-primary mb-2">
-              还没有 Star 任何项目
-            </h2>
-            <p className="text-text-secondary mb-6">
-              去 GitHub 上 star 一些有趣的项目吧！
-            </p>
+            <h2 className="text-2xl font-bold text-text-primary mb-2">还没有 Star 任何项目</h2>
+            <p className="text-text-secondary mb-6">去 GitHub 上 star 一些有趣的项目吧！</p>
             <button
               onClick={loadStars}
               className="inline-flex items-center space-x-2 bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
@@ -602,9 +638,7 @@ export default function DashboardPage() {
         {/* Toolbar */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-text-primary">
-              我的 Stars
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-text-primary">我的 Stars</h2>
             <p className="text-sm sm:text-base text-text-secondary">
               共 {stars.length} 个项目 · 显示 {filteredStars.length} 个
             </p>
@@ -619,7 +653,9 @@ export default function DashboardPage() {
               {batchGenerating ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span className="hidden sm:inline">生成中 {batchProgress.current}/{batchProgress.total}</span>
+                  <span className="hidden sm:inline">
+                    生成中 {batchProgress.current}/{batchProgress.total}
+                  </span>
                   <span className="sm:hidden">生成中</span>
                 </>
               ) : (
@@ -639,7 +675,9 @@ export default function DashboardPage() {
               {batchAnalyzing ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span className="hidden sm:inline">分析中 {healthAnalysisProgress.current}/{healthAnalysisProgress.total}</span>
+                  <span className="hidden sm:inline">
+                    分析中 {healthAnalysisProgress.current}/{healthAnalysisProgress.total}
+                  </span>
                   <span className="sm:hidden">分析中</span>
                 </>
               ) : (
@@ -651,7 +689,7 @@ export default function DashboardPage() {
               )}
             </button>
             <button
-              onClick={() => navigate('/cleanup')}
+              onClick={() => navigate("/cleanup")}
               className="btn flex-1 sm:flex-none bg-danger text-white hover:bg-danger/90 text-body-sm"
               title="智能清理建议，帮你整理无效或重复的 Stars"
             >
@@ -660,7 +698,7 @@ export default function DashboardPage() {
               <span className="sm:hidden">清理</span>
             </button>
             <button
-              onClick={() => navigate('/deduplication')}
+              onClick={() => navigate("/deduplication")}
               className="btn flex-1 sm:flex-none bg-warning text-white hover:bg-warning/90 text-body-sm"
               title="智能去重，识别和清理相似项目"
             >
@@ -687,7 +725,7 @@ export default function DashboardPage() {
               disabled={loading}
               className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-surface-card border border-border text-text-primary px-3 sm:px-4 py-2 rounded-lg hover:bg-surface-darker transition-colors disabled:opacity-50 text-sm"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span>刷新</span>
             </button>
           </div>
@@ -697,7 +735,7 @@ export default function DashboardPage() {
         {showStats && stats && (
           <div className="mb-6">
             <StatsPanel stats={stats} />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               <LanguageDistribution languages={stats.languages} />
               <TagCloud tags={stats.tags} />
@@ -718,7 +756,7 @@ export default function DashboardPage() {
         )}
 
         {/* 自定义统计维度过滤器 */}
-        <CustomStatsFilter 
+        <CustomStatsFilter
           stars={filteredStars}
           metadata={metadata}
           onApplyFilter={handleApplyCustomFilter}
@@ -726,11 +764,7 @@ export default function DashboardPage() {
 
         {/* 数据可视化 */}
         {stats && (
-          <StatsVisualization 
-            stars={displayStars}
-            metadata={metadata}
-            healthStats={stats.health}
-          />
+          <StatsVisualization stars={displayStars} metadata={metadata} healthStats={stats.health} />
         )}
 
         {/* 显示当前过滤条件 */}
@@ -762,8 +796,8 @@ export default function DashboardPage() {
         )}
 
         {/* Stars Grid/List */}
-        <StarsList 
-          stars={displayStars} 
+        <StarsList
+          stars={displayStars}
           onOpenTagModal={handleOpenTagModal}
           onGenerateSummary={handleGenerateSummary}
           onSaveSummary={handleSaveSummary}
@@ -779,8 +813,8 @@ export default function DashboardPage() {
           onClose={() => setShowTagModal(false)}
           repo={selectedRepo}
           currentTags={metadata[selectedRepo?.id]?.tags || []}
-          currentNotes={metadata[selectedRepo?.id]?.notes || ''}
-          currentColor={metadata[selectedRepo?.id]?.color || '#3B82F6'}
+          currentNotes={metadata[selectedRepo?.id]?.notes || ""}
+          currentColor={metadata[selectedRepo?.id]?.color || "#3B82F6"}
           allTags={getAllTags()}
           onSave={handleSaveTag}
         />
@@ -814,7 +848,16 @@ export default function DashboardPage() {
   );
 }
 
-function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, generatingSummary, onAnalyzeHealth, onShowHealthDetail, analyzingHealth }) {
+function StarsList({
+  stars,
+  onOpenTagModal,
+  onGenerateSummary,
+  onSaveSummary,
+  generatingSummary,
+  onAnalyzeHealth,
+  onShowHealthDetail,
+  analyzingHealth,
+}) {
   const { viewMode } = useUIStore();
 
   if (stars.length === 0) {
@@ -825,13 +868,13 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
     );
   }
 
-  if (viewMode === 'grid') {
+  if (viewMode === "grid") {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {stars.map((star) => (
-          <StarCard 
-            key={star.id} 
-            star={star} 
+          <StarCard
+            key={star.id}
+            star={star}
             onOpenTagModal={onOpenTagModal}
             onGenerateSummary={onGenerateSummary}
             onSaveSummary={onSaveSummary}
@@ -848,9 +891,9 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
   return (
     <div className="space-y-4">
       {stars.map((star) => (
-        <StarListItem 
-          key={star.id} 
-          star={star} 
+        <StarListItem
+          key={star.id}
+          star={star}
           onOpenTagModal={onOpenTagModal}
           onGenerateSummary={onGenerateSummary}
           onSaveSummary={onSaveSummary}
@@ -864,15 +907,24 @@ function StarsList({ stars, onOpenTagModal, onGenerateSummary, onSaveSummary, ge
   );
 }
 
-function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating, onAnalyzeHealth, onShowHealthDetail, isAnalyzing }) {
+function StarCard({
+  star,
+  onOpenTagModal,
+  onGenerateSummary,
+  onSaveSummary,
+  isGenerating,
+  onAnalyzeHealth,
+  onShowHealthDetail,
+  isAnalyzing,
+}) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
-  const color = repoMeta.color || '#3B82F6';
+  const color = repoMeta.color || "#3B82F6";
   const aiSummary = repoMeta.aiSummary;
   const healthScore = repoMeta.healthScore;
-  
+
   return (
     <div className="bg-surface-card rounded-lg border border-border p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -892,8 +944,8 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
           )}
           {/* 健康度徽章 */}
           {healthScore && !isAnalyzing ? (
-            <HealthBadge 
-              healthScore={healthScore} 
+            <HealthBadge
+              healthScore={healthScore}
               size="sm"
               onClick={() => onShowHealthDetail(star)}
             />
@@ -916,7 +968,7 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
       </div>
 
       <p className="text-sm text-text-secondary mb-4 line-clamp-2">
-        {star.description || '暂无描述'}
+        {star.description || "暂无描述"}
       </p>
 
       {/* AI 摘要 */}
@@ -938,9 +990,7 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
             <TagBadge key={tag} tag={tag} color={color} size="sm" />
           ))}
           {tags.length > 3 && (
-            <span className="px-2 py-0.5 text-xs text-text-secondary">
-              +{tags.length - 3}
-            </span>
+            <span className="px-2 py-0.5 text-xs text-text-secondary">+{tags.length - 3}</span>
           )}
         </div>
       )}
@@ -948,30 +998,37 @@ function StarCard({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGe
       <div className="flex items-center justify-between text-sm text-text-secondary">
         <div className="flex items-center space-x-4">
           <span>⭐ {star.stargazersCount.toLocaleString()}</span>
-          {star.forksCount > 0 && (
-            <span>🔀 {star.forksCount.toLocaleString()}</span>
-          )}
+          {star.forksCount > 0 && <span>🔀 {star.forksCount.toLocaleString()}</span>}
         </div>
         <button
           onClick={() => onOpenTagModal(star)}
           className="text-primary-600 hover:text-primary-700 text-xs font-medium"
         >
-          {tags.length > 0 ? '编辑标签' : '添加标签'}
+          {tags.length > 0 ? "编辑标签" : "添加标签"}
         </button>
       </div>
     </div>
   );
 }
 
-function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, isGenerating, onAnalyzeHealth, onShowHealthDetail, isAnalyzing }) {
+function StarListItem({
+  star,
+  onOpenTagModal,
+  onGenerateSummary,
+  onSaveSummary,
+  isGenerating,
+  onAnalyzeHealth,
+  onShowHealthDetail,
+  isAnalyzing,
+}) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
-  const color = repoMeta.color || '#3B82F6';
+  const color = repoMeta.color || "#3B82F6";
   const aiSummary = repoMeta.aiSummary;
   const healthScore = repoMeta.healthScore;
-  
+
   return (
     <div className="bg-surface-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -989,8 +1046,8 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
             )}
             {/* 健康度徽章 */}
             {healthScore && !isAnalyzing ? (
-              <HealthBadge 
-                healthScore={healthScore} 
+              <HealthBadge
+                healthScore={healthScore}
                 size="sm"
                 onClick={() => onShowHealthDetail(star)}
               />
@@ -1010,10 +1067,8 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
               </button>
             )}
           </div>
-          <p className="text-sm text-text-secondary mb-3">
-            {star.description || '暂无描述'}
-          </p>
-          
+          <p className="text-sm text-text-secondary mb-3">{star.description || "暂无描述"}</p>
+
           {/* AI 摘要 */}
           <div className="mb-3">
             <AISummary
@@ -1025,7 +1080,7 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
               editable={true}
             />
           </div>
-          
+
           {/* 标签显示 */}
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -1034,18 +1089,18 @@ function StarListItem({ star, onOpenTagModal, onGenerateSummary, onSaveSummary, 
               ))}
             </div>
           )}
-          
+
           <div className="flex items-center space-x-4 text-sm text-text-secondary">
             <span>⭐ {star.stargazersCount.toLocaleString()}</span>
             <span>🔀 {star.forksCount.toLocaleString()}</span>
-            <span>更新于 {new Date(star.updatedAt).toLocaleDateString('zh-CN')}</span>
+            <span>更新于 {new Date(star.updatedAt).toLocaleDateString("zh-CN")}</span>
           </div>
         </div>
         <button
           onClick={() => onOpenTagModal(star)}
           className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors shrink-0"
         >
-          {tags.length > 0 ? '编辑' : '添加标签'}
+          {tags.length > 0 ? "编辑" : "添加标签"}
         </button>
       </div>
     </div>

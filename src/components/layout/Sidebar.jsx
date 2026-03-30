@@ -1,7 +1,19 @@
-import { Search, Filter, Tag, Grid, List, SortAsc, SortDesc, Star, Calendar, Type, X } from 'lucide-react';
-import { useStarsStore, useUIStore } from '../../store';
-import { useEffect, useState } from 'react';
-import { useDebounce } from '../../utils/performance';
+import {
+  Search,
+  Filter,
+  Tag,
+  Grid,
+  List,
+  SortAsc,
+  SortDesc,
+  Star,
+  Calendar,
+  Type,
+  X,
+} from "lucide-react";
+import { useStarsStore, useUIStore } from "../../store";
+import { useEffect, useState } from "react";
+import { useDebounce } from "../../utils/performance";
 
 export default function Sidebar() {
   const {
@@ -54,8 +66,8 @@ export default function Sidebar() {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [sidebarOpen, setSidebarOpen]);
 
   // 移动端点击遮罩关闭侧边栏
@@ -72,7 +84,7 @@ export default function Sidebar() {
 
   const toggleLanguage = (lang) => {
     if (selectedLanguages.includes(lang)) {
-      setSelectedLanguages(selectedLanguages.filter(l => l !== lang));
+      setSelectedLanguages(selectedLanguages.filter((l) => l !== lang));
     } else {
       setSelectedLanguages([...selectedLanguages, lang]);
     }
@@ -80,7 +92,7 @@ export default function Sidebar() {
 
   const toggleTag = (tag) => {
     if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
     } else {
       setSelectedTags([...selectedTags, tag]);
     }
@@ -113,175 +125,180 @@ export default function Sidebar() {
             <X className="w-5 h-5 text-text-secondary" />
           </button>
         </div>
-      {/* Search Box */}
-      <div className="p-4 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
-          <input
-            type="text"
-            placeholder="搜索 repositories..."
-            value={localSearchQuery}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg text-body-sm text-text-primary placeholder:text-text-secondary focus-ring bg-surface"
-          />
-        </div>
-      </div>
-
-      {/* Result Count */}
-      <div className="px-4 py-3 bg-surface border-b border-border">
-        <p className="text-body-sm text-text-secondary">
-          显示 <span className="font-semibold text-text-primary">{filteredStars.length}</span> 个项目
-        </p>
-      </div>
-
-      {/* View Mode Toggle */}
-      <div className="px-4 py-3 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-body-sm font-medium text-text-primary">视图模式</span>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-fast focus-ring ${
-              viewMode === 'grid'
-                ? 'bg-primary/10 text-primary'
-                : 'bg-surface text-text-secondary hover:bg-surface-darker'
-            }`}
-          >
-            <Grid className="w-4 h-4" strokeWidth={1.5} />
-            <span className="text-body-sm">网格</span>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-fast focus-ring ${
-              viewMode === 'list'
-                ? 'bg-primary/10 text-primary'
-                : 'bg-surface text-text-secondary hover:bg-surface-darker'
-            }`}
-          >
-            <List className="w-4 h-4" strokeWidth={1.5} />
-            <span className="text-body-sm">列表</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sort Options */}
-      <div className="px-4 py-3 border-b border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-body-sm font-medium text-text-primary">排序方式</span>
-          <button
-            onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-            className="p-1 hover:bg-surface rounded transition-fast focus-ring"
-            title={sortDirection === 'asc' ? '升序' : '降序'}
-          >
-            {sortDirection === 'asc' ? (
-              <SortAsc className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
-            ) : (
-              <SortDesc className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
-            )}
-          </button>
-        </div>
-        <div className="space-y-1">
-          <button
-            onClick={() => setSortBy('updated')}
-            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
-              sortBy === 'updated'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-secondary hover:bg-surface'
-            }`}
-          >
-            <Calendar className="w-4 h-4" strokeWidth={1.5} />
-            <span>最近更新</span>
-          </button>
-          <button
-            onClick={() => setSortBy('stars')}
-            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
-              sortBy === 'stars'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-secondary hover:bg-surface'
-            }`}
-          >
-            <Star className="w-4 h-4" strokeWidth={1.5} />
-            <span>Star 数量</span>
-          </button>
-          <button
-            onClick={() => setSortBy('name')}
-            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
-              sortBy === 'name'
-                ? 'bg-primary/10 text-primary'
-                : 'text-text-secondary hover:bg-surface'
-            }`}
-          >
-            <Type className="w-4 h-4" strokeWidth={1.5} />
-            <span>项目名称</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Scroll Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* Language Filter */}
-        {languages.length > 0 && (
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center space-x-2 mb-3">
-              <Filter className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
-              <h3 className="text-body-sm font-medium text-text-primary">编程语言</h3>
-            </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-              {languages.map((lang) => (
-                <label key={lang} className="flex items-center space-x-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={selectedLanguages.includes(lang)}
-                    onChange={() => toggleLanguage(lang)}
-                    className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-fast"
-                  />
-                  <span className="text-body-sm text-text-secondary group-hover:text-text-primary transition-fast">{lang}</span>
-                </label>
-              ))}
-            </div>
-            {selectedLanguages.length > 0 && (
-              <button
-                onClick={() => setSelectedLanguages([])}
-                className="mt-2 text-caption text-primary hover:text-primary/80 transition-fast focus-ring rounded px-1"
-              >
-                清除筛选
-              </button>
-            )}
+        {/* Search Box */}
+        <div className="p-4 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
+            <input
+              type="text"
+              placeholder="搜索 repositories..."
+              value={localSearchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg text-body-sm text-text-primary placeholder:text-text-secondary focus-ring bg-surface"
+            />
           </div>
-        )}
+        </div>
 
-        {/* Tag Filter */}
-        {tags.length > 0 && (
-          <div className="p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Tag className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
-              <h3 className="text-body-sm font-medium text-text-primary">标签</h3>
-            </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-              {tags.map((tag) => (
-                <label key={tag} className="flex items-center space-x-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(tag)}
-                    onChange={() => toggleTag(tag)}
-                    className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-fast"
-                  />
-                  <span className="text-body-sm text-text-secondary group-hover:text-text-primary transition-fast">{tag}</span>
-                </label>
-              ))}
-            </div>
-            {selectedTags.length > 0 && (
-              <button
-                onClick={() => setSelectedTags([])}
-                className="mt-2 text-caption text-primary hover:text-primary/80 transition-fast focus-ring rounded px-1"
-              >
-                清除筛选
-              </button>
-            )}
+        {/* Result Count */}
+        <div className="px-4 py-3 bg-surface border-b border-border">
+          <p className="text-body-sm text-text-secondary">
+            显示 <span className="font-semibold text-text-primary">{filteredStars.length}</span>{" "}
+            个项目
+          </p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-body-sm font-medium text-text-primary">视图模式</span>
           </div>
-        )}
-      </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-fast focus-ring ${
+                viewMode === "grid"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-surface text-text-secondary hover:bg-surface-darker"
+              }`}
+            >
+              <Grid className="w-4 h-4" strokeWidth={1.5} />
+              <span className="text-body-sm">网格</span>
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-fast focus-ring ${
+                viewMode === "list"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-surface text-text-secondary hover:bg-surface-darker"
+              }`}
+            >
+              <List className="w-4 h-4" strokeWidth={1.5} />
+              <span className="text-body-sm">列表</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Sort Options */}
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-body-sm font-medium text-text-primary">排序方式</span>
+            <button
+              onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+              className="p-1 hover:bg-surface rounded transition-fast focus-ring"
+              title={sortDirection === "asc" ? "升序" : "降序"}
+            >
+              {sortDirection === "asc" ? (
+                <SortAsc className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+              ) : (
+                <SortDesc className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
+          <div className="space-y-1">
+            <button
+              onClick={() => setSortBy("updated")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
+                sortBy === "updated"
+                  ? "bg-primary/10 text-primary"
+                  : "text-text-secondary hover:bg-surface"
+              }`}
+            >
+              <Calendar className="w-4 h-4" strokeWidth={1.5} />
+              <span>最近更新</span>
+            </button>
+            <button
+              onClick={() => setSortBy("stars")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
+                sortBy === "stars"
+                  ? "bg-primary/10 text-primary"
+                  : "text-text-secondary hover:bg-surface"
+              }`}
+            >
+              <Star className="w-4 h-4" strokeWidth={1.5} />
+              <span>Star 数量</span>
+            </button>
+            <button
+              onClick={() => setSortBy("name")}
+              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast focus-ring ${
+                sortBy === "name"
+                  ? "bg-primary/10 text-primary"
+                  : "text-text-secondary hover:bg-surface"
+              }`}
+            >
+              <Type className="w-4 h-4" strokeWidth={1.5} />
+              <span>项目名称</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Scroll Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {/* Language Filter */}
+          {languages.length > 0 && (
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center space-x-2 mb-3">
+                <Filter className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+                <h3 className="text-body-sm font-medium text-text-primary">编程语言</h3>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                {languages.map((lang) => (
+                  <label key={lang} className="flex items-center space-x-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedLanguages.includes(lang)}
+                      onChange={() => toggleLanguage(lang)}
+                      className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-fast"
+                    />
+                    <span className="text-body-sm text-text-secondary group-hover:text-text-primary transition-fast">
+                      {lang}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {selectedLanguages.length > 0 && (
+                <button
+                  onClick={() => setSelectedLanguages([])}
+                  className="mt-2 text-caption text-primary hover:text-primary/80 transition-fast focus-ring rounded px-1"
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Tag Filter */}
+          {tags.length > 0 && (
+            <div className="p-4">
+              <div className="flex items-center space-x-2 mb-3">
+                <Tag className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+                <h3 className="text-body-sm font-medium text-text-primary">标签</h3>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                {tags.map((tag) => (
+                  <label key={tag} className="flex items-center space-x-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={selectedTags.includes(tag)}
+                      onChange={() => toggleTag(tag)}
+                      className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-fast"
+                    />
+                    <span className="text-body-sm text-text-secondary group-hover:text-text-primary transition-fast">
+                      {tag}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="mt-2 text-caption text-primary hover:text-primary/80 transition-fast focus-ring rounded px-1"
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

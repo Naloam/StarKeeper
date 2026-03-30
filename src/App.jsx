@@ -1,25 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { useAuthStore } from './store';
-import LoginPage from './pages/LoginPage';
-import CallbackPage from './pages/CallbackPage';
-import DashboardPage from './pages/DashboardPage';
-import CleanupPage from './pages/CleanupPage';
-import DeduplicationPage from './pages/DeduplicationPage';
-import SharePage from './pages/SharePage';
-import ErrorBoundary from './components/common/ErrorBoundary';
-import PWAInstallPrompt from './components/common/PWAInstallPrompt';
-import OfflineIndicator from './components/common/OfflineIndicator';
-import { useEffect, useState } from 'react';
-import { validateGitHubToken } from './utils/auth';
-import { setupNetworkListener } from './utils/toast';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { useAuthStore } from "./store";
+import LoginPage from "./pages/LoginPage";
+import CallbackPage from "./pages/CallbackPage";
+import DashboardPage from "./pages/DashboardPage";
+import CleanupPage from "./pages/CleanupPage";
+import DeduplicationPage from "./pages/DeduplicationPage";
+import SharePage from "./pages/SharePage";
+import ErrorBoundary from "./components/common/ErrorBoundary";
+import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
+import OfflineIndicator from "./components/common/OfflineIndicator";
+import { useEffect, useState } from "react";
+import { validateGitHubToken } from "./utils/auth";
+import { setupNetworkListener } from "./utils/toast";
 
 function App() {
   const { isAuthenticated, accessToken, login, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
-
-  console.log('🚀 App 组件已加载');
-  console.log('🔑 认证状态:', isAuthenticated);
 
   // 设置网络状态监听
   useEffect(() => {
@@ -28,51 +25,35 @@ function App() {
 
   // 应用启动时检查 store 中的 token
   useEffect(() => {
-    console.log('⚡ useEffect 执行 - 检查 token');
     const initAuth = async () => {
       // 从 zustand store 获取 token（已经 persist）
       const token = accessToken;
-      console.log('🎫 Store 中的 token:', token ? '存在' : '不存在');
-      
+
       if (token) {
         try {
-          console.log('🔍 验证 token...');
           const result = await validateGitHubToken(token);
-          
+
           if (result.valid) {
-            console.log('✅ Token 验证成功:', result.user.login);
             // Token 有效，更新用户信息（如果需要）
             if (!isAuthenticated) {
               login(result.user, token);
             }
           } else {
-            console.warn('❌ Token 验证失败:', result.error);
-            // Token 无效，清除所有数据
+            // Token 无效，通过 zustand 的 logout 清除数据
             logout();
-            
-            // 清除 zustand persist 数据
-            localStorage.removeItem('starkeeper-auth');
-            
-            // 显示友好提示
-            if (result.error.includes('无效') || result.error.includes('过期')) {
-              console.log('🧹 已清除失效的 Token，请重新登录');
-            }
           }
         } catch (error) {
-          console.error('❌ Token 验证异常:', error);
-          // 验证失败，清除 token
+          console.error("Token 验证异常:", error);
           logout();
-          localStorage.removeItem('starkeeper-auth');
         }
       }
-      
+
       setIsChecking(false);
     };
-    
-    initAuth();
-  }, []); // 只在组件挂载时运行一次
 
-  console.log('📍 准备渲染路由，isAuthenticated:', isAuthenticated);
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 显示加载状态
   if (isChecking) {
@@ -111,13 +92,13 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
-      
+
       {/* PWA 安装提示 */}
       <PWAInstallPrompt />
-      
+
       {/* 离线状态指示器 */}
       <OfflineIndicator />
-      
+
       {/* Toast 通知组件 */}
       <Toaster
         position="top-right"
@@ -127,26 +108,26 @@ function App() {
           // 默认配置
           duration: 4000,
           style: {
-            background: '#fff',
-            color: '#363636',
-            borderRadius: '12px',
-            padding: '16px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-            maxWidth: '500px',
+            background: "#fff",
+            color: "#363636",
+            borderRadius: "12px",
+            padding: "16px",
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+            maxWidth: "500px",
           },
           // 成功样式
           success: {
             iconTheme: {
-              primary: '#10B981',
-              secondary: '#fff',
+              primary: "#10B981",
+              secondary: "#fff",
             },
           },
           // 错误样式
           error: {
             duration: 5000,
             iconTheme: {
-              primary: '#EF4444',
-              secondary: '#fff',
+              primary: "#EF4444",
+              secondary: "#fff",
             },
           },
         }}

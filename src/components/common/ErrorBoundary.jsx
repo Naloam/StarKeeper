@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import React from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
 /**
  * ErrorBoundary 组件
@@ -23,10 +23,10 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // 记录错误到控制台
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+
     // 更新状态
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       error,
       errorInfo,
       errorCount: prevState.errorCount + 1,
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   render() {
@@ -61,20 +61,14 @@ class ErrorBoundary extends React.Component {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-4">
                 <AlertTriangle className="w-10 h-10 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                哎呀，出错了！
-              </h1>
-              <p className="text-white/90 text-lg">
-                应用遇到了一个意外的错误
-              </p>
+              <h1 className="text-3xl font-bold text-white mb-2">哎呀，出错了！</h1>
+              <p className="text-white/90 text-lg">应用遇到了一个意外的错误</p>
             </div>
 
             {/* 错误详情区域 */}
             <div className="p-8">
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-text-primary mb-3">
-                  发生了什么？
-                </h2>
+                <h2 className="text-xl font-semibold text-text-primary mb-3">发生了什么？</h2>
                 <p className="text-text-secondary leading-relaxed">
                   我们的应用遇到了一个意外的问题。这可能是由于网络问题、数据加载失败或程序错误导致的。
                   您可以尝试刷新页面或返回首页。
@@ -95,18 +89,14 @@ class ErrorBoundary extends React.Component {
                     </div>
                     {errorInfo && errorInfo.componentStack && (
                       <div>
-                        <p className="text-xs text-danger-text mb-2 font-semibold">
-                          组件堆栈：
-                        </p>
+                        <p className="text-xs text-danger-text mb-2 font-semibold">组件堆栈：</p>
                         <pre className="text-xs text-danger-text font-mono whitespace-pre-wrap">
                           {errorInfo.componentStack}
                         </pre>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-text-muted mt-2">
-                    错误次数: {errorCount}
-                  </p>
+                  <p className="text-xs text-text-muted mt-2">错误次数: {errorCount}</p>
                 </div>
               )}
 
@@ -130,9 +120,7 @@ class ErrorBoundary extends React.Component {
 
               {/* 帮助信息 */}
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-blue-800 mb-2">
-                  💡 提示
-                </h4>
+                <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 提示</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• 检查您的网络连接是否正常</li>
                   <li>• 清除浏览器缓存并重新加载页面</li>

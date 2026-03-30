@@ -1,4 +1,4 @@
-import { GITHUB_CONFIG } from '../config';
+import { GITHUB_CONFIG } from "../config";
 
 /**
  * 生成 GitHub OAuth 授权 URL
@@ -8,10 +8,10 @@ export function getGitHubAuthUrl() {
   const params = new URLSearchParams({
     client_id: GITHUB_CONFIG.clientId,
     redirect_uri: GITHUB_CONFIG.redirectUri,
-    scope: GITHUB_CONFIG.scopes.join(' '),
+    scope: GITHUB_CONFIG.scopes.join(" "),
     state: generateRandomState(),
   });
-  
+
   return `https://github.com/login/oauth/authorize?${params.toString()}`;
 }
 
@@ -21,7 +21,7 @@ export function getGitHubAuthUrl() {
  */
 function generateRandomState() {
   const state = Math.random().toString(36).substring(2, 15);
-  sessionStorage.setItem('github_oauth_state', state);
+  sessionStorage.setItem("github_oauth_state", state);
   return state;
 }
 
@@ -31,8 +31,8 @@ function generateRandomState() {
  * @returns {boolean}
  */
 export function validateState(state) {
-  const savedState = sessionStorage.getItem('github_oauth_state');
-  sessionStorage.removeItem('github_oauth_state');
+  const savedState = sessionStorage.getItem("github_oauth_state");
+  sessionStorage.removeItem("github_oauth_state");
   return state === savedState;
 }
 
@@ -44,10 +44,10 @@ export function validateState(state) {
 export function parseOAuthCallback(url) {
   const params = new URLSearchParams(new URL(url).search);
   return {
-    code: params.get('code'),
-    state: params.get('state'),
-    error: params.get('error'),
-    errorDescription: params.get('error_description'),
+    code: params.get("code"),
+    state: params.get("state"),
+    error: params.get("error"),
+    errorDescription: params.get("error_description"),
   };
 }
 
@@ -61,12 +61,12 @@ export function parseOAuthCallback(url) {
 export async function exchangeCodeForToken(code) {
   // TODO: 实现后端 API endpoint
   // 因为 GitHub OAuth 需要 client_secret，不能在前端直接调用
-  
+
   // 临时方案：使用 GitHub OAuth Proxy 或者 Serverless Function
   // 这里返回模拟数据，实际需要替换
-  
-  throw new Error('此功能需要后端支持。请先配置 GitHub OAuth App 并创建后端 API。');
-  
+
+  throw new Error("此功能需要后端支持。请先配置 GitHub OAuth App 并创建后端 API。");
+
   // 实际实现示例：
   // const response = await fetch('/api/auth/github/callback', {
   //   method: 'POST',
@@ -84,7 +84,7 @@ export async function exchangeCodeForToken(code) {
 export async function refreshAccessToken(refreshToken) {
   // GitHub 的 OAuth token 不会过期，所以通常不需要刷新
   // 如果需要撤销访问，用户需要在 GitHub 设置中手动撤销
-  throw new Error('GitHub OAuth tokens do not expire');
+  throw new Error("GitHub OAuth tokens do not expire");
 }
 
 /**
@@ -95,8 +95,8 @@ export async function refreshAccessToken(refreshToken) {
 export async function revokeAccessToken(accessToken) {
   // 这个操作也需要在后端完成
   // 调用 GitHub API: DELETE https://api.github.com/applications/{client_id}/token
-  
-  throw new Error('此功能需要后端支持');
+
+  throw new Error("此功能需要后端支持");
 }
 
 /**
@@ -106,7 +106,7 @@ export async function revokeAccessToken(accessToken) {
 export function storeToken(token) {
   // 简单的 base64 编码（实际应该使用更安全的加密）
   const encoded = btoa(token);
-  localStorage.setItem('github_token', encoded);
+  localStorage.setItem("github_token", encoded);
 }
 
 /**
@@ -114,13 +114,13 @@ export function storeToken(token) {
  * @returns {string|null}
  */
 export function getStoredToken() {
-  const encoded = localStorage.getItem('github_token');
+  const encoded = localStorage.getItem("github_token");
   if (!encoded) return null;
-  
+
   try {
     return atob(encoded);
   } catch (error) {
-    console.error('Failed to decode token:', error);
+    console.error("Failed to decode token:", error);
     return null;
   }
 }
@@ -129,7 +129,7 @@ export function getStoredToken() {
  * 清除存储的 token
  */
 export function clearStoredToken() {
-  localStorage.removeItem('github_token');
+  localStorage.removeItem("github_token");
 }
 
 /**
@@ -139,11 +139,11 @@ export function clearStoredToken() {
  */
 export async function validateGitHubToken(token) {
   try {
-    const response = await fetch('https://api.github.com/user', {
+    const response = await fetch("https://api.github.com/user", {
       headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
     });
 
     if (response.ok) {
@@ -152,17 +152,17 @@ export async function validateGitHubToken(token) {
     }
 
     if (response.status === 401) {
-      return { valid: false, error: 'Token 无效或已过期' };
+      return { valid: false, error: "Token 无效或已过期" };
     }
 
     if (response.status === 403) {
-      return { valid: false, error: 'Token 权限不足或已被限制' };
+      return { valid: false, error: "Token 权限不足或已被限制" };
     }
 
     return { valid: false, error: `验证失败: ${response.status}` };
   } catch (error) {
-    console.error('Token validation error:', error);
-    return { valid: false, error: '网络错误，无法验证 Token' };
+    console.error("Token validation error:", error);
+    return { valid: false, error: "网络错误，无法验证 Token" };
   }
 }
 

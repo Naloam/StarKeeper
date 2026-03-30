@@ -5,66 +5,66 @@
 /* Design Tokens: Natural paper-texture minimal system */
 :root {
   /* Natural Colors */
-  --color-primary: #7A8B7F;
-  --color-primary-50: #F5F7F6;
-  --color-primary-100: #E8EBE9;
-  --color-primary-200: #D1D7D3;
-  --color-primary-300: #BAC3BD;
-  --color-primary-400: #A3AFA7;
-  --color-primary-500: #7A8B7F;
+  --color-primary: #7a8b7f;
+  --color-primary-50: #f5f7f6;
+  --color-primary-100: #e8ebe9;
+  --color-primary-200: #d1d7d3;
+  --color-primary-300: #bac3bd;
+  --color-primary-400: #a3afa7;
+  --color-primary-500: #7a8b7f;
   --color-primary-600: #627066;
-  --color-primary-700: #49544D;
+  --color-primary-700: #49544d;
   --color-primary-800: #313833;
-  --color-primary-900: #181C1A;
+  --color-primary-900: #181c1a;
 
-  --color-surface: #FAF9F7;
-  --color-background: #FAF9F7;
-  --color-surface-darker: #F5F3F0;
-  --color-surface-card: #FEFDFB;
+  --color-surface: #faf9f7;
+  --color-background: #faf9f7;
+  --color-surface-darker: #f5f3f0;
+  --color-surface-card: #fefdfb;
 
-  --color-text-primary: #2B2B2B;
-  --color-text-secondary: #6B6B6B;
-  --color-text-tertiary: #9B9B9B;
-  --color-text-muted: #B8B8B8;
+  --color-text-primary: #2b2b2b;
+  --color-text-secondary: #6b6b6b;
+  --color-text-tertiary: #9b9b9b;
+  --color-text-muted: #b8b8b8;
 
-  --color-border: #E8E6E3;
-  --color-border-light: #F0EEEB;
-  --color-border-dark: #D6D4D1;
-  
+  --color-border: #e8e6e3;
+  --color-border-light: #f0eeeb;
+  --color-border-dark: #d6d4d1;
+
   /* Natural Accents */
-  --color-accent-sand: #D4C5B3;
-  --color-accent-olive: #A8B5A0;
-  --color-accent-smoke: #B8C5D0;
-  --color-accent-wheat: #E8D8C0;
-  --color-accent-stone: #C8BFBA;
+  --color-accent-sand: #d4c5b3;
+  --color-accent-olive: #a8b5a0;
+  --color-accent-smoke: #b8c5d0;
+  --color-accent-wheat: #e8d8c0;
+  --color-accent-stone: #c8bfba;
 
   /* Semantic Colors */
-  --color-success: #6B8E6F;
-  --color-success-light: #E8F0E9;
-  --color-success-text: #4A6B4D;
+  --color-success: #6b8e6f;
+  --color-success-light: #e8f0e9;
+  --color-success-text: #4a6b4d;
 
-  --color-warning: #C9A66B;
-  --color-warning-light: #F7F0E6;
-  --color-warning-text: #8B7447;
+  --color-warning: #c9a66b;
+  --color-warning-light: #f7f0e6;
+  --color-warning-text: #8b7447;
 
-  --color-danger: #B87A7A;
-  --color-danger-light: #F5EDED;
-  --color-danger-text: #8B5656;
+  --color-danger: #b87a7a;
+  --color-danger-light: #f5eded;
+  --color-danger-text: #8b5656;
 
-  --color-info: #7A8B9F;
-  --color-info-light: #E9EDF1;
-  --color-info-text: #5A6B7F;
-  
+  --color-info: #7a8b9f;
+  --color-info-light: #e9edf1;
+  --color-info-text: #5a6b7f;
+
   /* Shadows - soft and natural */
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-paper: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
-  
+
   /* Animation */
   --transition-fast: 120ms ease-out;
   --transition-normal: 200ms ease-out;
   --transition-gentle: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* Border */
   --radius-soft: 16px;
   --radius-gentle: 20px;
@@ -74,55 +74,55 @@
 
 .dark {
   /* Dark Mode Colors */
-  --color-primary: #7A8B7F;
-  --color-primary-50: #181C1A;
+  --color-primary: #7a8b7f;
+  --color-primary-50: #181c1a;
   --color-primary-100: #313833;
-  --color-primary-200: #49544D;
+  --color-primary-200: #49544d;
   --color-primary-300: #627066;
-  --color-primary-400: #7A8B7F;
-  --color-primary-500: #A3AFA7;
-  --color-primary-600: #BAC3BD;
-  --color-primary-700: #D1D7D3;
-  --color-primary-800: #E8EBE9;
-  --color-primary-900: #F5F7F6;
+  --color-primary-400: #7a8b7f;
+  --color-primary-500: #a3afa7;
+  --color-primary-600: #bac3bd;
+  --color-primary-700: #d1d7d3;
+  --color-primary-800: #e8ebe9;
+  --color-primary-900: #f5f7f6;
 
   --color-surface: #121212;
   --color-background: #121212;
-  --color-surface-darker: #0A0A0A;
-  --color-surface-card: #1E1E1E;
+  --color-surface-darker: #0a0a0a;
+  --color-surface-card: #1e1e1e;
 
-  --color-text-primary: #E0E0E0;
-  --color-text-secondary: #A0A0A0;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #a0a0a0;
   --color-text-tertiary: #707070;
   --color-text-muted: #505050;
 
   --color-border: #333333;
-  --color-border-light: #2A2A2A;
+  --color-border-light: #2a2a2a;
   --color-border-dark: #444444;
 
   /* Accents */
-  --color-accent-sand: #8D8377;
-  --color-accent-olive: #70796B;
-  --color-accent-smoke: #7A838A;
-  --color-accent-wheat: #9A9080;
-  --color-accent-stone: #857F7C;
+  --color-accent-sand: #8d8377;
+  --color-accent-olive: #70796b;
+  --color-accent-smoke: #7a838a;
+  --color-accent-wheat: #9a9080;
+  --color-accent-stone: #857f7c;
 
   /* Semantic Colors */
-  --color-success: #6B8E6F;
-  --color-success-light: #1E2A20;
-  --color-success-text: #A3CFA7;
+  --color-success: #6b8e6f;
+  --color-success-light: #1e2a20;
+  --color-success-text: #a3cfa7;
 
-  --color-warning: #C9A66B;
-  --color-warning-light: #2A2418;
-  --color-warning-text: #E0C899;
+  --color-warning: #c9a66b;
+  --color-warning-light: #2a2418;
+  --color-warning-text: #e0c899;
 
-  --color-danger: #B87A7A;
-  --color-danger-light: #2A1C1C;
-  --color-danger-text: #E0A0A0;
+  --color-danger: #b87a7a;
+  --color-danger-light: #2a1c1c;
+  --color-danger-text: #e0a0a0;
 
-  --color-info: #7A8B9F;
-  --color-info-light: #1C222A;
-  --color-info-text: #A0B5CF;
+  --color-info: #7a8b9f;
+  --color-info-light: #1c222a;
+  --color-info-text: #a0b5cf;
 
   /* Shadows */
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -134,7 +134,13 @@
   /* Typography base styles with natural feel */
   body {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
     font-size: 16px;
     line-height: 1.7; /* 更宽松的行距 */
     font-weight: 400;
@@ -143,22 +149,27 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: 0.01em; /* 微妙的字间距 */
-    
+
     /* 纸张纹理背景 */
-    background-image: 
-      url('data:image/svg+xml,%3Csvg width="200" height="200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" /%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23noise)" opacity="0.02" /%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg width="200" height="200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" /%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23noise)" opacity="0.02" /%3E%3C/svg%3E');
     background-attachment: fixed;
   }
 
   code {
-    font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-family:
+      "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
     background-color: rgba(122, 139, 127, 0.08); /* 淡橄榄背景 */
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.9em;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 600;
     letter-spacing: -0.015em;
     color: var(--color-text-primary);
@@ -207,12 +218,13 @@
   .card {
     @apply bg-surface-card border border-border rounded-soft p-6;
     box-shadow: var(--shadow-card);
-    transition: box-shadow var(--transition-gentle), transform var(--transition-gentle);
+    transition:
+      box-shadow var(--transition-gentle),
+      transform var(--transition-gentle);
     position: relative;
-    
+
     /* 细微的纸张纹理 */
-    background-image: 
-      url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="paper"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23paper)" opacity="0.015" /%3E%3C/svg%3E');
+    background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="paper"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23paper)" opacity="0.015" /%3E%3C/svg%3E');
   }
 
   .card:hover {
@@ -237,24 +249,26 @@
     box-shadow: var(--shadow-subtle);
     transform: translateY(-1px);
   }
-  
+
   /* 手绘感装饰线 */
   .decorative-line {
     position: relative;
   }
-  
+
   .decorative-line::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -4px;
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      var(--color-primary) 30%, 
-      var(--color-primary) 70%, 
-      transparent 100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-primary) 30%,
+      var(--color-primary) 70%,
+      transparent 100%
+    );
     opacity: 0.3;
     border-radius: 2px;
   }
@@ -265,7 +279,7 @@
   .text-display-1 {
     @apply text-display-1;
   }
-  
+
   .text-display-2 {
     @apply text-display-2;
   }
@@ -284,7 +298,7 @@
     .text-display-1 {
       @apply text-5xl;
     }
-    
+
     .text-display-2 {
       @apply text-4xl;
     }
@@ -294,7 +308,7 @@
     .text-display-1 {
       @apply text-3xl;
     }
-    
+
     .text-display-2 {
       @apply text-2xl;
     }
@@ -313,11 +327,7 @@
 
 .loading-shimmer {
   animation: shimmer 1.2s ease-in-out infinite;
-  background: linear-gradient(to right, 
-    #FAF9F7 0%, 
-    #F5F3F0 20%, 
-    #FAF9F7 40%, 
-    #FAF9F7 100%);
+  background: linear-gradient(to right, #faf9f7 0%, #f5f3f0 20%, #faf9f7 40%, #faf9f7 100%);
   background-size: 800px 104px;
   position: relative;
   overflow: hidden;
@@ -329,26 +339,30 @@
 }
 
 .paper-edge::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(122, 139, 127, 0.1) 50%, 
-    transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(122, 139, 127, 0.1) 50%,
+    transparent 100%
+  );
 }
 
 /* 柔和的分割线 */
 .natural-divider {
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    var(--color-border) 20%, 
-    var(--color-border) 80%, 
-    transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-border) 20%,
+    var(--color-border) 80%,
+    transparent 100%
+  );
   margin: 2rem 0;
   opacity: 0.6;
 }

@@ -1,6 +1,6 @@
 /**
  * 健康度分析服务
- * 
+ *
  * 健康度评分算法:
  * - 总分 0-100
  * - 活跃度 (40分): commits + releases + 更新时间
@@ -8,7 +8,7 @@
  * - 维护状态 (30分): 未archived + 有CI + README更新
  */
 
-import { getRepoReleases, getRepoActivity, getRepoCIStatus } from './github.service';
+import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
 
 /**
  * 计算项目健康度评分
@@ -57,7 +57,7 @@ export async function calculateHealthScore(accessToken, repo) {
 
     // 计算距今天数
     const daysSinceUpdate = Math.floor(
-      (Date.now() - new Date(repo.pushedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(repo.pushedAt).getTime()) / (1000 * 60 * 60 * 24),
     );
 
     const result = {
@@ -90,7 +90,7 @@ export async function calculateHealthScore(accessToken, repo) {
       activity: 0,
       community: 0,
       maintenance: 0,
-      level: 'critical',
+      level: "critical",
       details: {},
       error: error.message,
       calculatedAt: new Date().toISOString(),
@@ -119,7 +119,7 @@ function calculateActivityScore(data) {
   const { latestRelease } = data;
   if (latestRelease) {
     const daysSinceRelease = Math.floor(
-      (Date.now() - new Date(latestRelease.publishedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(latestRelease.publishedAt).getTime()) / (1000 * 60 * 60 * 24),
     );
     if (daysSinceRelease <= 30) score += 15;
     else if (daysSinceRelease <= 90) score += 12;
@@ -130,7 +130,7 @@ function calculateActivityScore(data) {
 
   // 3. 最后更新时间 (10分)
   const daysSinceUpdate = Math.floor(
-    (Date.now() - new Date(data.pushedAt).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(data.pushedAt).getTime()) / (1000 * 60 * 60 * 24),
   );
   if (daysSinceUpdate <= 7) score += 10;
   else if (daysSinceUpdate <= 30) score += 8;
@@ -197,7 +197,7 @@ function calculateMaintenanceScore(data) {
 
   // 3. README/代码最近更新 (5分)
   const daysSinceUpdate = Math.floor(
-    (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24),
   );
   if (daysSinceUpdate <= 30) score += 5;
   else if (daysSinceUpdate <= 90) score += 4;
@@ -213,11 +213,11 @@ function calculateMaintenanceScore(data) {
  * @returns {string} - excellent | good | fair | poor | critical
  */
 function getHealthLevel(score) {
-  if (score >= 80) return 'excellent'; // 优秀
-  if (score >= 60) return 'good';      // 良好
-  if (score >= 40) return 'fair';      // 一般
-  if (score >= 20) return 'poor';      // 较差
-  return 'critical';                   // 危险
+  if (score >= 80) return "excellent"; // 优秀
+  if (score >= 60) return "good"; // 良好
+  if (score >= 40) return "fair"; // 一般
+  if (score >= 20) return "poor"; // 较差
+  return "critical"; // 危险
 }
 
 /**
@@ -230,7 +230,7 @@ export function detectStaleRepo(repo, healthScore) {
   // 条件: 健康度 < 30 且最后更新 > 365天
   if (healthScore.score < 30) {
     const daysSinceUpdate = Math.floor(
-      (Date.now() - new Date(repo.pushedAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(repo.pushedAt).getTime()) / (1000 * 60 * 60 * 24),
     );
     return daysSinceUpdate > 365;
   }
@@ -245,40 +245,40 @@ export function detectStaleRepo(repo, healthScore) {
  */
 export function analyzeActivity(repo, healthScore) {
   const { score, details } = healthScore;
-  let trend = 'stable';
-  let recommendation = '';
+  let trend = "stable";
+  let recommendation = "";
 
   // 判断趋势
   if (details.archived) {
-    trend = 'archived';
-    recommendation = '该项目已被归档，不再维护。建议寻找替代方案。';
+    trend = "archived";
+    recommendation = "该项目已被归档，不再维护。建议寻找替代方案。";
   } else if (score >= 80) {
-    trend = 'thriving';
-    recommendation = '项目非常活跃，社区健康，可以放心使用。';
+    trend = "thriving";
+    recommendation = "项目非常活跃，社区健康，可以放心使用。";
   } else if (score >= 60) {
-    trend = 'healthy';
-    recommendation = '项目维护良好，建议继续关注。';
+    trend = "healthy";
+    recommendation = "项目维护良好，建议继续关注。";
   } else if (score >= 40) {
-    trend = 'declining';
-    recommendation = '项目活跃度下降，建议评估是否继续使用。';
+    trend = "declining";
+    recommendation = "项目活跃度下降，建议评估是否继续使用。";
   } else if (score >= 20) {
-    trend = 'stale';
-    recommendation = '项目更新缓慢，建议寻找更活跃的替代方案。';
+    trend = "stale";
+    recommendation = "项目更新缓慢，建议寻找更活跃的替代方案。";
   } else {
-    trend = 'abandoned';
-    recommendation = '项目疑似废弃，强烈建议迁移到其他方案。';
+    trend = "abandoned";
+    recommendation = "项目疑似废弃，强烈建议迁移到其他方案。";
   }
 
   // 额外建议
   const suggestions = [];
   if (details.daysSinceLastUpdate > 180) {
-    suggestions.push('超过6个月未更新');
+    suggestions.push("超过6个月未更新");
   }
   if (!details.hasCI) {
-    suggestions.push('缺少自动化测试');
+    suggestions.push("缺少自动化测试");
   }
   if (details.openIssues > 200) {
-    suggestions.push('积压的 Issues 较多');
+    suggestions.push("积压的 Issues 较多");
   }
 
   return {
@@ -315,7 +315,7 @@ export async function batchCalculateHealthScore(accessToken, repos, onProgress) 
       }
 
       // 避免速率限制，每个请求间隔 500ms
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error(`批量分析失败: ${repo.fullName}`, error);
       // 继续处理下一个

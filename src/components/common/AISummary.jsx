@@ -1,20 +1,20 @@
-import { Sparkles, RefreshCw, Edit2, Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, RefreshCw, Edit2, Check, X } from "lucide-react";
+import { useState } from "react";
 
 /**
  * AI 摘要展示组件
  * 用于显示项目的 AI 生成摘要
  */
-export default function AISummary({ 
-  summary, 
-  onGenerate, 
-  onRegenerate, 
+export default function AISummary({
+  summary,
+  onGenerate,
+  onRegenerate,
   onSave,
   loading = false,
-  editable = false
+  editable = false,
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedSummary, setEditedSummary] = useState(summary?.summary || '');
+  const [editedSummary, setEditedSummary] = useState(summary?.summary || "");
 
   const handleSave = async () => {
     if (onSave && editedSummary.trim()) {
@@ -26,8 +26,8 @@ export default function AISummary({
         });
         setIsEditing(false);
       } catch (error) {
-        console.error('保存摘要失败:', error);
-        alert('保存失败：' + error.message);
+        console.error("保存摘要失败:", error);
+        alert("保存失败：" + error.message);
       }
     } else {
       setIsEditing(false);
@@ -35,7 +35,7 @@ export default function AISummary({
   };
 
   const handleCancel = () => {
-    setEditedSummary(summary?.summary || '');
+    setEditedSummary(summary?.summary || "");
     setIsEditing(false);
   };
 
@@ -93,7 +93,6 @@ export default function AISummary({
   // 显示摘要内容
   return (
     <div className="card hover:shadow-card-hover transition-fast">
-      
       {/* 头部：图标 + 操作按钮 */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
@@ -159,7 +158,9 @@ export default function AISummary({
       {/* 功能点 */}
       {summary?.features && summary.features.length > 0 && (
         <div className="mb-3">
-          <h4 className="text-caption font-bold text-text-primary mb-2 uppercase tracking-wide">主要功能</h4>
+          <h4 className="text-caption font-bold text-text-primary mb-2 uppercase tracking-wide">
+            主要功能
+          </h4>
           <ul className="space-y-1.5">
             {summary.features.map((feature, index) => (
               <li key={index} className="text-caption text-text-secondary flex items-start">
@@ -182,7 +183,7 @@ export default function AISummary({
         {summary?.techStack && summary.techStack.length > 0 && (
           <div className="bg-surface rounded-lg p-2">
             <span className="font-bold text-text-primary">🔧 技术栈：</span>
-            <span className="text-text-secondary ml-1">{summary.techStack.join(', ')}</span>
+            <span className="text-text-secondary ml-1">{summary.techStack.join(", ")}</span>
           </div>
         )}
       </div>
@@ -190,7 +191,7 @@ export default function AISummary({
       {/* 时间戳 */}
       {summary?.timestamp && (
         <p className="text-caption text-text-tertiary mt-3">
-          生成于 {new Date(summary.timestamp).toLocaleString('zh-CN')}
+          生成于 {new Date(summary.timestamp).toLocaleString("zh-CN")}
         </p>
       )}
     </div>

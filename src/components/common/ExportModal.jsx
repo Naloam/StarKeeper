@@ -1,17 +1,17 @@
-import { X, Download, FileText, Table, Code } from 'lucide-react';
-import { useState } from 'react';
-import { 
-  exportAndDownloadMarkdown, 
-  exportAndDownloadCSV, 
+import { X, Download, FileText, Table, Code } from "lucide-react";
+import { useState } from "react";
+import {
+  exportAndDownloadMarkdown,
+  exportAndDownloadCSV,
   exportAndDownloadJSON,
-  getExportStats 
-} from '../../services/export.service';
+  getExportStats,
+} from "../../services/export.service";
 
 /**
  * 导出模态框组件
  */
 export default function ExportModal({ isOpen, onClose, stars, metadata }) {
-  const [selectedFormat, setSelectedFormat] = useState('markdown');
+  const [selectedFormat, setSelectedFormat] = useState("markdown");
   const [isExporting, setIsExporting] = useState(false);
 
   if (!isOpen) return null;
@@ -20,58 +20,58 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
 
   const formats = [
     {
-      id: 'markdown',
-      name: 'Markdown',
+      id: "markdown",
+      name: "Markdown",
       icon: FileText,
-      description: '按标签分类，包含 AI 摘要和笔记',
-      extension: '.md',
-      color: 'blue',
+      description: "按标签分类，包含 AI 摘要和笔记",
+      extension: ".md",
+      color: "blue",
     },
     {
-      id: 'csv',
-      name: 'CSV',
+      id: "csv",
+      name: "CSV",
       icon: Table,
-      description: '表格格式，适合 Excel 打开',
-      extension: '.csv',
-      color: 'green',
+      description: "表格格式，适合 Excel 打开",
+      extension: ".csv",
+      color: "green",
     },
     {
-      id: 'json',
-      name: 'JSON',
+      id: "json",
+      name: "JSON",
       icon: Code,
-      description: '完整数据，包含所有元数据',
-      extension: '.json',
-      color: 'purple',
+      description: "完整数据，包含所有元数据",
+      extension: ".json",
+      color: "purple",
     },
   ];
 
   const handleExport = () => {
     setIsExporting(true);
-    
+
     setTimeout(() => {
       try {
         switch (selectedFormat) {
-          case 'markdown':
+          case "markdown":
             exportAndDownloadMarkdown(stars, metadata);
             break;
-          case 'csv':
+          case "csv":
             exportAndDownloadCSV(stars, metadata);
             break;
-          case 'json':
+          case "json":
             exportAndDownloadJSON(stars, metadata);
             break;
           default:
             break;
         }
-        
+
         // 延迟关闭以显示成功动画
         setTimeout(() => {
           onClose();
           setIsExporting(false);
         }, 500);
       } catch (error) {
-        console.error('导出失败:', error);
-        alert('导出失败：' + error.message);
+        console.error("导出失败:", error);
+        alert("导出失败：" + error.message);
         setIsExporting(false);
       }
     }, 300);
@@ -137,7 +137,7 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
             {formats.map((format) => {
               const Icon = format.icon;
               const isSelected = selectedFormat === format.id;
-              
+
               return (
                 <button
                   key={format.id}
@@ -145,21 +145,17 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
                   className={`w-full flex items-start space-x-4 p-4 rounded-lg border-2 transition-all ${
                     isSelected
                       ? `border-${format.color}-500 bg-${format.color}-50`
-                      : 'border-border hover:border-text-secondary bg-surface-card'
+                      : "border-border hover:border-text-secondary bg-surface-card"
                   }`}
                 >
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      isSelected
-                        ? `bg-${format.color}-100`
-                        : 'bg-gray-100'
+                      isSelected ? `bg-${format.color}-100` : "bg-gray-100"
                     }`}
                   >
                     <Icon
                       className={`w-5 h-5 ${
-                        isSelected
-                          ? `text-${format.color}-600`
-                          : 'text-text-secondary'
+                        isSelected ? `text-${format.color}-600` : "text-text-secondary"
                       }`}
                     />
                   </div>
@@ -172,7 +168,9 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
                   </div>
                   {isSelected && (
                     <div className="flex-shrink-0">
-                      <div className={`w-5 h-5 rounded-full bg-${format.color}-500 flex items-center justify-center`}>
+                      <div
+                        className={`w-5 h-5 rounded-full bg-${format.color}-500 flex items-center justify-center`}
+                      >
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
@@ -192,8 +190,8 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-border bg-gray-50">
           <p className="text-xs text-text-secondary">
-            导出文件名: github-stars-{new Date().toISOString().split('T')[0]}
-            {formats.find(f => f.id === selectedFormat)?.extension}
+            导出文件名: github-stars-{new Date().toISOString().split("T")[0]}
+            {formats.find((f) => f.id === selectedFormat)?.extension}
           </p>
           <div className="flex items-center space-x-3">
             <button
