@@ -104,7 +104,7 @@ export async function calculateHealthScore(accessToken, repo) {
  * @param {Object} data
  * @returns {number}
  */
-function calculateActivityScore(data) {
+export function calculateActivityScore(data) {
   let score = 0;
 
   // 1. 最近30天 commits (15分)
@@ -146,7 +146,7 @@ function calculateActivityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-function calculateCommunityScore(data) {
+export function calculateCommunityScore(data) {
   let score = 0;
   const { openIssues, openPRs, contributors, stargazersCount } = data;
 
@@ -181,7 +181,7 @@ function calculateCommunityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-function calculateMaintenanceScore(data) {
+export function calculateMaintenanceScore(data) {
   let score = 0;
   const { archived, hasCI, updatedAt } = data;
 
@@ -212,7 +212,7 @@ function calculateMaintenanceScore(data) {
  * @param {number} score
  * @returns {string} - excellent | good | fair | poor | critical
  */
-function getHealthLevel(score) {
+export function getHealthLevel(score) {
   if (score >= 80) return "excellent"; // 优秀
   if (score >= 60) return "good"; // 良好
   if (score >= 40) return "fair"; // 一般

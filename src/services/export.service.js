@@ -422,7 +422,7 @@ export function exportStatsJSON(statsData) {
  * @returns {string} CSV 文本
  */
 export function exportStatsCSV(statsData) {
-  const { basic, health, languages, tags } = statsData;
+  const { basic = {}, health, languages = [], tags = [] } = statsData || {};
 
   let csv = `统计类型,指标,数值,占比\n`;
 
