@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2025-11-24
 
 ### Added
+
 - **AI 语义搜索功能** - 项目最具差异化的新功能
   - 自然语言搜索，无需精确关键词
   - 基于 DashScope Embedding API 生成 1536 维向量
@@ -19,14 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 提供示例查询，帮助用户快速上手
 
 ### Fixed
+
 - PWA 构建警告 - 配置 `maximumFileSizeToCacheInBytes` 为 3MB
 - 版本号不一致问题 - 统一为 v0.3.0
 
 ### Changed
+
 - 更新项目文档，补充统计分析和数据可视化功能说明
 - 更新功能完成度记录（16/16 = 100%）
 
 ### Technical Details
+
 - 新增 `semantic-search.service.js` 服务（10个核心函数）
   - `cosineSimilarity()` - 余弦相似度计算
   - `generateSearchText()` - 生成搜索文本
@@ -49,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2025-11-19
 
 ### Added
+
 - **统计分析系统** - 完整的数据统计服务
   - 基础统计（总数、标签数、笔记率、AI摘要率）
   - 健康度统计（分布、平均分）
@@ -79,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-11-15
 
 ### Added
+
 - MVP 基础功能
   - GitHub OAuth 认证
   - Stars 数据同步
@@ -106,16 +112,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 下一步计划
 
 ### P1: 核心功能增强
+
 - [ ] 学习路径功能
 - [ ] 深色模式支持
 - [ ] 快捷键系统
 
 ### P2: 新功能开发
+
 - [ ] 多账号支持
 - [ ] 浏览器扩展
 - [ ] 协作功能
 
 ### P3: 性能与优化
+
 - [ ] 大量 Stars 优化（>1000）
 - [ ] 缓存策略改进
 - [ ] 构建体积优化

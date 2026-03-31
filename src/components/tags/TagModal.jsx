@@ -1,20 +1,20 @@
-import { X, Tag, Save, Palette } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import TagBadge from './TagBadge';
-import TagInput from './TagInput';
+import { X, Tag, Save, Palette } from "lucide-react";
+import { useState, useEffect } from "react";
+import TagBadge from "./TagBadge";
+import TagInput from "./TagInput";
 
 /**
  * 标签管理 Modal
  */
-export default function TagModal({ 
-  isOpen, 
-  onClose, 
-  repo, 
+export default function TagModal({
+  isOpen,
+  onClose,
+  repo,
   currentTags = [],
-  currentNotes = '',
-  currentColor = '#3B82F6',
+  currentNotes = "",
+  currentColor = "#3B82F6",
   allTags = [],
-  onSave 
+  onSave,
 }) {
   const [tags, setTags] = useState(currentTags);
   const [notes, setNotes] = useState(currentNotes);
@@ -29,14 +29,14 @@ export default function TagModal({
   }, [isOpen, currentTags, currentNotes, currentColor]);
 
   const predefinedColors = [
-    '#EF4444', // Red
-    '#F59E0B', // Orange
-    '#10B981', // Green
-    '#3B82F6', // Blue
-    '#6366F1', // Indigo
-    '#8B5CF6', // Purple
-    '#EC4899', // Pink
-    '#6B7280', // Gray
+    "#EF4444", // Red
+    "#F59E0B", // Orange
+    "#10B981", // Green
+    "#3B82F6", // Blue
+    "#6366F1", // Indigo
+    "#8B5CF6", // Purple
+    "#EC4899", // Pink
+    "#6B7280", // Gray
   ];
 
   const handleAddTag = (tag) => {
@@ -46,7 +46,7 @@ export default function TagModal({
   };
 
   const handleRemoveTag = (tag) => {
-    setTags(tags.filter(t => t !== tag));
+    setTags(tags.filter((t) => t !== tag));
   };
 
   const handleSave = async () => {
@@ -59,7 +59,7 @@ export default function TagModal({
       });
       onClose();
     } catch (error) {
-      console.error('保存失败:', error);
+      console.error("保存失败:", error);
     }
   };
 
@@ -75,12 +75,8 @@ export default function TagModal({
               <Tag className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-text-primary">
-                管理标签
-              </h2>
-              <p className="text-sm text-text-secondary">
-                {repo?.fullName}
-              </p>
+              <h2 className="text-xl font-semibold text-text-primary">管理标签</h2>
+              <p className="text-sm text-text-secondary">{repo?.fullName}</p>
             </div>
           </div>
           <button
@@ -95,11 +91,9 @@ export default function TagModal({
         <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* 添加标签 */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              添加标签
-            </label>
+            <label className="block text-sm font-medium text-text-primary mb-2">添加标签</label>
             <TagInput
-              suggestions={allTags.filter(t => !tags.includes(t))}
+              suggestions={allTags.filter((t) => !tags.includes(t))}
               onAdd={handleAddTag}
               placeholder="输入标签名称或从建议中选择..."
             />
@@ -139,8 +133,8 @@ export default function TagModal({
                   onClick={() => setSelectedColor(color)}
                   className={`w-8 h-8 rounded-full transition-all ${
                     selectedColor === color
-                      ? 'ring-2 ring-offset-2 ring-border-dark scale-110'
-                      : 'hover:scale-105'
+                      ? "ring-2 ring-offset-2 ring-border-dark scale-110"
+                      : "hover:scale-105"
                   }`}
                   style={{ backgroundColor: color }}
                   aria-label={`Select color ${color}`}
@@ -151,9 +145,7 @@ export default function TagModal({
 
           {/* 笔记 */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              笔记 (可选)
-            </label>
+            <label className="block text-sm font-medium text-text-primary mb-2">笔记 (可选)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -166,9 +158,7 @@ export default function TagModal({
           {/* 项目信息 */}
           <div className="bg-surface-darker rounded-lg p-4 border border-border">
             <h3 className="font-medium text-text-primary mb-2">{repo?.name}</h3>
-            <p className="text-sm text-text-secondary mb-3">
-              {repo?.description || '暂无描述'}
-            </p>
+            <p className="text-sm text-text-secondary mb-3">{repo?.description || "暂无描述"}</p>
             <div className="flex items-center space-x-4 text-sm text-text-muted">
               <span>⭐ {repo?.stargazersCount?.toLocaleString()}</span>
               {repo?.language && (

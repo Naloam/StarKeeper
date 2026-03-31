@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Download, Star } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { X, Download, Star } from "lucide-react";
 
 /**
  * PWA 安装提示组件
@@ -11,9 +11,9 @@ export default function PWAInstallPrompt() {
 
   useEffect(() => {
     // 检查是否已经安装或已经关闭过提示
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-    const wasDismissed = localStorage.getItem('pwa-install-dismissed');
-    
+    const isInstalled = window.matchMedia("(display-mode: standalone)").matches;
+    const wasDismissed = localStorage.getItem("pwa-install-dismissed");
+
     if (isInstalled || wasDismissed) {
       return;
     }
@@ -30,20 +30,20 @@ export default function PWAInstallPrompt() {
       }, 3000);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     // 监听应用安装事件
     const handleAppInstalled = () => {
-      console.log('✅ PWA 已安装');
+      console.log("✅ PWA 已安装");
       setShowPrompt(false);
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -66,7 +66,7 @@ export default function PWAInstallPrompt() {
     setShowPrompt(false);
     // 记住用户关闭了提示（7天内不再显示）
     const dismissedUntil = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    localStorage.setItem('pwa-install-dismissed', dismissedUntil);
+    localStorage.setItem("pwa-install-dismissed", dismissedUntil);
   };
 
   if (!showPrompt) return null;
@@ -90,9 +90,7 @@ export default function PWAInstallPrompt() {
           </div>
           <div className="flex-1 pt-1">
             <h3 className="font-bold text-lg mb-1">安装 StarKeeper</h3>
-            <p className="text-sm text-white/90">
-              获得更快的访问速度和离线使用能力
-            </p>
+            <p className="text-sm text-white/90">获得更快的访问速度和离线使用能力</p>
           </div>
         </div>
 

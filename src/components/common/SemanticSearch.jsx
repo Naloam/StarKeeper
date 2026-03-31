@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Loader2, AlertCircle, X, TrendingUp } from 'lucide-react';
-import { 
-  semanticSearch, 
+import React, { useState, useEffect } from "react";
+import { Search, Sparkles, Loader2, AlertCircle, X, TrendingUp } from "lucide-react";
+import {
+  semanticSearch,
   loadEmbeddingsFromMetadata,
   batchGenerateRepoEmbeddings,
   saveEmbeddingsToMetadata,
-  getReposNeedingEmbedding
-} from '../../services/semantic-search.service';
-import { saveMetadataToGist } from '../../services/metadata.service';
-import toast from 'react-hot-toast';
+  getReposNeedingEmbedding,
+} from "../../services/semantic-search.service";
+import { saveMetadataToGist } from "../../services/metadata.service";
+import toast from "react-hot-toast";
 
 /**
  * 语义搜索组件
  * 提供基于 AI 的自然语言搜索功能
  */
-export default function SemanticSearch({ 
-  stars, 
-  metadata, 
-  gistId, 
-  accessToken,
-  onResults 
-}) {
-  const [query, setQuery] = useState('');
+export default function SemanticSearch({ stars, metadata, gistId, accessToken, onResults }) {
+  const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initProgress, setInitProgress] = useState({ current: 0, total: 0 });
@@ -38,14 +32,14 @@ export default function SemanticSearch({
   const initializeEmbeddings = async () => {
     try {
       setError(null);
-      
+
       // 从 metadata 加载现有 embeddings
       const existingEmbeddings = loadEmbeddingsFromMetadata(metadata);
       setEmbeddings(existingEmbeddings);
 
       // 检查是否有项目需要生成 embedding
       const needUpdate = getReposNeedingEmbedding(stars, metadata);
-      
+
       if (needUpdate.length > 0) {
         console.log(`需要为 ${needUpdate.length} 个项目生成 embedding`);
         setIsInitializing(true);
@@ -57,7 +51,7 @@ export default function SemanticSearch({
           metadata,
           (current, total) => {
             setInitProgress({ current, total });
-          }
+          },
         );
 
         // 合并 embeddings
@@ -74,10 +68,10 @@ export default function SemanticSearch({
       setIsReady(true);
       setIsInitializing(false);
     } catch (err) {
-      console.error('初始化 embeddings 失败:', err);
+      console.error("初始化 embeddings 失败:", err);
       setError(err.message);
       setIsInitializing(false);
-      toast.error('向量索引初始化失败');
+      toast.error("向量索引初始化失败");
     }
   };
 
@@ -90,7 +84,7 @@ export default function SemanticSearch({
     }
 
     if (!isReady) {
-      toast.error('向量索引尚未准备好，请稍候');
+      toast.error("向量索引尚未准备好，请稍候");
       return;
     }
 
@@ -98,38 +92,33 @@ export default function SemanticSearch({
     setError(null);
 
     try {
-      const searchResults = await semanticSearch(
-        query,
-        stars,
-        embeddings,
-        {
-          topK: 12,
-          threshold: 0.4
-        }
-      );
+      const searchResults = await semanticSearch(query, stars, embeddings, {
+        topK: 12,
+        threshold: 0.4,
+      });
 
       setResults(searchResults);
       onResults?.(searchResults);
 
       if (searchResults.length === 0) {
-        toast('未找到相关项目，请尝试其他关键词', { icon: '🔍' });
+        toast("未找到相关项目，请尝试其他关键词", { icon: "🔍" });
       } else {
-        const highCount = searchResults.filter(r => r.relevance === 'high').length;
-        const mediumCount = searchResults.filter(r => r.relevance === 'medium').length;
-        
+        const highCount = searchResults.filter((r) => r.relevance === "high").length;
+        const mediumCount = searchResults.filter((r) => r.relevance === "medium").length;
+
         let message = `找到 ${searchResults.length} 个相关项目`;
         if (highCount > 0) {
           message += `（${highCount} 个高度相关`;
           if (mediumCount > 0) message += `，${mediumCount} 个中度相关`;
-          message += '）';
+          message += "）";
         }
-        
+
         toast.success(message);
       }
     } catch (err) {
-      console.error('搜索失败:', err);
+      console.error("搜索失败:", err);
       setError(err.message);
-      toast.error('搜索失败，请重试');
+      toast.error("搜索失败，请重试");
     } finally {
       setIsSearching(false);
     }
@@ -137,14 +126,14 @@ export default function SemanticSearch({
 
   // 清除搜索
   const handleClear = () => {
-    setQuery('');
+    setQuery("");
     setResults([]);
     onResults?.(null);
   };
 
   // 回车搜索
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSearch();
     }
@@ -152,11 +141,11 @@ export default function SemanticSearch({
 
   // 示例查询
   const exampleQueries = [
-    'React 组件库',
-    '数据可视化工具',
-    'Node.js 后端框架',
-    'Python 机器学习',
-    '前端工程化工具',
+    "React 组件库",
+    "数据可视化工具",
+    "Node.js 后端框架",
+    "Python 机器学习",
+    "前端工程化工具",
   ];
 
   const handleExampleClick = (example) => {
@@ -171,11 +160,9 @@ export default function SemanticSearch({
           <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.5} />
           AI 语义搜索
         </h3>
-        
+
         {isReady && (
-          <span className="text-caption text-success bg-success/10 px-2 py-1 rounded">
-            已就绪
-          </span>
+          <span className="text-caption text-success bg-success/10 px-2 py-1 rounded">已就绪</span>
         )}
       </div>
 
@@ -189,10 +176,10 @@ export default function SemanticSearch({
             </span>
           </div>
           <div className="w-full bg-border rounded-full h-2 overflow-hidden">
-            <div 
+            <div
               className="h-full bg-primary transition-all duration-300"
-              style={{ 
-                width: `${initProgress.total > 0 ? (initProgress.current / initProgress.total) * 100 : 0}%` 
+              style={{
+                width: `${initProgress.total > 0 ? (initProgress.current / initProgress.total) * 100 : 0}%`,
               }}
             />
           </div>
@@ -219,7 +206,7 @@ export default function SemanticSearch({
           disabled={!isReady || isInitializing}
           className="input pl-10 pr-24"
         />
-        
+
         {query && (
           <button
             onClick={handleClear}
@@ -240,7 +227,7 @@ export default function SemanticSearch({
               搜索中
             </>
           ) : (
-            '搜索'
+            "搜索"
           )}
         </button>
       </div>
@@ -298,25 +285,25 @@ export default function SemanticSearch({
                         {repo.full_name || repo.name}
                       </h4>
                       {/* 相关度标识 */}
-                      {relevance === 'high' && (
+                      {relevance === "high" && (
                         <span className="px-2 py-0.5 bg-success/20 text-success text-xs font-medium rounded flex-shrink-0">
                           高度相关
                         </span>
                       )}
-                      {relevance === 'medium' && (
+                      {relevance === "medium" && (
                         <span className="px-2 py-0.5 bg-warning/20 text-warning text-xs font-medium rounded flex-shrink-0">
                           中度相关
                         </span>
                       )}
                     </div>
-                    
+
                     {/* 描述 */}
                     {repo.description && (
                       <p className="text-body-sm text-text-secondary line-clamp-2 mb-2">
                         {repo.description}
                       </p>
                     )}
-                    
+
                     {/* 元信息 */}
                     <div className="flex flex-wrap items-center gap-3 text-caption text-text-secondary">
                       {repo.language && (
@@ -333,7 +320,10 @@ export default function SemanticSearch({
                       {repo.topics && repo.topics.length > 0 && (
                         <div className="flex gap-1 flex-wrap">
                           {repo.topics.slice(0, 3).map((topic, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-accent/10 text-accent rounded text-xs">
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 bg-accent/10 text-accent rounded text-xs"
+                            >
                               {topic}
                             </span>
                           ))}
@@ -346,16 +336,18 @@ export default function SemanticSearch({
                       )}
                     </div>
                   </div>
-                  
+
                   {/* 相似度分数 */}
                   <div className="flex-shrink-0">
-                    <div className={`px-3 py-1 rounded-full text-caption font-medium ${
-                      relevance === 'high' 
-                        ? 'bg-success/10 text-success' 
-                        : relevance === 'medium'
-                        ? 'bg-warning/10 text-warning'
-                        : 'bg-primary/10 text-primary'
-                    }`}>
+                    <div
+                      className={`px-3 py-1 rounded-full text-caption font-medium ${
+                        relevance === "high"
+                          ? "bg-success/10 text-success"
+                          : relevance === "medium"
+                            ? "bg-warning/10 text-warning"
+                            : "bg-primary/10 text-primary"
+                      }`}
+                    >
                       {(score * 100).toFixed(0)}%
                     </div>
                   </div>

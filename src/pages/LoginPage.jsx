@@ -1,22 +1,24 @@
-import { useState } from 'react';
-import { Github, Star, Sparkles, Key } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { getGitHubAuthUrl } from '../utils/auth';
-import { APP_CONFIG } from '../config';
-import { useAuthStore } from '../store';
+import { useState } from "react";
+import { Github, Star, Sparkles, Key } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { getGitHubAuthUrl } from "../utils/auth";
+import { APP_CONFIG } from "../config";
+import { useAuthStore } from "../store";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || '');
+  const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || "");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleOAuthLogin = () => {
     // 检查是否配置了 GitHub OAuth
     if (!import.meta.env.VITE_GITHUB_CLIENT_ID) {
-      alert('请先配置 GitHub OAuth App。\n\n1. 访问 https://github.com/settings/developers\n2. 创建 New OAuth App\n3. 配置 .env 文件');
+      alert(
+        "请先配置 GitHub OAuth App。\n\n1. 访问 https://github.com/settings/developers\n2. 创建 New OAuth App\n3. 配置 .env 文件",
+      );
       return;
     }
 
@@ -26,27 +28,27 @@ export default function LoginPage() {
 
   const handleTokenLogin = async () => {
     if (!token.trim()) {
-      setError('请输入 GitHub Personal Access Token');
+      setError("请输入 GitHub Personal Access Token");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // 验证 token
-      const response = await fetch('https://api.github.com/user', {
+      const response = await fetch("https://api.github.com/user", {
         headers: {
-          'Authorization': `token ${token.trim()}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
+          Authorization: `token ${token.trim()}`,
+          Accept: "application/vnd.github.v3+json",
+        },
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error('Token 无效或已过期');
+          throw new Error("Token 无效或已过期");
         }
-        throw new Error('验证失败，请检查 Token 权限');
+        throw new Error("验证失败，请检查 Token 权限");
       }
 
       const user = await response.json();
@@ -54,12 +56,12 @@ export default function LoginPage() {
       // 登录成功 - 只使用 zustand store 存储
       // 不再使用 localStorage 的 github_token，避免双重存储
       login(user, token.trim());
-      
+
       // 强制刷新页面以确保使用新的 token
-      window.location.href = '/dashboard';
+      window.location.href = "/dashboard";
     } catch (err) {
-      console.error('Token login error:', err);
-      setError(err.message || 'Token 验证失败');
+      console.error("Token login error:", err);
+      setError(err.message || "Token 验证失败");
     } finally {
       setLoading(false);
     }
@@ -88,9 +90,7 @@ export default function LoginPage() {
           <h1 className="text-4xl font-semibold text-text-primary mb-3 tracking-tight">
             {APP_CONFIG.name}
           </h1>
-          <p className="text-lg text-text-secondary font-light">
-            智能管理你的 GitHub Stars
-          </p>
+          <p className="text-lg text-text-secondary font-light">智能管理你的 GitHub Stars</p>
         </div>
 
         {/* Features - 纸张卡片质感 */}
@@ -139,7 +139,10 @@ export default function LoginPage() {
               {/* Token Input Form */}
               <div className="space-y-3 mb-3">
                 <div>
-                  <label htmlFor="token" className="block text-sm font-medium text-text-primary mb-2">
+                  <label
+                    htmlFor="token"
+                    className="block text-sm font-medium text-text-primary mb-2"
+                  >
                     GitHub Personal Access Token
                   </label>
                   <input
@@ -149,10 +152,10 @@ export default function LoginPage() {
                     onChange={(e) => setToken(e.target.value)}
                     placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                     className="w-full px-4 py-2.5 border border-border rounded-soft bg-surface-card text-text-primary placeholder:text-text-tertiary focus-ring transition-all"
-                    onKeyPress={(e) => e.key === 'Enter' && handleTokenLogin()}
+                    onKeyPress={(e) => e.key === "Enter" && handleTokenLogin()}
                   />
                 </div>
-                
+
                 {error && (
                   <div className="bg-danger-light border border-danger/20 rounded-soft p-3">
                     <p className="text-sm text-danger-text">{error}</p>
@@ -198,8 +201,8 @@ export default function LoginPage() {
               <button
                 onClick={() => {
                   setShowTokenInput(false);
-                  setToken('');
-                  setError('');
+                  setToken("");
+                  setError("");
                 }}
                 className="w-full text-text-secondary hover:text-text-primary px-6 py-2.5 rounded-soft hover:bg-surface transition-all text-sm border border-transparent hover:border-border"
               >

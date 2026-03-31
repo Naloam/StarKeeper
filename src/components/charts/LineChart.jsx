@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,9 +8,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+  Filler,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
 ChartJS.register(
   CategoryScale,
@@ -20,7 +20,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 /**
@@ -33,95 +33,95 @@ export default function LineChart({ data, options: customOptions, height = 300 }
     plugins: {
       legend: {
         display: true,
-        position: 'top',
+        position: "top",
         labels: {
           font: {
-            family: 'Inter, sans-serif',
+            family: "Inter, sans-serif",
             size: 12,
-            weight: '400'
+            weight: "400",
           },
-          color: '#6B665F',
+          color: "#6B665F",
           usePointStyle: true,
           padding: 16,
           boxWidth: 8,
-          boxHeight: 8
-        }
+          boxHeight: 8,
+        },
       },
       tooltip: {
-        backgroundColor: 'rgba(250, 248, 243, 0.95)',
-        titleColor: '#2D2A26',
-        bodyColor: '#6B665F',
-        borderColor: '#E8E3D9',
+        backgroundColor: "rgba(250, 248, 243, 0.95)",
+        titleColor: "#2D2A26",
+        bodyColor: "#6B665F",
+        borderColor: "#E8E3D9",
         borderWidth: 1,
         padding: 12,
         displayColors: true,
         titleFont: {
-          family: 'Inter, sans-serif',
+          family: "Inter, sans-serif",
           size: 13,
-          weight: '600'
+          weight: "600",
         },
         bodyFont: {
-          family: 'Inter, sans-serif',
+          family: "Inter, sans-serif",
           size: 12,
-          weight: '400'
+          weight: "400",
         },
         boxPadding: 6,
-        usePointStyle: true
-      }
+        usePointStyle: true,
+      },
     },
     scales: {
       x: {
         grid: {
           display: true,
-          color: 'rgba(232, 227, 217, 0.4)',
+          color: "rgba(232, 227, 217, 0.4)",
           lineWidth: 1,
-          drawBorder: false
+          drawBorder: false,
         },
         ticks: {
           font: {
-            family: 'Inter, sans-serif',
+            family: "Inter, sans-serif",
             size: 11,
-            weight: '400'
+            weight: "400",
           },
-          color: '#9B968E',
-          padding: 8
-        }
+          color: "#9B968E",
+          padding: 8,
+        },
       },
       y: {
         grid: {
           display: true,
-          color: 'rgba(232, 227, 217, 0.4)',
+          color: "rgba(232, 227, 217, 0.4)",
           lineWidth: 1,
-          drawBorder: false
+          drawBorder: false,
         },
         ticks: {
           font: {
-            family: 'Inter, sans-serif',
+            family: "Inter, sans-serif",
             size: 11,
-            weight: '400'
+            weight: "400",
           },
-          color: '#9B968E',
-          padding: 8
+          color: "#9B968E",
+          padding: 8,
         },
-        beginAtZero: true
-      }
+        beginAtZero: true,
+      },
     },
     elements: {
       line: {
         borderWidth: 2,
-        tension: 0.3
+        tension: 0.3,
       },
       point: {
         radius: 4,
         hoverRadius: 6,
         borderWidth: 2,
-        hoverBorderWidth: 3
-      }
+        hoverBorderWidth: 3,
+      },
     },
     interaction: {
-      mode: 'index',
-      intersect: false
-    }
+      mode: "index",
+      intersect: false,
+    },
   };
 
   const mergedOptions = {
@@ -129,8 +129,8 @@ export default function LineChart({ data, options: customOptions, height = 300 }
     ...customOptions,
     plugins: {
       ...defaultOptions.plugins,
-      ...customOptions?.plugins
-    }
+      ...customOptions?.plugins,
+    },
   };
 
   return (

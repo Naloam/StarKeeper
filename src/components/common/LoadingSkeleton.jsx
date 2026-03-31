@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * 骨架屏基础组件
@@ -6,7 +6,7 @@ import React from 'react';
  */
 
 // 基础骨架屏元素
-export const SkeletonBox = ({ className = '', width, height, rounded = 'rounded' }) => (
+export const SkeletonBox = ({ className = "", width, height, rounded = "rounded" }) => (
   <div
     className={`animate-pulse bg-gradient-to-r from-border-light via-border to-border-light bg-[length:200%_100%] ${rounded} ${className}`}
     style={{ width, height }}
@@ -14,13 +14,13 @@ export const SkeletonBox = ({ className = '', width, height, rounded = 'rounded'
 );
 
 // 文本骨架屏
-export const SkeletonText = ({ lines = 1, className = '' }) => (
+export const SkeletonText = ({ lines = 1, className = "" }) => (
   <div className={`space-y-2 ${className}`}>
     {Array.from({ length: lines }).map((_, index) => (
       <SkeletonBox
         key={index}
         height="16px"
-        width={index === lines - 1 ? '80%' : '100%'}
+        width={index === lines - 1 ? "80%" : "100%"}
         rounded="rounded"
       />
     ))}
@@ -28,7 +28,7 @@ export const SkeletonText = ({ lines = 1, className = '' }) => (
 );
 
 // 圆形骨架屏（用于头像）
-export const SkeletonCircle = ({ size = '40px', className = '' }) => (
+export const SkeletonCircle = ({ size = "40px", className = "" }) => (
   <SkeletonBox width={size} height={size} rounded="rounded-full" className={className} />
 );
 
@@ -199,7 +199,7 @@ export const PageSkeleton = () => (
 );
 
 // 加载遮罩层
-export const LoadingOverlay = ({ message = '加载中...' }) => (
+export const LoadingOverlay = ({ message = "加载中..." }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-surface-card rounded-lg p-8 shadow-2xl max-w-sm w-full mx-4">
       <div className="flex flex-col items-center">
@@ -208,7 +208,7 @@ export const LoadingOverlay = ({ message = '加载中...' }) => (
           <div className="absolute inset-0 border-4 border-info-light rounded-full"></div>
           <div className="absolute inset-0 border-4 border-info rounded-full border-t-transparent animate-spin"></div>
         </div>
-        
+
         {/* 加载文本 */}
         <p className="text-lg font-medium text-text-primary">{message}</p>
         <p className="text-sm text-text-secondary mt-2">请稍候...</p>

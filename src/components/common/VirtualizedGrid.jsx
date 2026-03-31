@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
-import { FixedSizeGrid as Grid } from 'react-window';
+import { useRef, useEffect, useState } from "react";
+import { FixedSizeGrid as Grid } from "react-window";
 
 /**
  * 虚拟化网格组件 - 优化大量数据渲染性能
@@ -10,13 +10,13 @@ import { FixedSizeGrid as Grid } from 'react-window';
  * @param {Number} columnCount - 列数
  * @param {Number} gap - 项之间的间距
  */
-export default function VirtualizedGrid({ 
-  items, 
-  renderItem, 
-  itemWidth = 384, 
-  itemHeight = 400, 
+export default function VirtualizedGrid({
+  items,
+  renderItem,
+  itemWidth = 384,
+  itemHeight = 400,
   columnCount = 3,
-  gap = 24 
+  gap = 24,
 }) {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -53,7 +53,7 @@ export default function VirtualizedGrid({
   // 渲染单元格
   const Cell = ({ columnIndex, rowIndex, style }) => {
     const index = rowIndex * actualColumnCount + columnIndex;
-    
+
     if (index >= items.length) {
       return null;
     }
@@ -78,24 +78,22 @@ export default function VirtualizedGrid({
   // 如果数据少于一屏，使用普通渲染
   if (items.length <= actualColumnCount * 2) {
     return (
-      <div 
+      <div
         ref={containerRef}
         className="grid gap-4 sm:gap-6"
         style={{
-          gridTemplateColumns: `repeat(${actualColumnCount}, minmax(0, 1fr))`
+          gridTemplateColumns: `repeat(${actualColumnCount}, minmax(0, 1fr))`,
         }}
       >
         {items.map((item, index) => (
-          <div key={item.id || index}>
-            {renderItem(item, index)}
-          </div>
+          <div key={item.id || index}>{renderItem(item, index)}</div>
         ))}
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="w-full" style={{ height: 'calc(100vh - 16rem)' }}>
+    <div ref={containerRef} className="w-full" style={{ height: "calc(100vh - 16rem)" }}>
       {dimensions.width > 0 && (
         <Grid
           columnCount={actualColumnCount}

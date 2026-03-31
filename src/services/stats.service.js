@@ -11,35 +11,35 @@
  */
 export function calculateBasicStats(stars, metadata) {
   const totalStars = stars.length;
-  
+
   // 统计标签数
   const allTags = new Set();
-  Object.values(metadata).forEach(meta => {
+  Object.values(metadata).forEach((meta) => {
     if (meta.tags && Array.isArray(meta.tags)) {
-      meta.tags.forEach(tag => allTags.add(tag));
+      meta.tags.forEach((tag) => allTags.add(tag));
     }
   });
   const totalTags = allTags.size;
-  
+
   // 统计有笔记的项目数
-  const withNotes = Object.values(metadata).filter(meta => 
-    meta.notes && typeof meta.notes === 'string' && meta.notes.trim().length > 0
+  const withNotes = Object.values(metadata).filter(
+    (meta) => meta.notes && typeof meta.notes === "string" && meta.notes.trim().length > 0,
   ).length;
-  
+
   // 统计有 AI 摘要的项目数
-  const withAISummary = Object.values(metadata).filter(meta => {
+  const withAISummary = Object.values(metadata).filter((meta) => {
     if (!meta.aiSummary) return false;
     // 支持字符串格式
-    if (typeof meta.aiSummary === 'string') {
+    if (typeof meta.aiSummary === "string") {
       return meta.aiSummary.trim().length > 0;
     }
     // 支持对象格式
-    if (typeof meta.aiSummary === 'object') {
+    if (typeof meta.aiSummary === "object") {
       return meta.aiSummary.summary && meta.aiSummary.summary.trim().length > 0;
     }
     return false;
   }).length;
-  
+
   return {
     totalStars,
     totalTags,
@@ -58,18 +58,18 @@ export function calculateBasicStats(stars, metadata) {
  */
 export function calculateHealthStats(stars, metadata) {
   const healthDistribution = {
-    excellent: 0,  // 80-100
-    good: 0,       // 60-79
-    fair: 0,       // 40-59
-    poor: 0,       // 20-39
-    critical: 0,   // 0-19
-    unknown: 0,    // 未分析
+    excellent: 0, // 80-100
+    good: 0, // 60-79
+    fair: 0, // 40-59
+    poor: 0, // 20-39
+    critical: 0, // 0-19
+    unknown: 0, // 未分析
   };
-  
+
   let totalScore = 0;
   let analyzedCount = 0;
-  
-  stars.forEach(star => {
+
+  stars.forEach((star) => {
     const repoMeta = metadata[star.id];
     if (repoMeta?.healthScore) {
       const { score, level } = repoMeta.healthScore;
@@ -80,10 +80,11 @@ export function calculateHealthStats(stars, metadata) {
       healthDistribution.unknown++;
     }
   });
-  
+
   const averageScore = analyzedCount > 0 ? Math.round(totalScore / analyzedCount) : 0;
-  const analyzedPercentage = stars.length > 0 ? Math.round((analyzedCount / stars.length) * 100) : 0;
-  
+  const analyzedPercentage =
+    stars.length > 0 ? Math.round((analyzedCount / stars.length) * 100) : 0;
+
   return {
     distribution: healthDistribution,
     averageScore,
@@ -99,15 +100,15 @@ export function calculateHealthStats(stars, metadata) {
  */
 export function calculateLanguageStats(stars) {
   const languageMap = {};
-  
-  stars.forEach(star => {
+
+  stars.forEach((star) => {
     if (star.language) {
       languageMap[star.language] = (languageMap[star.language] || 0) + 1;
     } else {
-      languageMap['Unknown'] = (languageMap['Unknown'] || 0) + 1;
+      languageMap["Unknown"] = (languageMap["Unknown"] || 0) + 1;
     }
   });
-  
+
   // 转换为数组并排序
   const languageStats = Object.entries(languageMap)
     .map(([language, count]) => ({
@@ -116,7 +117,7 @@ export function calculateLanguageStats(stars) {
       percentage: stars.length > 0 ? Math.round((count / stars.length) * 100) : 0,
     }))
     .sort((a, b) => b.count - a.count);
-  
+
   return languageStats;
 }
 
@@ -127,15 +128,15 @@ export function calculateLanguageStats(stars) {
  */
 export function calculateTagStats(metadata) {
   const tagMap = {};
-  
-  Object.values(metadata).forEach(meta => {
+
+  Object.values(metadata).forEach((meta) => {
     if (meta.tags && Array.isArray(meta.tags)) {
-      meta.tags.forEach(tag => {
+      meta.tags.forEach((tag) => {
         tagMap[tag] = (tagMap[tag] || 0) + 1;
       });
     }
   });
-  
+
   // 转换为数组并排序
   const tagStats = Object.entries(tagMap)
     .map(([tag, count]) => ({
@@ -143,7 +144,7 @@ export function calculateTagStats(metadata) {
       count,
     }))
     .sort((a, b) => b.count - a.count);
-  
+
   return tagStats;
 }
 
@@ -154,15 +155,15 @@ export function calculateTagStats(metadata) {
  */
 export function calculateStarsGrowthTrend(stars) {
   const monthlyMap = {};
-  
-  stars.forEach(star => {
+
+  stars.forEach((star) => {
     if (star.starredAt) {
       const date = new Date(star.starredAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + 1;
     }
   });
-  
+
   // 转换为数组并排序
   const monthlyStats = Object.entries(monthlyMap)
     .map(([month, count]) => ({
@@ -170,14 +171,14 @@ export function calculateStarsGrowthTrend(stars) {
       count,
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
-  
+
   // 计算累计值
   let cumulative = 0;
-  monthlyStats.forEach(stat => {
+  monthlyStats.forEach((stat) => {
     cumulative += stat.count;
     stat.cumulative = cumulative;
   });
-  
+
   return monthlyStats;
 }
 
@@ -189,10 +190,10 @@ export function calculateStarsGrowthTrend(stars) {
  */
 export function getRecentlyActiveRepos(stars, limit = 10) {
   return stars
-    .filter(star => star.pushedAt)
+    .filter((star) => star.pushedAt)
     .sort((a, b) => new Date(b.pushedAt) - new Date(a.pushedAt))
     .slice(0, limit)
-    .map(star => ({
+    .map((star) => ({
       id: star.id,
       fullName: star.fullName,
       name: star.name,
@@ -214,7 +215,7 @@ export function getTopStarredRepos(stars, limit = 10) {
   return stars
     .sort((a, b) => b.stargazersCount - a.stargazersCount)
     .slice(0, limit)
-    .map(star => ({
+    .map((star) => ({
       id: star.id,
       fullName: star.fullName,
       name: star.name,
@@ -232,17 +233,19 @@ export function getTopStarredRepos(stars, limit = 10) {
  */
 export function calculateActivityHeatmap(stars) {
   // 初始化 7x24 的矩阵（星期 x 小时）
-  const heatmap = Array(7).fill(0).map(() => Array(24).fill(0));
-  
-  stars.forEach(star => {
+  const heatmap = Array(7)
+    .fill(0)
+    .map(() => Array(24).fill(0));
+
+  stars.forEach((star) => {
     if (star.pushedAt) {
       const date = new Date(star.pushedAt);
       const dayOfWeek = date.getDay(); // 0-6 (周日-周六)
-      const hour = date.getHours();    // 0-23
+      const hour = date.getHours(); // 0-23
       heatmap[dayOfWeek][hour]++;
     }
   });
-  
+
   return heatmap;
 }
 
@@ -273,15 +276,15 @@ export function generateStatsReport(stars, metadata) {
  */
 export function getHealthChartData(healthStats) {
   const { distribution } = healthStats;
-  
+
   return [
-    { level: '优秀', count: distribution.excellent, color: '#10b981' },
-    { level: '良好', count: distribution.good, color: '#3b82f6' },
-    { level: '一般', count: distribution.fair, color: '#eab308' },
-    { level: '较差', count: distribution.poor, color: '#f97316' },
-    { level: '危险', count: distribution.critical, color: '#ef4444' },
-    { level: '未分析', count: distribution.unknown, color: '#6b7280' },
-  ].filter(item => item.count > 0);
+    { level: "优秀", count: distribution.excellent, color: "#10b981" },
+    { level: "良好", count: distribution.good, color: "#3b82f6" },
+    { level: "一般", count: distribution.fair, color: "#eab308" },
+    { level: "较差", count: distribution.poor, color: "#f97316" },
+    { level: "危险", count: distribution.critical, color: "#ef4444" },
+    { level: "未分析", count: distribution.unknown, color: "#6b7280" },
+  ].filter((item) => item.count > 0);
 }
 
 /**
@@ -290,12 +293,10 @@ export function getHealthChartData(healthStats) {
  * @returns {Array} 图表数据
  */
 export function getLanguageChartData(languageStats) {
-  return languageStats
-    .slice(0, 10)
-    .map((item, index) => ({
-      ...item,
-      color: getLanguageColor(item.language, index),
-    }));
+  return languageStats.slice(0, 10).map((item, index) => ({
+    ...item,
+    color: getLanguageColor(item.language, index),
+  }));
 }
 
 /**
@@ -306,31 +307,37 @@ export function getLanguageChartData(languageStats) {
  */
 function getLanguageColor(language, index) {
   const colorMap = {
-    JavaScript: '#f7df1e',
-    TypeScript: '#3178c6',
-    Python: '#3776ab',
-    Java: '#007396',
-    Go: '#00add8',
-    Rust: '#ce422b',
-    C: '#a8b9cc',
-    'C++': '#f34b7d',
-    'C#': '#239120',
-    PHP: '#777bb4',
-    Ruby: '#cc342d',
-    Swift: '#fa7343',
-    Kotlin: '#7f52ff',
-    Dart: '#0175c2',
-    Vue: '#42b883',
-    HTML: '#e34c26',
-    CSS: '#1572b6',
-    Shell: '#89e051',
+    JavaScript: "#f7df1e",
+    TypeScript: "#3178c6",
+    Python: "#3776ab",
+    Java: "#007396",
+    Go: "#00add8",
+    Rust: "#ce422b",
+    C: "#a8b9cc",
+    "C++": "#f34b7d",
+    "C#": "#239120",
+    PHP: "#777bb4",
+    Ruby: "#cc342d",
+    Swift: "#fa7343",
+    Kotlin: "#7f52ff",
+    Dart: "#0175c2",
+    Vue: "#42b883",
+    HTML: "#e34c26",
+    CSS: "#1572b6",
+    Shell: "#89e051",
   };
-  
+
   const defaultColors = [
-    '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
-    '#10b981', '#06b6d4', '#6366f1', '#84cc16',
+    "#3b82f6",
+    "#8b5cf6",
+    "#ec4899",
+    "#f59e0b",
+    "#10b981",
+    "#06b6d4",
+    "#6366f1",
+    "#84cc16",
   ];
-  
+
   return colorMap[language] || defaultColors[index % defaultColors.length];
 }
 
@@ -340,37 +347,37 @@ function getLanguageColor(language, index) {
  * @param {string} period - 时间周期：'month', 'quarter', 'year'
  * @returns {Object} Chart.js 格式的数据
  */
-export function getStarsGrowthChartData(stars, period = 'month') {
+export function getStarsGrowthChartData(stars, period = "month") {
   const trend = calculateStarsGrowthTrend(stars);
-  
+
   // 根据周期聚合数据
   let aggregatedData = trend;
-  if (period === 'quarter') {
+  if (period === "quarter") {
     aggregatedData = aggregateByQuarter(trend);
-  } else if (period === 'year') {
+  } else if (period === "year") {
     aggregatedData = aggregateByYear(trend);
   }
-  
+
   return {
-    labels: aggregatedData.map(item => item.month),
+    labels: aggregatedData.map((item) => item.month),
     datasets: [
       {
-        label: '新增 Stars',
-        data: aggregatedData.map(item => item.count),
-        borderColor: '#C8956E',
-        backgroundColor: 'rgba(200, 149, 110, 0.1)',
+        label: "新增 Stars",
+        data: aggregatedData.map((item) => item.count),
+        borderColor: "#C8956E",
+        backgroundColor: "rgba(200, 149, 110, 0.1)",
         fill: true,
-        tension: 0.3
+        tension: 0.3,
       },
       {
-        label: '累计 Stars',
-        data: aggregatedData.map(item => item.cumulative),
-        borderColor: '#7A9B76',
-        backgroundColor: 'rgba(122, 155, 118, 0.1)',
+        label: "累计 Stars",
+        data: aggregatedData.map((item) => item.cumulative),
+        borderColor: "#7A9B76",
+        backgroundColor: "rgba(122, 155, 118, 0.1)",
         fill: true,
-        tension: 0.3
-      }
-    ]
+        tension: 0.3,
+      },
+    ],
   };
 }
 
@@ -382,27 +389,29 @@ export function getStarsGrowthChartData(stars, period = 'month') {
 export function getLanguagePieChartData(stars) {
   const languages = calculateLanguageStats(stars);
   const topLanguages = languages.slice(0, 8);
-  
+
   // 自然色系配色
   const naturalColors = [
-    '#C8956E', // 暖棕
-    '#7A9B76', // 苔绿
-    '#B8A99A', // 沙色
-    '#8B9D9B', // 烟蓝
-    '#D4B5A0', // 浅卡其
-    '#9CA89E', // 橄榄灰
-    '#C5B8A8', // 月白
-    '#A8B5A7', // 淡绿灰
+    "#C8956E", // 暖棕
+    "#7A9B76", // 苔绿
+    "#B8A99A", // 沙色
+    "#8B9D9B", // 烟蓝
+    "#D4B5A0", // 浅卡其
+    "#9CA89E", // 橄榄灰
+    "#C5B8A8", // 月白
+    "#A8B5A7", // 淡绿灰
   ];
-  
+
   return {
-    labels: topLanguages.map(item => item.language),
-    datasets: [{
-      data: topLanguages.map(item => item.count),
-      backgroundColor: naturalColors,
-      borderColor: '#FAF8F3',
-      borderWidth: 3
-    }]
+    labels: topLanguages.map((item) => item.language),
+    datasets: [
+      {
+        data: topLanguages.map((item) => item.count),
+        backgroundColor: naturalColors,
+        borderColor: "#FAF8F3",
+        borderWidth: 3,
+      },
+    ],
   };
 }
 
@@ -413,29 +422,31 @@ export function getLanguagePieChartData(stars) {
  */
 export function getHealthDistributionChartData(healthStats) {
   const { distribution } = healthStats;
-  
+
   return {
-    labels: ['优秀', '良好', '一般', '需关注', '未分析'],
-    datasets: [{
-      label: '项目数量',
-      data: [
-        distribution.excellent || 0,
-        distribution.good || 0,
-        distribution.fair || 0,
-        (distribution.poor || 0) + (distribution.critical || 0),
-        distribution.unknown || 0
-      ],
-      backgroundColor: [
-        'rgba(122, 155, 118, 0.8)', // 苔绿
-        'rgba(184, 169, 154, 0.8)', // 沙色
-        'rgba(200, 149, 110, 0.8)', // 暖棕
-        'rgba(139, 157, 155, 0.8)', // 烟蓝
-        'rgba(155, 150, 142, 0.8)'  // 灰色
-      ],
-      borderColor: '#FAF8F3',
-      borderWidth: 2,
-      borderRadius: 8
-    }]
+    labels: ["优秀", "良好", "一般", "需关注", "未分析"],
+    datasets: [
+      {
+        label: "项目数量",
+        data: [
+          distribution.excellent || 0,
+          distribution.good || 0,
+          distribution.fair || 0,
+          (distribution.poor || 0) + (distribution.critical || 0),
+          distribution.unknown || 0,
+        ],
+        backgroundColor: [
+          "rgba(122, 155, 118, 0.8)", // 苔绿
+          "rgba(184, 169, 154, 0.8)", // 沙色
+          "rgba(200, 149, 110, 0.8)", // 暖棕
+          "rgba(139, 157, 155, 0.8)", // 烟蓝
+          "rgba(155, 150, 142, 0.8)", // 灰色
+        ],
+        borderColor: "#FAF8F3",
+        borderWidth: 2,
+        borderRadius: 8,
+      },
+    ],
   };
 }
 
@@ -448,17 +459,19 @@ export function getHealthDistributionChartData(healthStats) {
 export function getTagTrendChartData(stars, metadata) {
   const tags = calculateTagStats(stars, metadata);
   const topTags = tags.slice(0, 10);
-  
+
   return {
-    labels: topTags.map(item => item.tag),
-    datasets: [{
-      label: '使用次数',
-      data: topTags.map(item => item.count),
-      backgroundColor: 'rgba(200, 149, 110, 0.8)',
-      borderColor: '#C8956E',
-      borderWidth: 2,
-      borderRadius: 8
-    }]
+    labels: topTags.map((item) => item.tag),
+    datasets: [
+      {
+        label: "使用次数",
+        data: topTags.map((item) => item.count),
+        backgroundColor: "rgba(200, 149, 110, 0.8)",
+        borderColor: "#C8956E",
+        borderWidth: 2,
+        borderRadius: 8,
+      },
+    ],
   };
 }
 
@@ -467,18 +480,22 @@ export function getTagTrendChartData(stars, metadata) {
  */
 function aggregateByQuarter(monthlyData) {
   const quarterMap = {};
-  
-  monthlyData.forEach(item => {
-    const [year, month] = item.month.split('-');
+
+  monthlyData.forEach((item) => {
+    const [year, month] = item.month.split("-");
     const quarter = Math.ceil(parseInt(month) / 3);
     const quarterKey = `${year}-Q${quarter}`;
-    
+
     if (!quarterMap[quarterKey]) {
-      quarterMap[quarterKey] = { month: quarterKey, count: 0, cumulative: item.cumulative };
+      quarterMap[quarterKey] = {
+        month: quarterKey,
+        count: 0,
+        cumulative: item.cumulative,
+      };
     }
     quarterMap[quarterKey].count += item.count;
   });
-  
+
   return Object.values(quarterMap).sort((a, b) => a.month.localeCompare(b.month));
 }
 
@@ -487,16 +504,16 @@ function aggregateByQuarter(monthlyData) {
  */
 function aggregateByYear(monthlyData) {
   const yearMap = {};
-  
-  monthlyData.forEach(item => {
-    const year = item.month.split('-')[0];
-    
+
+  monthlyData.forEach((item) => {
+    const year = item.month.split("-")[0];
+
     if (!yearMap[year]) {
       yearMap[year] = { month: year, count: 0, cumulative: item.cumulative };
     }
     yearMap[year].count += item.count;
   });
-  
+
   return Object.values(yearMap).sort((a, b) => a.month.localeCompare(b.month));
 }
 
@@ -507,15 +524,15 @@ function aggregateByYear(monthlyData) {
  */
 export function getActivityHeatmapData(stars) {
   const activityMap = {};
-  
-  stars.forEach(star => {
+
+  stars.forEach((star) => {
     if (star.pushedAt) {
       const date = new Date(star.pushedAt);
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = date.toISOString().split("T")[0];
       activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
     }
   });
-  
+
   return Object.entries(activityMap)
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));

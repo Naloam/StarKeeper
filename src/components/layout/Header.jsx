@@ -1,8 +1,8 @@
-import { Star, Github, LogOut, Settings, Menu, X, Sun, Moon } from 'lucide-react';
-import { useAuthStore, useUIStore } from '../../store';
-import { APP_CONFIG } from '../../config';
-import LazyImage from '../common/LazyImage';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Star, Github, LogOut, Settings, Menu, X, Sun, Moon } from "lucide-react";
+import { useAuthStore, useUIStore } from "../../store";
+import { APP_CONFIG } from "../../config";
+import LazyImage from "../common/LazyImage";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function Header() {
   const { user, logout } = useAuthStore();
@@ -10,9 +10,9 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
-    if (window.confirm('确定要退出登录吗？')) {
+    if (window.confirm("确定要退出登录吗？")) {
       logout();
-      window.location.href = '/';
+      window.location.href = "/";
     }
   };
 
@@ -29,12 +29,10 @@ export default function Header() {
             >
               <Menu className="w-5 h-5 text-text-secondary" />
             </button>
-            
+
             <div className="flex items-center space-x-2">
               <Star className="w-6 h-6 text-primary" strokeWidth={1.5} />
-              <h1 className="text-h3 text-text-primary">
-                {APP_CONFIG.name}
-              </h1>
+              <h1 className="text-h3 text-text-primary">{APP_CONFIG.name}</h1>
             </div>
           </div>
 
@@ -59,9 +57,9 @@ export default function Header() {
                 <button
                   onClick={toggleTheme}
                   className="p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
-                  title={theme === 'dark' ? '切换到亮色模式' : '切换到深色模式'}
+                  title={theme === "dark" ? "切换到亮色模式" : "切换到深色模式"}
                 >
-                  {theme === 'dark' ? (
+                  {theme === "dark" ? (
                     <Sun className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
                   ) : (
                     <Moon className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />

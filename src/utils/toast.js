@@ -1,4 +1,4 @@
-import toast from 'react-hot-toast';
+import toast from "react-hot-toast";
 
 /**
  * Toast 通知工具函数
@@ -8,14 +8,14 @@ import toast from 'react-hot-toast';
 // 默认配置
 const defaultOptions = {
   duration: 4000,
-  position: 'top-right',
+  position: "top-right",
   style: {
-    background: '#fff',
-    color: '#363636',
-    borderRadius: '12px',
-    padding: '16px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-    maxWidth: '500px',
+    background: "#fff",
+    color: "#363636",
+    borderRadius: "12px",
+    padding: "16px",
+    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+    maxWidth: "500px",
   },
 };
 
@@ -29,8 +29,8 @@ export const showSuccess = (message, options = {}) => {
     ...defaultOptions,
     ...options,
     iconTheme: {
-      primary: '#10B981',
-      secondary: '#fff',
+      primary: "#10B981",
+      secondary: "#fff",
     },
   });
 };
@@ -46,8 +46,8 @@ export const showError = (message, options = {}) => {
     duration: 5000, // 错误信息显示更长时间
     ...options,
     iconTheme: {
-      primary: '#EF4444',
-      secondary: '#fff',
+      primary: "#EF4444",
+      secondary: "#fff",
     },
   });
 };
@@ -61,10 +61,10 @@ export const showWarning = (message, options = {}) => {
   return toast(message, {
     ...defaultOptions,
     ...options,
-    icon: '⚠️',
+    icon: "⚠️",
     style: {
       ...defaultOptions.style,
-      borderLeft: '4px solid #F59E0B',
+      borderLeft: "4px solid #F59E0B",
     },
   });
 };
@@ -78,10 +78,10 @@ export const showInfo = (message, options = {}) => {
   return toast(message, {
     ...defaultOptions,
     ...options,
-    icon: 'ℹ️',
+    icon: "ℹ️",
     style: {
       ...defaultOptions.style,
-      borderLeft: '4px solid #3B82F6',
+      borderLeft: "4px solid #3B82F6",
     },
   });
 };
@@ -110,20 +110,20 @@ export const showPromise = (promise, messages, options = {}) => {
   return toast.promise(
     promise,
     {
-      loading: messages.loading || '加载中...',
-      success: messages.success || '操作成功！',
+      loading: messages.loading || "加载中...",
+      success: messages.success || "操作成功！",
       error: (err) => {
         // 处理错误消息
-        if (typeof messages.error === 'function') {
+        if (typeof messages.error === "function") {
           return messages.error(err);
         }
-        return messages.error || err?.message || '操作失败！';
+        return messages.error || err?.message || "操作失败！";
       },
     },
     {
       ...defaultOptions,
       ...options,
-    }
+    },
   );
 };
 
@@ -160,52 +160,52 @@ export const dismissAll = () => {
  * @param {Error} error - 错误对象
  * @param {string} defaultMessage - 默认错误消息
  */
-export const handleApiError = (error, defaultMessage = '操作失败') => {
-  console.error('API Error:', error);
+export const handleApiError = (error, defaultMessage = "操作失败") => {
+  console.error("API Error:", error);
 
   // GitHub API 特定错误
   if (error.status === 401) {
-    showError('身份验证失败，请重新登录');
+    showError("身份验证失败，请重新登录");
     return;
   }
 
   if (error.status === 403) {
-    const isRateLimit = error.response?.headers?.['x-ratelimit-remaining'] === '0';
+    const isRateLimit = error.response?.headers?.["x-ratelimit-remaining"] === "0";
     if (isRateLimit) {
-      const resetTime = error.response?.headers?.['x-ratelimit-reset'];
+      const resetTime = error.response?.headers?.["x-ratelimit-reset"];
       const resetDate = resetTime ? new Date(resetTime * 1000) : null;
-      const resetStr = resetDate ? resetDate.toLocaleTimeString('zh-CN') : '稍后';
+      const resetStr = resetDate ? resetDate.toLocaleTimeString("zh-CN") : "稍后";
       showWarning(`API 调用次数已达上限，请在 ${resetStr} 后重试`);
       return;
     }
-    showError('没有权限执行此操作');
+    showError("没有权限执行此操作");
     return;
   }
 
   if (error.status === 404) {
-    showError('请求的资源不存在');
+    showError("请求的资源不存在");
     return;
   }
 
   if (error.status === 422) {
-    showError('请求参数有误，请检查后重试');
+    showError("请求参数有误，请检查后重试");
     return;
   }
 
   if (error.status >= 500) {
-    showError('服务器错误，请稍后重试');
+    showError("服务器错误，请稍后重试");
     return;
   }
 
   // 网络错误
-  if (!error.status && error.message === 'Network Error') {
-    showError('网络连接失败，请检查网络设置');
+  if (!error.status && error.message === "Network Error") {
+    showError("网络连接失败，请检查网络设置");
     return;
   }
 
   // 超时错误
-  if (error.code === 'ECONNABORTED') {
-    showError('请求超时，请稍后重试');
+  if (error.code === "ECONNABORTED") {
+    showError("请求超时，请稍后重试");
     return;
   }
 
@@ -219,14 +219,14 @@ export const handleApiError = (error, defaultMessage = '操作失败') => {
  * 自动显示网络状态变化提示
  */
 export const setupNetworkListener = () => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
-  window.addEventListener('online', () => {
-    showSuccess('网络已连接');
+  window.addEventListener("online", () => {
+    showSuccess("网络已连接");
   });
 
-  window.addEventListener('offline', () => {
-    showWarning('网络连接已断开，部分功能可能无法使用');
+  window.addEventListener("offline", () => {
+    showWarning("网络连接已断开，部分功能可能无法使用");
   });
 };
 

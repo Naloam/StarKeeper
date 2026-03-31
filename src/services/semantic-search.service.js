@@ -3,7 +3,15 @@
  * 基于 DashScope Embedding API 实现自然语言搜索
  */
 
-import { generateEmbedding, batchGenerateEmbeddings } from './dashscope.service';
+import { generateEmbedding, batchGenerateEmbeddings } from "./dashscope.service";
+
+// 预编译正则表达式
+const REGEX_FRONTEND = /react|vue|angular|svelte|component|ui|frontend|前端/;
+const REGEX_BACKEND = /server|backend|api|express|koa|flask|django|spring|后端/;
+const REGEX_TOOL = /util|tool|helper|library|库|工具/;
+const REGEX_FRAMEWORK = /framework|engine|框架|引擎/;
+const REGEX_DATA = /data|database|sql|mongo|redis|数据/;
+const REGEX_VISUAL = /chart|graph|visual|echarts|d3|可视化|图表/;
 
 /**
  * 计算余弦相似度
@@ -13,7 +21,7 @@ import { generateEmbedding, batchGenerateEmbeddings } from './dashscope.service'
  */
 export function cosineSimilarity(vec1, vec2) {
   if (!vec1 || !vec2 || vec1.length !== vec2.length) {
-    throw new Error('向量维度不匹配');
+    throw new Error("向量维度不匹配");
   }
 
   let dotProduct = 0;
@@ -44,64 +52,64 @@ export function generateSearchText(repo, metadata) {
   // 1. 项目名称（重复2次增加权重）
   parts.push(repo.name);
   parts.push(repo.name);
-  
+
   // 2. 项目全名（owner/name 格式）
   if (repo.full_name) {
     parts.push(repo.full_name);
   }
-  
+
   // 3. 描述（最重要的特征，重复2次）
   if (repo.description) {
     parts.push(repo.description);
     parts.push(repo.description);
   }
-  
+
   // 4. 语言（重复2次，语言是重要特征）
   if (repo.language) {
     parts.push(repo.language);
     parts.push(repo.language);
     // 添加常见的语言相关词汇
     const langKeywords = {
-      'JavaScript': 'JS 前端 Web Node.js',
-      'TypeScript': 'TS 前端 Web 类型安全',
-      'Python': 'Python 脚本 数据分析 机器学习',
-      'Java': 'Java 后端 企业级',
-      'Go': 'Golang 后端 微服务',
-      'Rust': 'Rust 系统编程 性能',
-      'C++': 'CPP 系统编程 游戏',
-      'C#': 'CSharp .NET Unity',
-      'PHP': 'PHP Web 后端',
-      'Ruby': 'Ruby Rails Web',
-      'Swift': 'Swift iOS macOS',
-      'Kotlin': 'Kotlin Android',
-      'Vue': 'Vue.js 前端框架',
-      'React': 'React.js 前端框架'
+      JavaScript: "JS 前端 Web Node.js",
+      TypeScript: "TS 前端 Web 类型安全",
+      Python: "Python 脚本 数据分析 机器学习",
+      Java: "Java 后端 企业级",
+      Go: "Golang 后端 微服务",
+      Rust: "Rust 系统编程 性能",
+      "C++": "CPP 系统编程 游戏",
+      "C#": "CSharp .NET Unity",
+      PHP: "PHP Web 后端",
+      Ruby: "Ruby Rails Web",
+      Swift: "Swift iOS macOS",
+      Kotlin: "Kotlin Android",
+      Vue: "Vue.js 前端框架",
+      React: "React.js 前端框架",
     };
     if (langKeywords[repo.language]) {
       parts.push(langKeywords[repo.language]);
     }
   }
-  
+
   // 5. 主题标签（GitHub topics，只加一次，topics 本身已经很精确）
   if (repo.topics && Array.isArray(repo.topics)) {
-    const topicsStr = repo.topics.join(' ');
+    const topicsStr = repo.topics.join(" ");
     parts.push(topicsStr);
   }
-  
+
   // 6. AI 摘要（详细的项目信息）
   if (metadata?.aiSummary) {
-    if (typeof metadata.aiSummary === 'string') {
+    if (typeof metadata.aiSummary === "string") {
       parts.push(metadata.aiSummary);
     } else if (metadata.aiSummary.summary) {
       parts.push(metadata.aiSummary.summary);
       if (metadata.aiSummary.features && Array.isArray(metadata.aiSummary.features)) {
-        parts.push(metadata.aiSummary.features.join(' '));
+        parts.push(metadata.aiSummary.features.join(" "));
       }
       if (metadata.aiSummary.useCase) {
         parts.push(metadata.aiSummary.useCase);
       }
       if (metadata.aiSummary.techStack && Array.isArray(metadata.aiSummary.techStack)) {
-        const techStack = metadata.aiSummary.techStack.join(' ');
+        const techStack = metadata.aiSummary.techStack.join(" ");
         parts.push(techStack);
       }
     }
@@ -109,7 +117,7 @@ export function generateSearchText(repo, metadata) {
 
   // 7. 用户标签（只加一次）
   if (metadata?.tags && Array.isArray(metadata.tags)) {
-    const tagsStr = metadata.tags.join(' ');
+    const tagsStr = metadata.tags.join(" ");
     parts.push(tagsStr);
   }
 
@@ -117,41 +125,30 @@ export function generateSearchText(repo, metadata) {
   if (metadata?.notes) {
     parts.push(metadata.notes);
   }
-  
+
   // 9. 根据项目类型添加关键词
-  const nameAndDesc = `${repo.name} ${repo.description || ''}`.toLowerCase();
-  
-  // 前端相关
-  if (nameAndDesc.match(/react|vue|angular|svelte|component|ui|frontend|前端/)) {
-    parts.push('前端 Web UI 组件 界面');
+  const nameAndDesc = `${repo.name} ${repo.description || ""}`.toLowerCase();
+
+  if (REGEX_FRONTEND.test(nameAndDesc)) {
+    parts.push("前端 Web UI 组件 界面");
   }
-  
-  // 后端相关
-  if (nameAndDesc.match(/server|backend|api|express|koa|flask|django|spring|后端/)) {
-    parts.push('后端 服务器 API 接口');
+  if (REGEX_BACKEND.test(nameAndDesc)) {
+    parts.push("后端 服务器 API 接口");
   }
-  
-  // 工具库
-  if (nameAndDesc.match(/util|tool|helper|library|库|工具/)) {
-    parts.push('工具 库 辅助 实用');
+  if (REGEX_TOOL.test(nameAndDesc)) {
+    parts.push("工具 库 辅助 实用");
   }
-  
-  // 框架
-  if (nameAndDesc.match(/framework|engine|框架|引擎/)) {
-    parts.push('框架 平台 系统');
+  if (REGEX_FRAMEWORK.test(nameAndDesc)) {
+    parts.push("框架 平台 系统");
   }
-  
-  // 数据相关
-  if (nameAndDesc.match(/data|database|sql|mongo|redis|数据/)) {
-    parts.push('数据 数据库 存储');
+  if (REGEX_DATA.test(nameAndDesc)) {
+    parts.push("数据 数据库 存储");
   }
-  
-  // 可视化
-  if (nameAndDesc.match(/chart|graph|visual|echarts|d3|可视化|图表/)) {
-    parts.push('可视化 图表 数据展示');
+  if (REGEX_VISUAL.test(nameAndDesc)) {
+    parts.push("可视化 图表 数据展示");
   }
 
-  return parts.filter(Boolean).join(' ');
+  return parts.filter(Boolean).join(" ");
 }
 
 /**
@@ -162,9 +159,9 @@ export function generateSearchText(repo, metadata) {
  */
 export async function generateRepoEmbedding(repo, metadata) {
   const searchText = generateSearchText(repo, metadata);
-  
+
   if (!searchText.trim()) {
-    throw new Error('无法生成搜索文本');
+    throw new Error("无法生成搜索文本");
   }
 
   return await generateEmbedding(searchText);
@@ -183,9 +180,9 @@ export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress
 
   for (let i = 0; i < repos.length; i += batchSize) {
     const batch = repos.slice(i, Math.min(i + batchSize, repos.length));
-    
+
     // 生成搜索文本
-    const texts = batch.map(repo => {
+    const texts = batch.map((repo) => {
       const metadata = metadataMap[repo.id] || {};
       return generateSearchText(repo, metadata);
     });
@@ -193,7 +190,7 @@ export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress
     try {
       // 批量生成 embeddings
       const batchEmbeddings = await batchGenerateEmbeddings(texts);
-      
+
       // 映射到 repoId
       batch.forEach((repo, idx) => {
         embeddings[repo.id] = batchEmbeddings[idx];
@@ -206,7 +203,7 @@ export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress
 
       // 避免速率限制
       if (i + batchSize < repos.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error) {
       console.error(`批量生成 embeddings 失败 (batch ${i}-${i + batchSize}):`, error);
@@ -245,20 +242,20 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
 
     try {
       const score = cosineSimilarity(queryEmbedding, repoEmbedding);
-      
+
       if (score >= threshold) {
         // 确定相关度等级
-        let relevance = 'low';
+        let relevance = "low";
         if (score >= 0.7) {
-          relevance = 'high';
+          relevance = "high";
         } else if (score >= 0.55) {
-          relevance = 'medium';
+          relevance = "medium";
         }
 
         results.push({
           repo,
           score: Math.round(score * 100) / 100, // 保留两位小数
-          relevance
+          relevance,
         });
       }
     } catch (error) {
@@ -271,12 +268,12 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
 
   // 动态调整结果数量
   // 如果有高相关度结果，优先返回高相关度的
-  const highRelevance = results.filter(r => r.relevance === 'high');
-  const mediumRelevance = results.filter(r => r.relevance === 'medium');
-  const lowRelevance = results.filter(r => r.relevance === 'low');
+  const highRelevance = results.filter((r) => r.relevance === "high");
+  const mediumRelevance = results.filter((r) => r.relevance === "medium");
+  const lowRelevance = results.filter((r) => r.relevance === "low");
 
   let finalResults = [];
-  
+
   // 策略：优先返回高相关度，如果不足再补充中等相关度
   if (highRelevance.length >= 3) {
     // 如果有足够的高相关度结果，主要返回高相关度
@@ -290,7 +287,9 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
     finalResults = [...highRelevance];
     const remaining = topK - finalResults.length;
     if (remaining > 0) {
-      finalResults.push(...mediumRelevance.slice(0, Math.min(remaining, Math.ceil(remaining * 0.6))));
+      finalResults.push(
+        ...mediumRelevance.slice(0, Math.min(remaining, Math.ceil(remaining * 0.6))),
+      );
     }
     const stillRemaining = topK - finalResults.length;
     if (stillRemaining > 0) {
@@ -329,11 +328,11 @@ export function findSimilarRepos(targetRepo, repos, embeddingsMap, options = {})
 
     try {
       const score = cosineSimilarity(targetEmbedding, repoEmbedding);
-      
+
       if (score >= threshold) {
         results.push({
           repo,
-          score: Math.round(score * 100) / 100
+          score: Math.round(score * 100) / 100,
         });
       }
     } catch (error) {
@@ -354,7 +353,7 @@ export function findSimilarRepos(targetRepo, repos, embeddingsMap, options = {})
  */
 export function loadEmbeddingsFromMetadata(metadata) {
   const embeddings = {};
-  
+
   for (const [repoId, repoMeta] of Object.entries(metadata)) {
     if (repoMeta?.embedding && Array.isArray(repoMeta.embedding)) {
       embeddings[repoId] = repoMeta.embedding;
@@ -395,7 +394,7 @@ export function getReposNeedingEmbedding(repos, metadata) {
 
   for (const repo of repos) {
     const repoMeta = metadata[repo.id];
-    
+
     // 没有 embedding
     if (!repoMeta?.embedding) {
       needUpdate.push(repo);

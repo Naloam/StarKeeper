@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Copy,
   TrendingUp,
@@ -9,30 +9,30 @@ import {
   XCircle,
   AlertTriangle,
   Sparkles,
-  Trash2
-} from 'lucide-react';
-import { useStarsStore, useAuthStore } from '../store';
-import { 
+  Trash2,
+} from "lucide-react";
+import { useStarsStore, useAuthStore } from "../store";
+import {
   detectSimilarRepos,
   clusterByLanguage,
   clusterByTopics,
-  generateDeduplicationReport
-} from '../services/similarity.service';
-import { saveMetadataToGist } from '../services/metadata.service';
-import SimilarReposCard from '../components/common/SimilarReposCard';
-import MainLayout from '../components/layout/MainLayout';
+  generateDeduplicationReport,
+} from "../services/similarity.service";
+import { saveMetadataToGist } from "../services/metadata.service";
+import SimilarReposCard from "../components/common/SimilarReposCard";
+import MainLayout from "../components/layout/MainLayout";
 
 export default function DeduplicationPage() {
   const navigate = useNavigate();
   const { stars, metadata, setMetadata } = useStarsStore();
   const { accessToken, gistId } = useAuthStore();
-  
+
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [threshold, setThreshold] = useState(0.6); // 相似度阈值
   const [selectedRepos, setSelectedRepos] = useState(new Set());
   const [removing, setRemoving] = useState(false);
-  const [activeTab, setActiveTab] = useState('similar'); // similar | language | topics
+  const [activeTab, setActiveTab] = useState("similar"); // similar | language | topics
 
   useEffect(() => {
     if (stars.length > 0) {
@@ -46,7 +46,7 @@ export default function DeduplicationPage() {
       const deduplicationReport = generateDeduplicationReport(stars, threshold);
       setReport(deduplicationReport);
     } catch (error) {
-      console.error('分析失败:', error);
+      console.error("分析失败:", error);
     } finally {
       setLoading(false);
     }
@@ -65,9 +65,9 @@ export default function DeduplicationPage() {
   const handleSelectAllInGroup = (group) => {
     const newSelected = new Set(selectedRepos);
     const recommendedId = group.recommendation.repoId;
-    
+
     // 选择组内除了推荐项之外的所有项目
-    group.repos.forEach(repo => {
+    group.repos.forEach((repo) => {
       if (repo.id !== recommendedId) {
         if (newSelected.has(repo.id)) {
           newSelected.delete(repo.id);
@@ -76,13 +76,13 @@ export default function DeduplicationPage() {
         }
       }
     });
-    
+
     setSelectedRepos(newSelected);
   };
 
   const handleRemoveSelected = async () => {
     if (selectedRepos.size === 0) return;
-    
+
     if (!confirm(`确定要归档 ${selectedRepos.size} 个重复项目吗？`)) {
       return;
     }
@@ -92,30 +92,30 @@ export default function DeduplicationPage() {
       // 将选中的项目标记为已归档
       const updatedMetadata = { ...metadata };
       const now = new Date().toISOString();
-      
-      selectedRepos.forEach(repoId => {
+
+      selectedRepos.forEach((repoId) => {
         if (!updatedMetadata[repoId]) {
           updatedMetadata[repoId] = {};
         }
         updatedMetadata[repoId].archived = true;
         updatedMetadata[repoId].archivedAt = now;
-        updatedMetadata[repoId].archivedReason = 'duplicate';
+        updatedMetadata[repoId].archivedReason = "duplicate";
       });
-      
+
       // 保存到 Gist
       await saveMetadataToGist(accessToken, gistId, updatedMetadata);
       setMetadata(updatedMetadata);
-      
+
       // 清除选择
       setSelectedRepos(new Set());
-      
+
       // 重新分析
       analyzeDeduplication();
-      
+
       alert(`成功归档 ${selectedRepos.size} 个项目！`);
     } catch (error) {
-      console.error('归档失败:', error);
-      alert('归档失败，请重试');
+      console.error("归档失败:", error);
+      alert("归档失败，请重试");
     } finally {
       setRemoving(false);
     }
@@ -145,7 +145,7 @@ export default function DeduplicationPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
               className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
@@ -159,13 +159,11 @@ export default function DeduplicationPage() {
               基于多维度相似度分析，帮助你识别和清理重复的 Star 项目
             </p>
           </div>
-          
+
           {/* 操作按钮 */}
           {selectedRepos.size > 0 && (
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">
-                已选择 {selectedRepos.size} 个项目
-              </span>
+              <span className="text-sm text-gray-600">已选择 {selectedRepos.size} 个项目</span>
               <button
                 onClick={() => setSelectedRepos(new Set())}
                 className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -227,11 +225,10 @@ export default function DeduplicationPage() {
         <div className="bg-surface-card rounded-lg border border-border p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                相似度阈值
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">相似度阈值</h3>
               <p className="text-sm text-gray-600">
-                调整阈值以控制检测灵敏度，当前阈值: <span className="font-bold text-primary-600">{(threshold * 100).toFixed(0)}%</span>
+                调整阈值以控制检测灵敏度，当前阈值:{" "}
+                <span className="font-bold text-primary-600">{(threshold * 100).toFixed(0)}%</span>
               </p>
             </div>
             <div className="w-64">
@@ -256,14 +253,10 @@ export default function DeduplicationPage() {
         {report.duplicateGroups === 0 ? (
           <div className="bg-surface-card rounded-lg border border-border p-12 text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              太棒了！没有发现重复项目
-            </h3>
-            <p className="text-gray-600 mb-6">
-              你的 Stars 列表很干净，没有明显的重复或相似项目
-            </p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">太棒了！没有发现重复项目</h3>
+            <p className="text-gray-600 mb-6">你的 Stars 列表很干净，没有明显的重复或相似项目</p>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               返回主页
@@ -280,7 +273,7 @@ export default function DeduplicationPage() {
                 <span>点击"选择移除"标记待清理项目</span>
               </div>
             </div>
-            
+
             {report.groups.map((group, index) => (
               <div key={index} className="relative">
                 {/* 快速选择按钮 */}
@@ -292,7 +285,7 @@ export default function DeduplicationPage() {
                     快速选择非推荐项
                   </button>
                 </div>
-                
+
                 <SimilarReposCard
                   group={group}
                   onSelectRepo={handleSelectRepo}
@@ -329,10 +322,10 @@ export default function DeduplicationPage() {
 // 统计卡片组件
 function StatCard({ icon, label, value, color, subtitle }) {
   const colorClasses = {
-    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-    green: 'bg-green-50 text-green-600 border-green-200',
-    blue: 'bg-blue-50 text-blue-600 border-blue-200'
+    yellow: "bg-yellow-50 text-yellow-600 border-yellow-200",
+    red: "bg-red-50 text-red-600 border-red-200",
+    green: "bg-green-50 text-green-600 border-green-200",
+    blue: "bg-blue-50 text-blue-600 border-blue-200",
   };
 
   return (
