@@ -1,6 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+// ============================================================
+// applyFilters 防抖 — 避免连续 setSearchQuery/setSortBy 等触发过多重计算
+// ============================================================
+let filterTimer = null;
+const FILTER_DEBOUNCE_MS = 32; // ~1 帧间隔，足够合并同一 tick 内的多次 setState
+
+function debouncedApplyFilters() {
+  if (filterTimer) clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => {
+    filterTimer = null;
+    useStarsStore.getState()._applyFiltersImmediate();
+  }, FILTER_DEBOUNCE_MS);
+}
+
 /**
  * 认证状态管理
  */
@@ -80,21 +94,21 @@ export const useStarsStore = create((set, get) => ({
   // Actions
   setStars: (stars) => {
     set({ stars });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   addStar: (star) => {
     set((state) => ({
       stars: [star, ...state.stars],
     }));
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   removeStar: (repoId) => {
     set((state) => ({
       stars: state.stars.filter((s) => s.id !== repoId),
     }));
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   clearStars: () => {
@@ -115,27 +129,27 @@ export const useStarsStore = create((set, get) => ({
   // 搜索与过滤
   setSearchQuery: (query) => {
     set({ searchQuery: query });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   setSelectedLanguages: (languages) => {
     set({ selectedLanguages: languages });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   setSelectedTags: (tags) => {
     set({ selectedTags: tags });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   setSortBy: (sortBy) => {
     set({ sortBy });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   setSortDirection: (direction) => {
     set({ sortDirection: direction });
-    get().applyFilters();
+    debouncedApplyFilters();
   },
 
   // 应用过滤和排序

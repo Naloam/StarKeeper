@@ -1,18 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { lazy, Suspense } from "react";
 import { useAuthStore } from "./store";
 import LoginPage from "./pages/LoginPage";
 import CallbackPage from "./pages/CallbackPage";
-import DashboardPage from "./pages/DashboardPage";
-import CleanupPage from "./pages/CleanupPage";
-import DeduplicationPage from "./pages/DeduplicationPage";
-import SharePage from "./pages/SharePage";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import OfflineIndicator from "./components/common/OfflineIndicator";
 import { useEffect, useState } from "react";
 import { validateGitHubToken } from "./utils/auth";
 import { setupNetworkListener } from "./utils/toast";
+
+// 路由级代码分割 — 懒加载页面组件
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const CleanupPage = lazy(() => import("./pages/CleanupPage"));
+const DeduplicationPage = lazy(() => import("./pages/DeduplicationPage"));
+const SharePage = lazy(() => import("./pages/SharePage"));
 
 function App() {
   const { isAuthenticated, accessToken, login, logout } = useAuthStore();
@@ -70,27 +73,35 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
-          <Route
-            path="/"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
-          />
-          <Route path="/auth/callback" element={<CallbackPage />} />
-          <Route
-            path="/dashboard"
-            element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/cleanup"
-            element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/deduplication"
-            element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
-          />
-          <Route path="/share/:shareId" element={<SharePage />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+            </div>
+          }
+        >
+          <Routes>
+            <Route
+              path="/"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
+            />
+            <Route path="/auth/callback" element={<CallbackPage />} />
+            <Route
+              path="/dashboard"
+              element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/cleanup"
+              element={isAuthenticated ? <CleanupPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/deduplication"
+              element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
+            />
+            <Route path="/share/:shareId" element={<SharePage />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
 
       {/* PWA 安装提示 */}
