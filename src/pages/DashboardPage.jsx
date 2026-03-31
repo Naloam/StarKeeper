@@ -197,7 +197,7 @@ export default function DashboardPage() {
       setStars(repos);
     } catch (error) {
       console.error("加载 stars 失败:", error);
-      alert("加载失败：" + error.message);
+      toast.error("加载失败：" + error.message);
     } finally {
       setLoading(false);
     }
@@ -245,7 +245,7 @@ export default function DashboardPage() {
         console.log("✅ 重新加载后该仓库的 metadata:", storeMetadata[data.repoId]);
       } catch (error) {
         console.error("❌ 保存到 Gist 失败:", error);
-        alert("保存失败：" + error.message);
+        toast.error("保存失败：" + error.message);
         throw error; // 抛出错误，阻止 Modal 关闭
       }
     } else {
@@ -279,7 +279,7 @@ export default function DashboardPage() {
       const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
 
       if (!readmeContent) {
-        alert("该项目没有 README 文件");
+        toast.error("该项目没有 README 文件");
         return;
       }
 
@@ -306,7 +306,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("❌ 生成 AI 摘要失败:", error);
-      alert("生成失败：" + error.message);
+      toast.error("生成失败：" + error.message);
     } finally {
       setGeneratingSummary((prev) => ({ ...prev, [repoId]: false }));
     }
@@ -344,7 +344,7 @@ export default function DashboardPage() {
     });
 
     if (reposWithoutSummary.length === 0) {
-      alert("当前显示的所有项目都已有 AI 摘要");
+      toast.success("当前显示的所有项目都已有 AI 摘要");
       return;
     }
 
@@ -463,7 +463,7 @@ export default function DashboardPage() {
       setShowHealthModal(true);
     } catch (error) {
       console.error("❌ 分析健康度失败:", error);
-      alert("分析失败：" + error.message);
+      toast.error("分析失败：" + error.message);
     } finally {
       setAnalyzingHealth((prev) => ({ ...prev, [repoId]: false }));
     }
@@ -481,7 +481,7 @@ export default function DashboardPage() {
     });
 
     if (reposNeedingAnalysis.length === 0) {
-      alert("当前显示的所有项目都已有健康度数据（且未过期）");
+      toast.success("当前显示的所有项目都已有健康度数据（且未过期）");
       return;
     }
 
@@ -582,10 +582,10 @@ export default function DashboardPage() {
       console.log("✅ 本地状态已更新:", updatedConfig);
 
       setShowShareModal(false);
-      alert("分享设置已更新！");
+      toast.success("分享设置已更新！");
     } catch (error) {
       console.error("❌ 更新分享配置失败:", error);
-      alert("更新失败：" + error.message);
+      toast.error("更新失败：" + error.message);
       throw error; // 重新抛出错误，防止 Modal 关闭
     }
   };

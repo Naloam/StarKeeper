@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Trash2,
   AlertTriangle,
@@ -96,7 +97,7 @@ export default function CleanupPage() {
       setActiveTab("archived"); // 切换到归档标签页
     } catch (error) {
       console.error("归档失败:", error);
-      alert("归档失败，请重试");
+      toast.error("归档失败，请重试");
     } finally {
       setArchiving(false);
     }
@@ -114,7 +115,7 @@ export default function CleanupPage() {
       analyzeStars(); // 重新分析
     } catch (error) {
       console.error("恢复失败:", error);
-      alert("恢复失败，请重试");
+      toast.error("恢复失败，请重试");
     } finally {
       setArchiving(false);
     }
