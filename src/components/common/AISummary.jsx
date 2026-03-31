@@ -1,5 +1,6 @@
 import { Sparkles, RefreshCw, Edit2, Check, X } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 /**
  * AI 摘要展示组件
@@ -27,7 +28,7 @@ export default function AISummary({
         setIsEditing(false);
       } catch (error) {
         console.error("保存摘要失败:", error);
-        alert("保存失败：" + error.message);
+        toast.error("保存失败：" + error.message);
       }
     } else {
       setIsEditing(false);

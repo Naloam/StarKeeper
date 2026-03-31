@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Copy,
   TrendingUp,
@@ -112,10 +113,10 @@ export default function DeduplicationPage() {
       // 重新分析
       analyzeDeduplication();
 
-      alert(`成功归档 ${selectedRepos.size} 个项目！`);
+      toast.success(`成功归档 ${selectedRepos.size} 个项目！`);
     } catch (error) {
       console.error("归档失败:", error);
-      alert("归档失败，请重试");
+      toast.error("归档失败，请重试");
     } finally {
       setRemoving(false);
     }

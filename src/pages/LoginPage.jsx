@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Github, Star, Sparkles, Key } from "lucide-react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { getGitHubAuthUrl } from "../utils/auth";
 import { APP_CONFIG } from "../config";
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const handleOAuthLogin = () => {
     // 检查是否配置了 GitHub OAuth
     if (!import.meta.env.VITE_GITHUB_CLIENT_ID) {
-      alert(
+      toast.error(
         "请先配置 GitHub OAuth App。\n\n1. 访问 https://github.com/settings/developers\n2. 创建 New OAuth App\n3. 配置 .env 文件",
       );
       return;

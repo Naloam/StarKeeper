@@ -1,5 +1,6 @@
 import { X, Download, FileText, Table, Code } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import {
   exportAndDownloadMarkdown,
   exportAndDownloadCSV,
@@ -71,7 +72,7 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
         }, 500);
       } catch (error) {
         console.error("导出失败:", error);
-        alert("导出失败：" + error.message);
+        toast.error("导出失败：" + error.message);
         setIsExporting(false);
       }
     }, 300);

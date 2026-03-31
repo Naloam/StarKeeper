@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
+import toast from "react-hot-toast";
 import { TrendingUp, PieChart as PieChartIcon, BarChart3, Download } from "lucide-react";
 import LineChart from "../charts/LineChart";
 import PieChart from "../charts/PieChart";
@@ -46,7 +47,7 @@ export default function StatsVisualization({ stars, metadata, healthStats }) {
   const handleExportChart = () => {
     const chartRef = chartRefs[activeTab].current;
     if (!chartRef) {
-      alert("无法找到图表");
+      toast.error("无法找到图表");
       return;
     }
 
@@ -54,14 +55,14 @@ export default function StatsVisualization({ stars, metadata, healthStats }) {
       // 获取 Chart.js canvas 元素
       const canvas = chartRef.querySelector("canvas");
       if (!canvas) {
-        alert("无法找到图表画布");
+        toast.error("无法找到图表画布");
         return;
       }
 
       // 转换为 Blob 并下载
       canvas.toBlob((blob) => {
         if (!blob) {
-          alert("导出失败");
+          toast.error("导出失败");
           return;
         }
 
@@ -84,7 +85,7 @@ export default function StatsVisualization({ stars, metadata, healthStats }) {
       }, "image/png");
     } catch (error) {
       console.error("导出图表失败:", error);
-      alert("导出失败：" + error.message);
+      toast.error("导出失败：" + error.message);
     }
   };
 
