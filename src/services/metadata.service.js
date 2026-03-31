@@ -255,6 +255,21 @@ export function convertGistToStoreFormat(gistMetadata) {
 }
 
 /**
+ * 保存 collections 到 Gist
+ * @param {string} accessToken
+ * @param {string} gistId
+ * @param {Array} collections
+ * @returns {Promise<void>}
+ */
+export async function saveCollections(accessToken, gistId, collections) {
+  return enqueueWrite(async () => {
+    const metadata = await loadMetadataFromGist(accessToken, gistId);
+    metadata.collections = collections;
+    await doSaveToGist(accessToken, gistId, metadata);
+  });
+}
+
+/**
  * 更新分享配置
  * @param {string} accessToken
  * @param {string} gistId
@@ -313,4 +328,5 @@ export default {
   convertStoreToGistFormat,
   convertGistToStoreFormat,
   updateShareConfig,
+  saveCollections,
 };

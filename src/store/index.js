@@ -87,9 +87,13 @@ export const useStarsStore = create((set, get) => ({
   selectedTags: [],
   sortBy: "updated", // updated | stars | name
   sortDirection: "desc", // asc | desc
+  selectedCollection: null, // 当前选中的收藏夹 ID
 
   // 元数据（标签、笔记等）
   metadata: {}, // { [repoId]: { tags: [], notes: '', color: '' } }
+
+  // 收藏夹（Collections）
+  collections: [], // [{ id, name, description, repoIds: [], createdAt, updatedAt }]
 
   // Actions
   setStars: (stars) => {
@@ -119,6 +123,8 @@ export const useStarsStore = create((set, get) => ({
       searchQuery: "",
       selectedLanguages: [],
       selectedTags: [],
+      selectedCollection: null,
+      collections: [],
     });
   },
 
@@ -154,8 +160,17 @@ export const useStarsStore = create((set, get) => ({
 
   // 应用过滤和排序
   applyFilters: () => {
-    const { stars, searchQuery, selectedLanguages, selectedTags, sortBy, sortDirection, metadata } =
-      get();
+    const {
+      stars,
+      searchQuery,
+      selectedLanguages,
+      selectedTags,
+      sortBy,
+      sortDirection,
+      metadata,
+      selectedCollection,
+      collections,
+    } = get();
 
     let filtered = [...stars];
 
@@ -182,6 +197,15 @@ export const useStarsStore = create((set, get) => ({
         const starTags = metadata[star.id]?.tags || [];
         return selectedTags.some((tag) => starTags.includes(tag));
       });
+    }
+
+    // 收藏夹过滤
+    if (selectedCollection) {
+      const col = collections.find((c) => c.id === selectedCollection);
+      if (col) {
+        const repoIdSet = new Set(col.repoIds);
+        filtered = filtered.filter((star) => repoIdSet.has(star.id));
+      }
     }
 
     // 排序
@@ -243,6 +267,71 @@ export const useStarsStore = create((set, get) => ({
 
   setNotes: (repoId, notes) => {
     get().updateRepoMetadata(repoId, { notes });
+  },
+
+  // Collections 管理
+  setCollections: (collections) => {
+    set({ collections });
+  },
+
+  createCollection: (name, description = "") => {
+    const collection = {
+      id: `col-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      description,
+      repoIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    set((state) => ({ collections: [...state.collections, collection] }));
+    return collection;
+  },
+
+  updateCollection: (collectionId, updates) => {
+    set((state) => ({
+      collections: state.collections.map((c) =>
+        c.id === collectionId ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c,
+      ),
+    }));
+  },
+
+  deleteCollection: (collectionId) => {
+    set((state) => ({
+      collections: state.collections.filter((c) => c.id !== collectionId),
+      selectedCollection:
+        state.selectedCollection === collectionId ? null : state.selectedCollection,
+    }));
+  },
+
+  addRepoToCollection: (collectionId, repoId) => {
+    set((state) => ({
+      collections: state.collections.map((c) => {
+        if (c.id === collectionId && !c.repoIds.includes(repoId)) {
+          return { ...c, repoIds: [...c.repoIds, repoId], updatedAt: new Date().toISOString() };
+        }
+        return c;
+      }),
+    }));
+  },
+
+  removeRepoFromCollection: (collectionId, repoId) => {
+    set((state) => ({
+      collections: state.collections.map((c) => {
+        if (c.id === collectionId) {
+          return {
+            ...c,
+            repoIds: c.repoIds.filter((id) => id !== repoId),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return c;
+      }),
+    }));
+  },
+
+  setSelectedCollection: (collectionId) => {
+    set({ selectedCollection: collectionId });
+    debouncedApplyFilters();
   },
 
   // Getters

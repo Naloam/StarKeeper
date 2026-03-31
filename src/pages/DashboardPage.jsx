@@ -15,6 +15,7 @@ import {
   Loader2,
   Zap,
   Copy,
+  FolderPlus,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import MainLayout from "../components/layout/MainLayout";
@@ -46,7 +47,10 @@ import {
   updateRepoMetadata as saveRepoMetadataToGist,
   convertGistToStoreFormat,
   updateShareConfig,
+  saveCollections,
 } from "../services/metadata.service";
+import CollectionModal from "../components/common/CollectionModal";
+import { APP_CONFIG } from "../config";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -61,6 +65,11 @@ export default function DashboardPage() {
     metadata,
     getAllTags,
     setMetadata,
+    collections,
+    setCollections,
+    createCollection: storeCreateCollection,
+    addRepoToCollection,
+    deleteCollection,
   } = useStarsStore();
   const [progress, setProgress] = useState({ current: 0, hasMore: false });
   const [selectedRepo, setSelectedRepo] = useState(null);
@@ -93,6 +102,13 @@ export default function DashboardPage() {
   // 语义搜索状态
   const [semanticSearchResults, setSemanticSearchResults] = useState(null);
 
+  // Collections 状态
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [collectionModalMode, setCollectionModalMode] = useState("create"); // create | add
+  const [collectionRepoId, setCollectionRepoId] = useState(null);
+
+  const collectionsEnabled = APP_CONFIG.features.collections;
+
   useEffect(() => {
     if (accessToken && stars.length === 0) {
       loadStars();
@@ -124,6 +140,11 @@ export default function DashboardPage() {
       const storeMetadata = convertGistToStoreFormat(gistMetadata);
       setMetadata(storeMetadata);
 
+      // 加载收藏夹
+      if (gistMetadata.collections) {
+        setCollections(gistMetadata.collections);
+      }
+
       // 加载分享配置
       if (gistMetadata.shareConfig) {
         setShareConfig(gistMetadata.shareConfig);
@@ -143,6 +164,17 @@ export default function DashboardPage() {
     }
   }, [stars, metadata]);
 
+  // Collections 变更时自动保存到 Gist
+  useEffect(() => {
+    if (collectionsEnabled && accessToken && gistId && collections.length >= 0) {
+      // 跳过初始加载（空数组 + 未加载完）
+      if (collections.length === 0 && !metadata) return;
+      saveCollections(accessToken, gistId, collections).catch((err) => {
+        console.error("保存收藏夹失败:", err);
+      });
+    }
+  }, [collections]);
+
   // 处理自定义过滤
   const handleApplyCustomFilter = (filteredData, filters) => {
     setCustomFilteredStars(filteredData);
@@ -156,6 +188,49 @@ export default function DashboardPage() {
   };
 
   // 确定要显示的数据 - 如果有语义搜索结果，需要与侧边栏筛选取交集
+  // Collection 操作
+  const handleCreateCollection = () => {
+    setCollectionModalMode("create");
+    setCollectionRepoId(null);
+    setShowCollectionModal(true);
+  };
+
+  const handleAddToCollection = (repoId) => {
+    if (collections.length === 0) {
+      // 没有收藏夹，先创建
+      setCollectionModalMode("create");
+      setCollectionRepoId(repoId);
+      setShowCollectionModal(true);
+    } else {
+      setCollectionModalMode("add");
+      setCollectionRepoId(repoId);
+      setShowCollectionModal(true);
+    }
+  };
+
+  const handleCollectionSave = async (data) => {
+    if (collectionModalMode === "create") {
+      const col = storeCreateCollection(data.name, data.description);
+      // 如果有待添加的 repo
+      if (collectionRepoId) {
+        addRepoToCollection(col.id, collectionRepoId);
+        toast.success(`已创建收藏夹「${data.name}」并添加项目`);
+      } else {
+        toast.success(`收藏夹「${data.name}」已创建`);
+      }
+    } else if (collectionModalMode === "add" && data.collectionId) {
+      addRepoToCollection(data.collectionId, data.repoId);
+      toast.success("已添加到收藏夹");
+    }
+  };
+
+  const handleDeleteCollection = async (collectionId) => {
+    deleteCollection(collectionId);
+    toast.success("收藏夹已删除");
+  };
+
+  const sidebarProps = collectionsEnabled ? { onCreateCollection: handleCreateCollection } : {};
+
   const displayStars = (() => {
     if (semanticSearchResults) {
       // 有语义搜索结果时，与 filteredStars 取交集
@@ -633,7 +708,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout sidebarProps={sidebarProps}>
       <div>
         {/* Toolbar */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -798,6 +873,7 @@ export default function DashboardPage() {
         {/* Stars Grid/List */}
         <StarsList
           stars={displayStars}
+          onAddToCollection={collectionsEnabled ? handleAddToCollection : null}
           onOpenTagModal={handleOpenTagModal}
           onGenerateSummary={handleGenerateSummary}
           onSaveSummary={handleSaveSummary}
@@ -843,6 +919,19 @@ export default function DashboardPage() {
             onClose={() => setShowHealthModal(false)}
           />
         )}
+
+        {/* Collection Modal */}
+        {collectionsEnabled && (
+          <CollectionModal
+            isOpen={showCollectionModal}
+            onClose={() => setShowCollectionModal(false)}
+            mode={collectionModalMode}
+            repoId={collectionRepoId}
+            collections={collections}
+            onSave={handleCollectionSave}
+            onDelete={handleDeleteCollection}
+          />
+        )}
       </div>
     </MainLayout>
   );
@@ -857,6 +946,7 @@ function StarsList({
   onAnalyzeHealth,
   onShowHealthDetail,
   analyzingHealth,
+  onAddToCollection,
 }) {
   const { viewMode } = useUIStore();
 
@@ -882,6 +972,7 @@ function StarsList({
             onAnalyzeHealth={onAnalyzeHealth}
             onShowHealthDetail={onShowHealthDetail}
             isAnalyzing={analyzingHealth[star.id]}
+            onAddToCollection={onAddToCollection}
           />
         ))}
       </div>
@@ -901,6 +992,7 @@ function StarsList({
           onAnalyzeHealth={onAnalyzeHealth}
           onShowHealthDetail={onShowHealthDetail}
           isAnalyzing={analyzingHealth[star.id]}
+          onAddToCollection={onAddToCollection}
         />
       ))}
     </div>
@@ -916,6 +1008,7 @@ function StarCard({
   onAnalyzeHealth,
   onShowHealthDetail,
   isAnalyzing,
+  onAddToCollection,
 }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
@@ -1000,12 +1093,23 @@ function StarCard({
           <span>⭐ {star.stargazersCount.toLocaleString()}</span>
           {star.forksCount > 0 && <span>🔀 {star.forksCount.toLocaleString()}</span>}
         </div>
-        <button
-          onClick={() => onOpenTagModal(star)}
-          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-        >
-          {tags.length > 0 ? "编辑标签" : "添加标签"}
-        </button>
+        <div className="flex items-center gap-3">
+          {onAddToCollection && (
+            <button
+              onClick={() => onAddToCollection(star.id)}
+              className="text-text-secondary hover:text-primary-600 text-xs font-medium"
+              title="添加到收藏夹"
+            >
+              <FolderPlus className="w-3.5 h-3.5 inline" />
+            </button>
+          )}
+          <button
+            onClick={() => onOpenTagModal(star)}
+            className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+          >
+            {tags.length > 0 ? "编辑标签" : "添加标签"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1020,6 +1124,7 @@ function StarListItem({
   onAnalyzeHealth,
   onShowHealthDetail,
   isAnalyzing,
+  onAddToCollection,
 }) {
   const { metadata } = useStarsStore();
   const repoId = `${star.owner.login}/${star.name}`;
@@ -1096,12 +1201,23 @@ function StarListItem({
             <span>更新于 {new Date(star.updatedAt).toLocaleDateString("zh-CN")}</span>
           </div>
         </div>
-        <button
-          onClick={() => onOpenTagModal(star)}
-          className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors shrink-0"
-        >
-          {tags.length > 0 ? "编辑" : "添加标签"}
-        </button>
+        <div className="ml-4 flex items-center gap-2 shrink-0">
+          {onAddToCollection && (
+            <button
+              onClick={() => onAddToCollection(star.id)}
+              className="p-1.5 text-text-secondary hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              title="添加到收藏夹"
+            >
+              <FolderPlus className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => onOpenTagModal(star)}
+            className="px-3 py-1.5 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+          >
+            {tags.length > 0 ? "编辑" : "添加标签"}
+          </button>
+        </div>
       </div>
     </div>
   );
