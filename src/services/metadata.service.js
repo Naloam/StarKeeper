@@ -11,6 +11,26 @@ import { addToSyncQueue } from "../components/common/OfflineIndicator";
  * 负责将标签、笔记等数据保存到用户的 GitHub Gist
  */
 
+// ============================================================
+// Gist 写入队列 — 防止并发写入导致数据覆盖
+// ============================================================
+let writeQueue = Promise.resolve();
+
+/**
+ * 将任务排入串行写入队列，确保同一时刻只有一个 Gist 写入在进行
+ * @param {Function} fn - 返回 Promise 的异步函数
+ * @returns {Promise} fn 的返回值
+ */
+function enqueueWrite(fn) {
+  const prev = writeQueue;
+  let resolve;
+  const wait = new Promise((r) => {
+    resolve = r;
+  });
+  writeQueue = wait;
+  return prev.then(() => fn()).finally(resolve);
+}
+
 const METADATA_GIST_FILENAME = "starkeeper-metadata.json";
 const METADATA_GIST_DESCRIPTION = "StarKeeper metadata (auto-managed by app)";
 
@@ -21,7 +41,6 @@ const METADATA_GIST_DESCRIPTION = "StarKeeper metadata (auto-managed by app)";
  */
 export async function findOrCreateMetadataGist(accessToken) {
   try {
-    // 查找现有的元数据 Gist
     const gists = await getUserGists(accessToken);
     const metadataGist = gists.find(
       (gist) =>
@@ -32,7 +51,6 @@ export async function findOrCreateMetadataGist(accessToken) {
       return metadataGist.id;
     }
 
-    // 如果不存在，创建新的
     const newGist = await createMetadataGist(accessToken, {
       version: "1.0",
       repositories: {},
@@ -55,7 +73,6 @@ export async function findOrCreateMetadataGist(accessToken) {
  */
 export async function loadMetadataFromGist(accessToken, gistId) {
   try {
-    // 如果离线，从本地缓存加载
     if (!navigator.onLine) {
       console.log("⚠️ 离线状态，从本地缓存加载");
       const cachedMetadata = localStorage.getItem("metadata-cache");
@@ -65,22 +82,17 @@ export async function loadMetadataFromGist(accessToken, gistId) {
     }
 
     const metadata = await getMetadataGist(accessToken, gistId);
-
-    // 更新本地缓存
     localStorage.setItem("metadata-cache", JSON.stringify(metadata));
-
     return metadata;
   } catch (error) {
     console.error("加载元数据失败:", error);
 
-    // 尝试从本地缓存加载
     const cachedMetadata = localStorage.getItem("metadata-cache");
     if (cachedMetadata) {
       console.log("📦 从本地缓存恢复元数据");
       return JSON.parse(cachedMetadata);
     }
 
-    // 如果加载失败且没有缓存，返回空的元数据结构
     return {
       version: "1.0",
       repositories: {},
@@ -91,51 +103,56 @@ export async function loadMetadataFromGist(accessToken, gistId) {
 }
 
 /**
- * 保存元数据到 Gist
- * @param {string} accessToken
- * @param {string} gistId
- * @param {Object} metadata - 完整的元数据对象
- * @returns {Promise<void>}
+ * 内部写入 Gist 的实现（不含队列，由 enqueueWrite 包裹调用）
  */
-export async function saveMetadataToGist(accessToken, gistId, metadata) {
-  try {
-    // 如果离线，将操作加入同步队列
-    if (!navigator.onLine) {
-      console.log("⚠️ 离线状态，保存到本地缓存");
-      localStorage.setItem("metadata-cache", JSON.stringify(metadata));
-      try {
-        addToSyncQueue("save-metadata", { gistId, metadata });
-      } catch (e) {
-        console.error("添加同步队列失败:", e);
-      }
-      return;
-    }
-
-    const updatedMetadata = {
-      ...metadata,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await updateMetadataGist(accessToken, gistId, updatedMetadata);
-    console.log("元数据已保存到 Gist:", gistId);
-
-    // 同时更新本地缓存
-    localStorage.setItem("metadata-cache", JSON.stringify(updatedMetadata));
-  } catch (error) {
-    console.error("保存元数据失败:", error);
-    // 保存失败时，保存到本地缓存
+async function doSaveToGist(accessToken, gistId, metadata) {
+  if (!navigator.onLine) {
+    console.log("⚠️ 离线状态，保存到本地缓存");
     localStorage.setItem("metadata-cache", JSON.stringify(metadata));
     try {
       addToSyncQueue("save-metadata", { gistId, metadata });
     } catch (e) {
       console.error("添加同步队列失败:", e);
     }
-    throw error;
+    return;
   }
+
+  const updatedMetadata = {
+    ...metadata,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await updateMetadataGist(accessToken, gistId, updatedMetadata);
+  console.log("元数据已保存到 Gist:", gistId);
+  localStorage.setItem("metadata-cache", JSON.stringify(updatedMetadata));
 }
 
 /**
- * 更新单个仓库的元数据
+ * 保存元数据到 Gist（通过写入队列串行化）
+ * @param {string} accessToken
+ * @param {string} gistId
+ * @param {Object} metadata - 完整的元数据对象
+ * @returns {Promise<void>}
+ */
+export async function saveMetadataToGist(accessToken, gistId, metadata) {
+  return enqueueWrite(async () => {
+    try {
+      await doSaveToGist(accessToken, gistId, metadata);
+    } catch (error) {
+      console.error("保存元数据失败:", error);
+      localStorage.setItem("metadata-cache", JSON.stringify(metadata));
+      try {
+        addToSyncQueue("save-metadata", { gistId, metadata });
+      } catch (e) {
+        console.error("添加同步队列失败:", e);
+      }
+      throw error;
+    }
+  });
+}
+
+/**
+ * 更新单个仓库的元数据（通过写入队列串行化，先加载最新再写入）
  * @param {string} accessToken
  * @param {string} gistId
  * @param {number} repoId
@@ -143,18 +160,9 @@ export async function saveMetadataToGist(accessToken, gistId, metadata) {
  * @returns {Promise<void>}
  */
 export async function updateRepoMetadata(accessToken, gistId, repoId, repoMetadata) {
-  try {
-    console.log("🔧 updateRepoMetadata 调用:", {
-      gistId,
-      repoId,
-      repoMetadata,
-    });
-
-    // 加载现有元数据
+  return enqueueWrite(async () => {
+    // 在队列内部加载最新元数据，避免竞态覆盖
     const metadata = await loadMetadataFromGist(accessToken, gistId);
-    console.log("📥 加载的元数据:", metadata);
-
-    // 更新特定仓库的元数据
     metadata.repositories = metadata.repositories || {};
     metadata.repositories[repoId] = {
       ...metadata.repositories[repoId],
@@ -162,28 +170,20 @@ export async function updateRepoMetadata(accessToken, gistId, repoId, repoMetada
       updatedAt: new Date().toISOString(),
     };
 
-    console.log("📝 更新后的 repositories[" + repoId + "]:", metadata.repositories[repoId]);
-
-    // 保存回 Gist
-    await saveMetadataToGist(accessToken, gistId, metadata);
-    console.log("✅ updateRepoMetadata 完成");
-  } catch (error) {
-    console.error("❌ 更新仓库元数据失败:", error);
-    throw error;
-  }
+    await doSaveToGist(accessToken, gistId, metadata);
+  });
 }
 
 /**
- * 批量更新多个仓库的元数据
+ * 批量更新多个仓库的元数据（原子操作，一次加载一次写入）
  * @param {string} accessToken
  * @param {string} gistId
  * @param {Object} reposMetadata - { repoId: { tags, notes, color }, ... }
  * @returns {Promise<void>}
  */
 export async function batchUpdateMetadata(accessToken, gistId, reposMetadata) {
-  try {
+  return enqueueWrite(async () => {
     const metadata = await loadMetadataFromGist(accessToken, gistId);
-
     metadata.repositories = metadata.repositories || {};
 
     Object.entries(reposMetadata).forEach(([repoId, repoMeta]) => {
@@ -194,11 +194,8 @@ export async function batchUpdateMetadata(accessToken, gistId, reposMetadata) {
       };
     });
 
-    await saveMetadataToGist(accessToken, gistId, metadata);
-  } catch (error) {
-    console.error("批量更新元数据失败:", error);
-    throw error;
-  }
+    await doSaveToGist(accessToken, gistId, metadata);
+  });
 }
 
 /**
@@ -209,17 +206,14 @@ export async function batchUpdateMetadata(accessToken, gistId, reposMetadata) {
  * @returns {Promise<void>}
  */
 export async function deleteRepoMetadata(accessToken, gistId, repoId) {
-  try {
+  return enqueueWrite(async () => {
     const metadata = await loadMetadataFromGist(accessToken, gistId);
 
     if (metadata.repositories && metadata.repositories[repoId]) {
       delete metadata.repositories[repoId];
-      await saveMetadataToGist(accessToken, gistId, metadata);
+      await doSaveToGist(accessToken, gistId, metadata);
     }
-  } catch (error) {
-    console.error("删除仓库元数据失败:", error);
-    throw error;
-  }
+  });
 }
 
 /**
@@ -235,7 +229,6 @@ export function convertStoreToGistFormat(storeMetadata) {
       tags: meta.tags || [],
       notes: meta.notes || "",
       color: meta.color || "#3B82F6",
-      // 保留其他字段如 healthScore, aiSummary, embedding 等
       ...(meta.healthScore ? { healthScore: meta.healthScore } : {}),
       ...(meta.aiSummary ? { aiSummary: meta.aiSummary } : {}),
       ...(meta.embedding ? { embedding: meta.embedding } : {}),
@@ -270,18 +263,10 @@ export function convertGistToStoreFormat(gistMetadata) {
  * @returns {Promise<string>} shareId (Gist ID)
  */
 export async function updateShareConfig(accessToken, gistId, shareConfig, stars = null) {
-  try {
-    console.log("📤 更新分享配置:", shareConfig);
-
-    // 加载现有元数据
+  return enqueueWrite(async () => {
     const metadata = await loadMetadataFromGist(accessToken, gistId);
-
-    // 使用 Gist ID 作为 shareId（这样可以通过 shareId 直接获取 Gist）
     const shareId = gistId;
 
-    console.log("🔑 ShareId (Gist ID):", shareId);
-
-    // 更新分享配置
     const updatedMetadata = {
       ...metadata,
       shareConfig: {
@@ -294,9 +279,7 @@ export async function updateShareConfig(accessToken, gistId, shareConfig, stars 
       updatedAt: new Date().toISOString(),
     };
 
-    // 如果提供了 stars 数据，保存到 sharedStars 字段
     if (stars && shareConfig.isPublic) {
-      console.log("💾 保存", stars.length, "个仓库到分享列表");
       updatedMetadata.sharedStars = stars.map((star) => ({
         id: star.id,
         name: star.name,
@@ -315,16 +298,9 @@ export async function updateShareConfig(accessToken, gistId, shareConfig, stars 
       }));
     }
 
-    // 保存到 Gist
-    await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-
-    console.log("✅ 分享配置已更新，ShareId:", shareId);
-
+    await doSaveToGist(accessToken, gistId, updatedMetadata);
     return shareId;
-  } catch (error) {
-    console.error("更新分享配置失败:", error);
-    throw error;
-  }
+  });
 }
 
 export default {
