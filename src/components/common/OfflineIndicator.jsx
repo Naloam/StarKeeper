@@ -1,6 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { WifiOff, Wifi, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
+
+const SYNC_QUEUE_KEY = "offline-sync-queue";
+const MAX_QUEUE_SIZE = 200;
+const MAX_RETRY_COUNT = 5;
+const BASE_RETRY_DELAY_MS = 2000;
+
+/**
+ * 生成操作的去重键：同类型 + 同目标视为重复
+ */
+function getDedupeKey(operation) {
+  const { type, data } = operation;
+  if (type === "save-metadata") return `save-metadata:${data.gistId}`;
+  if (type === "update-metadata") return `update-metadata:${data.gistId}:${data.repoId}`;
+  if (type === "star-repo" || type === "unstar-repo") return `${type}:${data.owner}/${data.repo}`;
+  return `${type}:${Date.now()}`; // 不去重
+}
 
 /**
  * 离线状态指示器组件
@@ -10,104 +26,97 @@ export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSync, setPendingSync] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const syncTimerRef = useRef(null);
 
-  // 检查待同步的操作数量
   const checkPendingSync = useCallback(() => {
     try {
-      const syncQueue = JSON.parse(localStorage.getItem("offline-sync-queue") || "[]");
+      const syncQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
       setPendingSync(syncQueue.length);
     } catch (error) {
       console.error("检查同步队列失败:", error);
     }
   }, []);
 
-  // 执行单个操作
+  // 执行单个操作（懒加载服务模块）
   const executeOperation = useCallback(async (operation) => {
-    const { type, data, timestamp } = operation;
+    const { type, data } = operation;
 
-    // 从 Zustand store 获取 token
     const authStore = JSON.parse(localStorage.getItem("starkeeper-auth") || "{}");
     const accessToken = authStore.state?.accessToken;
 
     if (!accessToken) {
-      console.error("❌ 无法获取访问令牌，跳过同步操作");
       throw new Error("未找到访问令牌");
     }
 
+    // 按需加载服务模块
+    const [githubModule, metadataModule] = await Promise.all([
+      import("../../services/github.service"),
+      import("../../services/metadata.service"),
+    ]);
+
     switch (type) {
       case "save-metadata":
-        // 保存元数据到 Gist
-        const githubService = await import("../../services/github.service");
-        await githubService.updateMetadataGist(accessToken, data.gistId, data.metadata);
+        await githubModule.updateMetadataGist(accessToken, data.gistId, data.metadata);
         break;
-
       case "update-metadata":
-        // 更新单个仓库元数据
-        const metadataService = await import("../../services/metadata.service");
-        await metadataService.updateRepoMetadata(
+        await metadataModule.updateRepoMetadata(
           accessToken,
           data.gistId,
           data.repoId,
           data.metadata,
         );
         break;
-
       case "star-repo":
-        // star 仓库
-        const githubService2 = await import("../../services/github.service");
-        await githubService2.starRepo(accessToken, data.owner, data.repo);
+        await githubModule.starRepo(accessToken, data.owner, data.repo);
         break;
-
       case "unstar-repo":
-        // 取消 star
-        const githubService3 = await import("../../services/github.service");
-        await githubService3.unstarRepo(accessToken, data.owner, data.repo);
+        await githubModule.unstarRepo(accessToken, data.owner, data.repo);
         break;
-
       default:
         console.warn("未知的操作类型:", type);
     }
   }, []);
 
-  // 同步待处理操作
   const syncPendingOperations = useCallback(async () => {
-    if (!isOnline || isSyncing) return;
+    if (!navigator.onLine || isSyncing) return;
 
     try {
       setIsSyncing(true);
-      const syncQueue = JSON.parse(localStorage.getItem("offline-sync-queue") || "[]");
+      const syncQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
 
       if (syncQueue.length === 0) {
         setPendingSync(0);
         return;
       }
 
-      const loadingToast = toast.loading(`正在同步 ${syncQueue.length} 个待处理操作...`);
-
-      // 处理队列中的每个操作
+      const loadingToast = toast.loading(`正在同步 ${syncQueue.length} 个操作...`);
       const failedOperations = [];
+      let successCount = 0;
 
       for (const operation of syncQueue) {
         try {
           await executeOperation(operation);
-          console.log("✅ 同步成功:", operation.type);
+          successCount++;
         } catch (error) {
-          console.error("❌ 同步操作失败:", operation, error);
-          failedOperations.push(operation);
+          console.error("同步操作失败:", operation.type, error);
+          // 指数退避：超过最大重试次数则丢弃
+          const retryCount = (operation.retryCount || 0) + 1;
+          if (retryCount <= MAX_RETRY_COUNT) {
+            failedOperations.push({ ...operation, retryCount });
+          } else {
+            console.warn("操作已达到最大重试次数，丢弃:", operation.type);
+          }
         }
       }
 
-      // 更新队列（只保留失败的操作）
-      localStorage.setItem("offline-sync-queue", JSON.stringify(failedOperations));
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(failedOperations));
       setPendingSync(failedOperations.length);
-
-      // 关闭加载提示
       toast.dismiss(loadingToast);
 
       if (failedOperations.length === 0) {
-        toast.success("所有操作已成功同步");
+        toast.success(`${successCount} 个操作已全部同步`);
       } else {
-        toast.error(`${failedOperations.length} 个操作同步失败，稍后重试`);
+        toast.error(`${successCount} 成功，${failedOperations.length} 个将在稍后重试`);
       }
     } catch (error) {
       console.error("同步失败:", error);
@@ -115,14 +124,23 @@ export default function OfflineIndicator() {
     } finally {
       setIsSyncing(false);
     }
-  }, [isOnline, isSyncing, executeOperation]);
+  }, [isSyncing, executeOperation]);
+
+  // 调度延迟同步（带退避）
+  const scheduleRetry = useCallback(
+    (delayMs) => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => {
+        syncPendingOperations();
+      }, delayMs);
+    },
+    [syncPendingOperations],
+  );
 
   useEffect(() => {
-    // 更新在线状态
     const handleOnline = () => {
       setIsOnline(true);
       toast.success("网络已连接");
-      // 自动触发同步
       syncPendingOperations();
     };
 
@@ -134,28 +152,26 @@ export default function OfflineIndicator() {
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // 检查待同步操作
     checkPendingSync();
 
-    // 如果在线且有待同步操作，自动尝试同步
+    // 应用启动时若在线且有待同步，延迟同步
     if (navigator.onLine) {
-      const syncQueue = JSON.parse(localStorage.getItem("offline-sync-queue") || "[]");
+      const syncQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
       if (syncQueue.length > 0) {
-        console.log("🔄 检测到待同步操作，准备自动同步...");
-        // 延迟一秒后自动同步，避免页面加载时立即同步
-        setTimeout(() => {
-          syncPendingOperations();
-        }, 1000);
+        // 根据最大 retryCount 计算退避延迟
+        const maxRetry = Math.max(0, ...syncQueue.map((op) => op.retryCount || 0));
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, maxRetry - 1);
+        scheduleRetry(Math.min(delay, 30000));
       }
     }
 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
-  }, [checkPendingSync, syncPendingOperations]);
+  }, [checkPendingSync, syncPendingOperations, scheduleRetry]);
 
-  // 如果在线且没有待同步操作，不显示指示器
   if (isOnline && pendingSync === 0) {
     return null;
   }
@@ -169,19 +185,13 @@ export default function OfflineIndicator() {
           ${isOnline ? "bg-green-500 text-white" : "bg-yellow-500 text-gray-900"}
         `}
       >
-        {/* 在线/离线图标 */}
         {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4 animate-pulse" />}
-
-        {/* 状态文本 */}
         <span>{isOnline ? "在线" : "离线模式"}</span>
 
-        {/* 待同步操作 */}
         {pendingSync > 0 && (
           <>
             <span className="mx-1">•</span>
             <span>{pendingSync} 个待同步</span>
-
-            {/* 同步按钮 */}
             {isOnline && (
               <button
                 onClick={syncPendingOperations}
@@ -200,36 +210,40 @@ export default function OfflineIndicator() {
 }
 
 /**
- * 添加操作到同步队列
- * @param {string} type - 操作类型
- * @param {object} data - 操作数据
+ * 添加操作到同步队列（带去重和大小限制）
  */
 export function addToSyncQueue(type, data) {
   try {
-    const syncQueue = JSON.parse(localStorage.getItem("offline-sync-queue") || "[]");
+    const syncQueue = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
 
-    syncQueue.push({
+    const newOp = {
       type,
       data,
       timestamp: Date.now(),
-      id: `${type}-${Date.now()}-${Math.random()}`,
-    });
+      retryCount: 0,
+    };
 
-    localStorage.setItem("offline-sync-queue", JSON.stringify(syncQueue));
+    // 去重：同类同目标的旧操作替换为新操作
+    const dedupeKey = getDedupeKey(newOp);
+    const filtered = syncQueue.filter((op) => getDedupeKey(op) !== dedupeKey);
+    filtered.push(newOp);
 
-    console.log("✅ 操作已加入同步队列:", type, data);
+    // 队列大小限制：保留最新的操作
+    const trimmed = filtered.length > MAX_QUEUE_SIZE ? filtered.slice(-MAX_QUEUE_SIZE) : filtered;
+
+    localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed));
+    console.log("操作已加入同步队列:", type);
   } catch (error) {
     console.error("添加到同步队列失败:", error);
   }
 }
 
 /**
- * 清除同步队列（用于调试或手动清理）
+ * 清除同步队列
  */
 export function clearSyncQueue() {
   try {
-    localStorage.removeItem("offline-sync-queue");
-    console.log("✅ 同步队列已清除");
+    localStorage.removeItem(SYNC_QUEUE_KEY);
     return true;
   } catch (error) {
     console.error("清除同步队列失败:", error);

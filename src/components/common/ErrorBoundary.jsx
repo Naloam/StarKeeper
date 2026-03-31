@@ -75,7 +75,24 @@ class ErrorBoundary extends React.Component {
                 </p>
               </div>
 
-              {/* 错误信息（开发环境显示） */}
+              {/* 错误分类提示（所有环境） */}
+              {error && (
+                <div className="mb-4">
+                  {error.message?.includes("network") ||
+                  error.message?.includes("fetch") ||
+                  error.name === "TypeError" ? (
+                    <p className="text-sm text-amber-600 font-medium">
+                      检测到可能的网络错误，请检查连接后重试。
+                    </p>
+                  ) : error.message?.includes("401") || error.message?.includes("token") ? (
+                    <p className="text-sm text-amber-600 font-medium">
+                      认证信息可能已过期，请尝试返回首页重新登录。
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {/* 错误详情（开发环境显示） */}
               {isDevelopment && error && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-text-primary mb-2">
