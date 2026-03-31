@@ -73,7 +73,7 @@ export const APP_CONFIG = {
     aiSummary: true,
     semanticSearch: true,
     healthMonitoring: true,
-    collections: false, // 暂未实现
+    collections: true,
   },
 
   // 数据存储模式

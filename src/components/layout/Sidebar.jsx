@@ -10,12 +10,15 @@ import {
   Calendar,
   Type,
   X,
+  FolderOpen,
+  Plus,
 } from "lucide-react";
 import { useStarsStore, useUIStore } from "../../store";
 import { useEffect, useState } from "react";
 import { useDebounce } from "../../utils/performance";
+import { APP_CONFIG } from "../../config";
 
-export default function Sidebar() {
+export default function Sidebar({ onCreateCollection }) {
   const {
     searchQuery,
     setSearchQuery,
@@ -30,9 +33,14 @@ export default function Sidebar() {
     getAllLanguages,
     getAllTags,
     filteredStars,
+    collections,
+    selectedCollection,
+    setSelectedCollection,
   } = useStarsStore();
 
   const { sidebarOpen, setSidebarOpen, viewMode, setViewMode } = useUIStore();
+
+  const collectionsEnabled = APP_CONFIG.features.collections;
 
   // 本地搜索输入状态
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
@@ -295,6 +303,63 @@ export default function Sidebar() {
                 >
                   清除筛选
                 </button>
+              )}
+            </div>
+          )}
+
+          {/* Collections 收藏夹 */}
+          {collectionsEnabled && (
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <FolderOpen className="w-4 h-4 text-text-secondary" strokeWidth={1.5} />
+                  <h3 className="text-body-sm font-medium text-text-primary">收藏夹</h3>
+                </div>
+                <button
+                  onClick={() => onCreateCollection?.()}
+                  className="p-1 hover:bg-surface rounded transition-colors"
+                  title="新建收藏夹"
+                >
+                  <Plus className="w-4 h-4 text-text-secondary" />
+                </button>
+              </div>
+
+              {/* 全部选项 */}
+              <button
+                onClick={() => setSelectedCollection(null)}
+                className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast mb-1 ${
+                  selectedCollection === null
+                    ? "bg-primary/10 text-primary"
+                    : "text-text-secondary hover:bg-surface"
+                }`}
+              >
+                <span>全部项目</span>
+                <span className="ml-auto text-xs text-text-secondary">{filteredStars.length}</span>
+              </button>
+
+              {/* 收藏夹列表 */}
+              {collections.map((col) => (
+                <button
+                  key={col.id}
+                  onClick={() =>
+                    setSelectedCollection(selectedCollection === col.id ? null : col.id)
+                  }
+                  className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-body-sm transition-fast ${
+                    selectedCollection === col.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-text-secondary hover:bg-surface"
+                  }`}
+                >
+                  <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{col.name}</span>
+                  <span className="ml-auto text-xs text-text-secondary shrink-0">
+                    {col.repoIds.length}
+                  </span>
+                </button>
+              ))}
+
+              {collections.length === 0 && (
+                <p className="text-xs text-text-secondary text-center py-2">点击 + 创建收藏夹</p>
               )}
             </div>
           )}
