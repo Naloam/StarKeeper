@@ -1,5 +1,6 @@
 import React from "react";
 import { HealthProgressBar } from "./HealthBadge";
+import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 健康度详情弹窗
@@ -7,6 +8,12 @@ import { HealthProgressBar } from "./HealthBadge";
  */
 const HealthDetailModal = ({ repo, healthScore, onClose }) => {
   if (!healthScore) return null;
+
+  return <HealthDetailContent repo={repo} healthScore={healthScore} onClose={onClose} />;
+};
+
+function HealthDetailContent({ repo, healthScore, onClose }) {
+  const modalRef = useModalA11y(true, onClose);
 
   const { score, activity, community, maintenance, level, details } = healthScore;
 
@@ -119,6 +126,12 @@ const HealthDetailModal = ({ repo, healthScore, onClose }) => {
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="health-modal-title"
+        aria-modal="true"
+        aria-labelledby="health-modal-title"
         className="bg-surface-card rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -126,7 +139,9 @@ const HealthDetailModal = ({ repo, healthScore, onClose }) => {
         <div className="sticky top-0 bg-surface-card border-b border-border px-6 py-4">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-text-primary">项目健康度报告</h2>
+              <h2 id="health-modal-title" className="text-2xl font-bold text-text-primary">
+                项目健康度报告
+              </h2>
               <p className="text-sm text-text-secondary mt-1">{repo.fullName}</p>
             </div>
             <button
@@ -267,6 +282,6 @@ const HealthDetailModal = ({ repo, healthScore, onClose }) => {
       </div>
     </div>
   );
-};
+}
 
 export default HealthDetailModal;

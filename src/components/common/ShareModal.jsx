@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from "lucide-react";
+import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 分享功能 Modal
@@ -11,6 +12,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
   const [shareDescription, setShareDescription] = useState(shareConfig?.shareDescription || "");
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const modalRef = useModalA11y(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,7 +60,13 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+        className="bg-surface-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
@@ -66,7 +74,9 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
               <Share2 className="w-5 h-5 text-info-text" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-text-primary">分享 Collection</h2>
+              <h2 id="share-modal-title" className="text-xl font-bold text-text-primary">
+                分享 Collection
+              </h2>
               <p className="text-sm text-text-secondary">让其他人看到你精心整理的项目收藏</p>
             </div>
           </div>

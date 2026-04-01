@@ -7,6 +7,7 @@ import {
   exportAndDownloadJSON,
   getExportStats,
 } from "../../services/export.service";
+import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 导出模态框组件
@@ -14,6 +15,7 @@ import {
 export default function ExportModal({ isOpen, onClose, stars, metadata }) {
   const [selectedFormat, setSelectedFormat] = useState("markdown");
   const [isExporting, setIsExporting] = useState(false);
+  const modalRef = useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -80,7 +82,13 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-card rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        className="bg-surface-card rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
@@ -88,7 +96,9 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
               <Download className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-text-primary">导出 Stars 数据</h2>
+              <h2 id="export-modal-title" className="text-xl font-bold text-text-primary">
+                导出 Stars 数据
+              </h2>
               <p className="text-sm text-text-secondary">选择导出格式并下载</p>
             </div>
           </div>
