@@ -110,6 +110,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/deepseek/, ""),
       },
+      // 代理 SiliconFlow Embedding API 请求
+      "/api/siliconflow": {
+        target: "https://api.siliconflow.cn",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/siliconflow/, ""),
+      },
     },
   },
   test: {
