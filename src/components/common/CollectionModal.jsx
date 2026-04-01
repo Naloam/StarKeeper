@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Plus, FolderOpen, Trash2, Check } from "lucide-react";
+import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * CollectionModal — 创建/编辑收藏夹，或将 repo 添加到收藏夹
@@ -21,6 +22,7 @@ export default function CollectionModal({
 }) {
   const [name, setName] = useState(collection?.name || "");
   const [description, setDescription] = useState(collection?.description || "");
+  const modalRef = useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -33,10 +35,16 @@ export default function CollectionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-surface-card rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="collection-modal-title"
+        className="bg-surface-card rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-lg font-semibold text-text-primary">
+          <h2 id="collection-modal-title" className="text-lg font-semibold text-text-primary">
             {mode === "create" && "新建收藏夹"}
             {mode === "edit" && "编辑收藏夹"}
             {mode === "add" && "添加到收藏夹"}

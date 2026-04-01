@@ -2,6 +2,7 @@ import { X, Tag, Save, Palette } from "lucide-react";
 import { useState, useEffect } from "react";
 import TagBadge from "./TagBadge";
 import TagInput from "./TagInput";
+import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 标签管理 Modal
@@ -19,6 +20,8 @@ export default function TagModal({
   const [tags, setTags] = useState(currentTags);
   const [notes, setNotes] = useState(currentNotes);
   const [selectedColor, setSelectedColor] = useState(currentColor);
+
+  const modalRef = useModalA11y(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,7 +70,13 @@ export default function TagModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in">
-      <div className="bg-surface-card rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden animate-slide-up">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tag-modal-title"
+        className="bg-surface-card rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden animate-slide-up"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
@@ -75,7 +84,9 @@ export default function TagModal({
               <Tag className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-text-primary">管理标签</h2>
+              <h2 id="tag-modal-title" className="text-xl font-semibold text-text-primary">
+                管理标签
+              </h2>
               <p className="text-sm text-text-secondary">{repo?.fullName}</p>
             </div>
           </div>

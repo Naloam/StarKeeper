@@ -119,6 +119,8 @@ export default function Sidebar({ onCreateCollection }) {
 
       {/* Sidebar */}
       <aside
+        role="navigation"
+        aria-label="筛选和导航"
         className="fixed lg:static top-0 left-0 w-64 bg-surface-card border-r border-border flex flex-col h-screen lg:h-[calc(100vh-4rem)] overflow-hidden z-50 lg:z-auto transform transition-transform duration-180 ease-out lg:transform-none"
         onClick={handleSidebarClick}
       >
