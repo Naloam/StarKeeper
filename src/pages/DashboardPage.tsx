@@ -40,7 +40,10 @@ import StatsVisualization from "../components/common/StatsVisualization";
 import CustomStatsFilter from "../components/common/CustomStatsFilter";
 import SemanticSearch from "../components/common/SemanticSearch";
 import LazyImage from "../components/common/LazyImage";
+import RelationGraph from "../components/common/RelationGraph";
+import { startBackgroundSync, stopBackgroundSync } from "../services/background-sync.service";
 import { useDebounce } from "../utils/performance";
+import { startBackgroundSync, stopBackgroundSync } from "../services/background-sync.service";
 import {
   findOrCreateMetadataGist,
   loadMetadataFromGist,
@@ -113,6 +116,14 @@ export default function DashboardPage() {
     if (accessToken && stars.length === 0) {
       loadStars();
     }
+  }, [accessToken]);
+
+  // 启动后台定时同步
+  useEffect(() => {
+    if (accessToken) {
+      startBackgroundSync();
+    }
+    return () => stopBackgroundSync();
   }, [accessToken]);
 
   // 加载元数据
@@ -840,6 +851,13 @@ export default function DashboardPage() {
         {/* 数据可视化 */}
         {stats && (
           <StatsVisualization stars={displayStars} metadata={metadata} healthStats={stats.health} />
+        )}
+
+        {/* 项目关系图谱 */}
+        {displayStars.length > 0 && (
+          <div className="mt-6">
+            <RelationGraph />
+          </div>
         )}
 
         {/* 显示当前过滤条件 */}

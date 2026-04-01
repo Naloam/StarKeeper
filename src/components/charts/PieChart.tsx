@@ -1,14 +1,20 @@
-import React from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import type { ChartData, ChartOptions } from "chart.js";
 import { Pie } from "react-chartjs-2";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+interface PieChartProps {
+  data: ChartData<"pie">;
+  options?: ChartOptions<"pie">;
+  height?: number;
+}
+
 /**
  * 自然风格饼图组件
  */
-export default function PieChart({ data, options: customOptions, height = 300 }) {
-  const defaultOptions = {
+export default function PieChart({ data, options: customOptions, height = 300 }: PieChartProps) {
+  const defaultOptions: ChartOptions<"pie"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -28,10 +34,10 @@ export default function PieChart({ data, options: customOptions, height = 300 })
           boxHeight: 12,
           generateLabels: (chart) => {
             const datasets = chart.data.datasets;
-            return chart.data.labels.map((label, i) => ({
-              text: label,
-              fillStyle: datasets[0].backgroundColor[i],
-              strokeStyle: datasets[0].borderColor?.[i] || "#FAF8F3",
+            return chart.data.labels!.map((label, i) => ({
+              text: label as string,
+              fillStyle: datasets[0].backgroundColor[i] as string,
+              strokeStyle: (datasets[0].borderColor as string[])?.[i] || "#FAF8F3",
               lineWidth: 2,
               hidden: false,
               index: i,
@@ -64,7 +70,7 @@ export default function PieChart({ data, options: customOptions, height = 300 })
             const label = context.label || "";
             const value = context.parsed || 0;
             const dataset = context.dataset;
-            const total = dataset.data.reduce((acc, curr) => acc + curr, 0);
+            const total = dataset.data.reduce((acc: number, curr: number) => acc + curr, 0);
             const percentage = ((value / total) * 100).toFixed(1);
             return `${label}: ${value} (${percentage}%)`;
           },
@@ -80,7 +86,7 @@ export default function PieChart({ data, options: customOptions, height = 300 })
     },
   };
 
-  const mergedOptions = {
+  const mergedOptions: ChartOptions<"pie"> = {
     ...defaultOptions,
     ...customOptions,
     plugins: {

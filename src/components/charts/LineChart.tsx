@@ -1,22 +1,39 @@
-import React from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+import type { ChartData, ChartOptions } from "chart.js";
+import { Line } from "react-chartjs-2";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+);
+
+interface LineChartProps {
+  data: ChartData<"line">;
+  options?: ChartOptions<"line">;
+  height?: number;
+}
 
 /**
- * 自然风格柱状图组件
+ * 自然风格折线图组件
  */
-export default function BarChart({ data, options: customOptions, height = 300 }) {
-  const defaultOptions = {
+export default function LineChart({ data, options: customOptions, height = 300 }: LineChartProps) {
+  const defaultOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -32,8 +49,8 @@ export default function BarChart({ data, options: customOptions, height = 300 })
           color: "#6B665F",
           usePointStyle: true,
           padding: 16,
-          boxWidth: 12,
-          boxHeight: 12,
+          boxWidth: 8,
+          boxHeight: 8,
         },
       },
       tooltip: {
@@ -61,7 +78,9 @@ export default function BarChart({ data, options: customOptions, height = 300 })
     scales: {
       x: {
         grid: {
-          display: false,
+          display: true,
+          color: "rgba(232, 227, 217, 0.4)",
+          lineWidth: 1,
           drawBorder: false,
         },
         ticks: {
@@ -94,14 +113,24 @@ export default function BarChart({ data, options: customOptions, height = 300 })
       },
     },
     elements: {
-      bar: {
-        borderRadius: 8,
-        borderSkipped: false,
+      line: {
+        borderWidth: 2,
+        tension: 0.3,
       },
+      point: {
+        radius: 4,
+        hoverRadius: 6,
+        borderWidth: 2,
+        hoverBorderWidth: 3,
+      },
+    },
+    interaction: {
+      mode: "index",
+      intersect: false,
     },
   };
 
-  const mergedOptions = {
+  const mergedOptions: ChartOptions<"line"> = {
     ...defaultOptions,
     ...customOptions,
     plugins: {
@@ -112,7 +141,7 @@ export default function BarChart({ data, options: customOptions, height = 300 })
 
   return (
     <div style={{ height: `${height}px` }}>
-      <Bar data={data} options={mergedOptions} />
+      <Line data={data} options={mergedOptions} />
     </div>
   );
 }

@@ -293,9 +293,85 @@ export async function testConnection() {
   }
 }
 
+/**
+ * AI 自动标签推荐 — 基于仓库描述、语言和已有标签推荐合适的标签
+ * @param {string} repoName - 仓库名称
+ * @param {string} repoDescription - 仓库描述
+ * @param {string} language - 主要编程语言
+ * @param {string[]} existingTags - 已有标签
+ * @param {string[]} allTags - 所有可用标签（用于复用）
+ * @returns {Promise<string[]>} 推荐的标签列表
+ */
+export async function suggestTags(
+  repoName,
+  repoDescription,
+  language,
+  existingTags = [],
+  allTags = [],
+) {
+  try {
+    const prompt = `你是一个 GitHub 项目分类专家。请为以下项目推荐 3-8 个合适的标签。
+
+项目名称：${repoName}
+项目描述：${repoDescription || "无"}
+主要语言：${language || "未知"}
+已有标签：${existingTags.length > 0 ? existingTags.join("、") : "无"}
+可选标签池（优先从中选择）：${allTags.length > 0 ? allTags.slice(0, 30).join("、") : "无"}
+
+请返回一个 JSON 数组，只包含标签字符串，例如：
+["标签1", "标签2", "标签3"]
+
+要求：
+1. 标签要简洁（1-3个词）
+2. 可以从标签池中选择，也可以创建新标签
+3. 不要重复已有标签
+4. 只返回 JSON 数组，不要其他文字`;
+
+    const response = await axios.post(
+      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
+      {
+        model: DASHSCOPE_CONFIG.models.turbo,
+        input: {
+          messages: [
+            { role: "system", content: "你是标签推荐专家，只返回JSON数组。" },
+            { role: "user", content: prompt },
+          ],
+        },
+        parameters: {
+          result_format: "message",
+          max_tokens: 200,
+          temperature: 0.6,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+          "Content-Type": "application/json",
+          "X-DashScope-SSE": "disable",
+        },
+      },
+    );
+
+    const content = response.data?.output?.choices?.[0]?.message?.content?.[0]?.text;
+    if (!content) return [];
+
+    // 提取 JSON 数组
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const tags = JSON.parse(jsonMatch[0]);
+      return tags.filter((t) => !existingTags.includes(t));
+    }
+    return [];
+  } catch (error) {
+    console.error("AI 标签推荐失败:", error);
+    return [];
+  }
+}
+
 export default {
   generateSummary,
   generateEmbedding,
   batchGenerateEmbeddings,
+  suggestTags,
   testConnection,
 };
