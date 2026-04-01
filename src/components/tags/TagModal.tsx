@@ -1,8 +1,28 @@
-import { X, Tag, Save, Palette } from "lucide-react";
+import { X, Tag, Save, Palette, Sparkles, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import TagBadge from "./TagBadge";
 import TagInput from "./TagInput";
 import useModalA11y from "../../hooks/useModalA11y";
+import { suggestTags } from "../../services/dashscope.service";
+
+interface TagModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  repo: {
+    id: number;
+    name: string;
+    fullName: string;
+    description: string | null;
+    language: string | null;
+    stargazersCount: number;
+  };
+  currentTags?: string[];
+  currentNotes?: string;
+  currentColor?: string;
+  allTags?: string[];
+  onSave: (data: { repoId: number; tags: string[]; notes: string; color: string }) => Promise<void>;
+}
 
 /**
  * 标签管理 Modal
@@ -16,10 +36,12 @@ export default function TagModal({
   currentColor = "#3B82F6",
   allTags = [],
   onSave,
-}) {
-  const [tags, setTags] = useState(currentTags);
+}: TagModalProps) {
+  const [tags, setTags] = useState<string[]>(currentTags);
   const [notes, setNotes] = useState(currentNotes);
   const [selectedColor, setSelectedColor] = useState(currentColor);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
 
   const modalRef = useModalA11y(isOpen, onClose);
 
@@ -42,14 +64,51 @@ export default function TagModal({
     "#6B7280", // Gray
   ];
 
-  const handleAddTag = (tag) => {
+  const handleAddTag = (tag: string) => {
     if (!tags.includes(tag)) {
       setTags([...tags, tag]);
     }
   };
 
-  const handleRemoveTag = (tag) => {
+  const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag));
+  };
+
+  const handleAiSuggest = async () => {
+    if (aiLoading) return;
+    setAiLoading(true);
+    try {
+      const recommended = await suggestTags(
+        repo.fullName,
+        repo.description,
+        repo.language,
+        tags,
+        allTags,
+      );
+      if (recommended.length > 0) {
+        setSuggestedTags(recommended);
+        toast.success(`AI 推荐了 ${recommended.length} 个标签`);
+      } else {
+        toast("暂无推荐标签");
+      }
+    } catch (error) {
+      console.error("AI 标签推荐失败:", error);
+      toast.error("AI 推荐失败，请重试");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAddSuggestedTag = (tag: string) => {
+    handleAddTag(tag);
+    setSuggestedTags(suggestedTags.filter((t) => t !== tag));
+  };
+
+  const handleAddAllSuggested = () => {
+    const newTags = suggestedTags.filter((t) => !tags.includes(t));
+    setTags([...tags, ...newTags]);
+    setSuggestedTags([]);
+    toast.success(`已添加 ${newTags.length} 个标签`);
   };
 
   const handleSave = async () => {
@@ -110,26 +169,51 @@ export default function TagModal({
             />
           </div>
 
-          {/* 当前标签 */}
-          {tags.length > 0 && (
+          {/* AI 推荐标签 */}
+          {suggestedTags.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">
-                当前标签 ({tags.length})
+                <Sparkles className="w-4 h-4 inline mr-1 text-purple-500" />
+                AI 推荐标签
               </label>
               <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <TagBadge
+                {suggestedTags.map((tag) => (
+                  <button
                     key={tag}
-                    tag={tag}
-                    color={selectedColor}
-                    removable
-                    onRemove={handleRemoveTag}
-                    size="md"
-                  />
+                    onClick={() => handleAddSuggestedTag(tag)}
+                    className="px-3 py-1 text-sm rounded-full border border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 transition-colors"
+                  >
+                    + {tag}
+                  </button>
                 ))}
+                <button
+                  onClick={handleAddAllSuggested}
+                  className="px-3 py-1 text-sm rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                >
+                  全部添加
+                </button>
               </div>
             </div>
           )}
+
+          {/* 当前标签 */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              当前标签 ({tags.length})
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <TagBadge
+                  key={tag}
+                  tag={tag}
+                  color={selectedColor}
+                  removable
+                  onRemove={handleRemoveTag}
+                  size="md"
+                />
+              ))}
+            </div>
+          </div>
 
           {/* 颜色选择 */}
           <div>
@@ -182,20 +266,34 @@ export default function TagModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-border bg-surface-darker">
+        <div className="flex items-center justify-between p-6 border-t border-border bg-surface-darker">
           <button
-            onClick={onClose}
-            className="px-4 py-2 text-text-primary hover:bg-border rounded-lg transition-colors"
+            onClick={handleAiSuggest}
+            disabled={aiLoading}
+            className="inline-flex items-center space-x-2 px-4 py-2 text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50"
           >
-            取消
+            {aiLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            <span>{aiLoading ? "推荐中..." : "AI 推荐标签"}</span>
           </button>
-          <button
-            onClick={handleSave}
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>保存</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-text-primary hover:bg-border rounded-lg transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSave}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              <span>保存</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

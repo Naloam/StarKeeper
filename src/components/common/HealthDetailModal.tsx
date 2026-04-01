@@ -130,8 +130,6 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="health-modal-title"
-        aria-modal="true"
-        aria-labelledby="health-modal-title"
         className="bg-surface-card rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >

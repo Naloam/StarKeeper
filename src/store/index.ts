@@ -12,7 +12,7 @@ function debouncedApplyFilters() {
   if (filterTimer) clearTimeout(filterTimer);
   filterTimer = setTimeout(() => {
     filterTimer = null;
-    useStarsStore.getState()._applyFiltersImmediate();
+    useStarsStore.getState().applyFilters();
   }, FILTER_DEBOUNCE_MS);
 }
 

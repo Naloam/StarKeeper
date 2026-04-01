@@ -3,19 +3,83 @@ import { DASHSCOPE_CONFIG } from "../config";
 
 /**
  * DashScope API 服务封装
- * 阿里云通义千问 API 调用
+ * 支持阿里云通义千问 / DeepSeek (OpenAI 兼容) API 调用
  */
+
+// 检测是否使用 DeepSeek API（key 以 sk- 开头且非 DashScope 格式）
+const isDeepSeek =
+  DASHSCOPE_CONFIG.apiKey?.startsWith("sk-") && !DASHSCOPE_CONFIG.apiKey?.startsWith("sk-aaa");
+
+const DEEPSEEK_BASE_URL = "/api/deepseek/v1";
+
+/**
+ * 通用聊天请求 — 兼容 DashScope 和 DeepSeek
+ */
+async function chatRequest(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens = 800,
+): Promise<string> {
+  if (isDeepSeek) {
+    const response = await axios.post(
+      `${DEEPSEEK_BASE_URL}/chat/completions`,
+      {
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data.choices[0].message.content;
+  }
+
+  // DashScope (阿里云通义千问)
+  const response = await axios.post(
+    `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
+    {
+      model: DASHSCOPE_CONFIG.models.turbo,
+      input: {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      },
+      parameters: {
+        result_format: "message",
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        top_p: 0.8,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+        "Content-Type": "application/json",
+        "X-DashScope-SSE": "disable",
+      },
+    },
+  );
+  return response.data.output.choices[0].message.content;
+}
 
 /**
  * 为 GitHub 项目的 README 生成 AI 摘要
- * @param {string} readmeContent - README 内容
- * @param {string} repoName - 仓库名称
- * @param {string} repoDescription - 仓库描述
- * @returns {Promise<Object>} 包含摘要、功能点、适用场景等
  */
-export async function generateSummary(readmeContent, repoName, repoDescription) {
+export async function generateSummary(
+  readmeContent: string,
+  repoName: string,
+  repoDescription: string,
+) {
   try {
-    // 截取 README 内容（避免超过 token 限制）
     const truncatedContent = readmeContent.slice(0, 3000);
 
     const prompt = `你是一个 GitHub 项目分析专家。请为以下项目生成简洁的摘要。
@@ -40,45 +104,15 @@ ${truncatedContent}
 4. techStack 列出主要技术栈（语言、框架等）
 5. 只返回 JSON，不要其他说明文字`;
 
-    console.log("📤 发送 DashScope API 请求...");
-    console.log("URL:", `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`);
+    console.log("📤 发送 AI API 请求...");
 
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
-      {
-        model: DASHSCOPE_CONFIG.models.turbo,
-        input: {
-          messages: [
-            {
-              role: "system",
-              content: "你是一个专业的技术文档分析助手，擅长提取和总结 GitHub 项目的核心信息。",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        },
-        parameters: {
-          result_format: "message",
-          max_tokens: 800,
-          temperature: 0.7,
-          top_p: 0.8,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          "Content-Type": "application/json",
-          "X-DashScope-SSE": "disable",
-        },
-      },
+    const text = await chatRequest(
+      "你是一个专业的技术文档分析助手，擅长提取和总结 GitHub 项目的核心信息。",
+      prompt,
+      800,
     );
 
-    console.log("✅ API 响应成功:", response.status);
-
-    // 解析响应
-    const text = response.data.output.choices[0].message.content;
+    console.log("✅ API 响应成功");
     console.log("🤖 AI 返回内容:", text);
 
     // 尝试提取 JSON - 从第一个 { 到最后一个 } 匹配
@@ -136,90 +170,65 @@ ${truncatedContent}
   }
 }
 
+const SILICONFLOW_EMBEDDING_URL = "/api/siliconflow/v1/embeddings";
+const SILICONFLOW_EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5";
+const SILICONFLOW_API_KEY = import.meta.env.VITE_SILICONFLOW_API_KEY || DASHSCOPE_CONFIG.apiKey;
+
 /**
- * 为文本生成 embedding 向量
- * @param {string} text - 需要生成向量的文本
- * @returns {Promise<Array<number>>} 1536 维向量数组
+ * 为文本生成 embedding 向量（通过 SiliconFlow）
  */
-export async function generateEmbedding(text) {
+export async function generateEmbedding(text: string): Promise<number[]> {
   try {
-    // 截取文本（避免超过限制）
     const truncatedText = text.slice(0, 2000);
 
-    // 使用配置中的 Embedding API 路径
     const embeddingUrl = import.meta.env.DEV
-      ? `/api/dashscope/api/v1/services/aigc${DASHSCOPE_CONFIG.embedding.endpoint}`
-      : `https://dashscope.aliyuncs.com/api/v1/services/aigc${DASHSCOPE_CONFIG.embedding.endpoint}`;
-
-    console.log("📤 Embedding API 请求:", {
-      url: embeddingUrl,
-      model: DASHSCOPE_CONFIG.embedding.model,
-      textLength: truncatedText.length,
-    });
+      ? SILICONFLOW_EMBEDDING_URL
+      : "https://api.siliconflow.cn/v1/embeddings";
 
     const response = await axios.post(
       embeddingUrl,
       {
-        model: DASHSCOPE_CONFIG.embedding.model,
-        input: {
-          texts: [truncatedText],
-        },
+        model: SILICONFLOW_EMBEDDING_MODEL,
+        input: truncatedText,
       },
       {
         headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+          Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
           "Content-Type": "application/json",
         },
       },
     );
 
-    console.log("✅ Embedding API 响应:", response.status);
-
-    if (!response.data || !response.data.output || !response.data.output.embeddings) {
-      console.error("❌ API 响应格式错误:", response.data);
-      throw new Error("API 响应格式不正确");
-    }
-
-    const embedding = response.data.output.embeddings[0].embedding;
+    const embedding = response.data.data[0].embedding;
     console.log("✅ Embedding 生成成功，维度:", embedding.length);
     return embedding;
-  } catch (error) {
-    console.error("❌ Embedding 生成失败:", {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: error.config?.url,
-    });
-
-    // 提供更有用的错误信息
-    if (error.response?.status === 400) {
-      throw new Error(`API 请求错误 (400): ${error.response?.data?.message || "请求参数不正确"}`);
-    } else if (error.response?.status === 401) {
-      throw new Error("API Key 无效或已过期");
-    } else if (error.response?.status === 429) {
-      throw new Error("API 调用频率过高，请稍后再试");
+  } catch (error: unknown) {
+    const err = error as {
+      response?: { status?: number; data?: { message?: string } };
+      message?: string;
+    };
+    if (err.response?.status === 401) {
+      throw new Error("Embedding API Key 无效或已过期（需要 SiliconFlow Key）");
+    } else if (err.response?.status === 429) {
+      throw new Error("Embedding API 调用频率过高，请稍后再试");
     } else {
-      throw new Error(`Embedding 生成失败: ${error.message}`);
+      throw new Error(`Embedding 生成失败: ${err.message}`);
     }
   }
 }
 
 /**
- * 批量生成 embeddings（用于初始化或批量处理）
- * @param {Array<string>} texts - 文本数组
- * @returns {Promise<Array<Array<number>>>} 向量数组
+ * 批量生成 embeddings（通过 SiliconFlow）
  */
-export async function batchGenerateEmbeddings(texts) {
+export async function batchGenerateEmbeddings(texts: string[]): Promise<number[][]> {
   try {
-    const embeddings = [];
+    const embeddings: number[][] = [];
 
-    // 使用配置中的 Embedding API 路径
     const embeddingUrl = import.meta.env.DEV
-      ? `/api/dashscope/api/v1/services/aigc${DASHSCOPE_CONFIG.embedding.endpoint}`
-      : `https://dashscope.aliyuncs.com/api/v1/services/aigc${DASHSCOPE_CONFIG.embedding.endpoint}`;
+      ? SILICONFLOW_EMBEDDING_URL
+      : "https://api.siliconflow.cn/v1/embeddings";
 
-    // 分批处理，每次最多 25 个（API 限制）
+    // 分批处理，SiliconFlow 支持数组输入
     const batchSize = 25;
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize).map((t) => t.slice(0, 2000));
@@ -231,25 +240,23 @@ export async function batchGenerateEmbeddings(texts) {
       const response = await axios.post(
         embeddingUrl,
         {
-          model: DASHSCOPE_CONFIG.embedding.model,
-          input: {
-            texts: batch,
-          },
+          model: SILICONFLOW_EMBEDDING_MODEL,
+          input: batch,
         },
         {
           headers: {
-            Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+            Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
             "Content-Type": "application/json",
           },
         },
       );
 
-      const batchEmbeddings = response.data.output.embeddings.map((e) => e.embedding);
+      const batchEmbeddings = response.data.data.map((d: { embedding: number[] }) => d.embedding);
       embeddings.push(...batchEmbeddings);
 
       // 避免速率限制
       if (i + batchSize < texts.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
@@ -264,32 +271,64 @@ export async function batchGenerateEmbeddings(texts) {
  * 测试 DashScope API 连接
  * @returns {Promise<boolean>} 是否连接成功
  */
-export async function testConnection() {
+export async function testConnection(): Promise<boolean> {
   try {
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
-      {
-        model: DASHSCOPE_CONFIG.models.turbo,
-        input: {
-          messages: [{ role: "user", content: "Hi" }],
-        },
-        parameters: {
-          result_format: "message",
-          max_tokens: 10,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    return response.status === 200;
+    const text = await chatRequest("You are a helpful assistant.", "Hi", 10);
+    return text.length > 0;
   } catch (error) {
-    console.error("DashScope 连接测试失败:", error);
+    console.error("AI 连接测试失败:", error);
     return false;
+  }
+}
+
+/**
+ * AI 自动标签推荐 — 基于仓库描述、语言和已有标签推荐合适的标签
+ * @param {string} repoName - 仓库名称
+ * @param {string} repoDescription - 仓库描述
+ * @param {string} language - 主要编程语言
+ * @param {string[]} existingTags - 已有标签
+ * @param {string[]} allTags - 所有可用标签（用于复用）
+ * @returns {Promise<string[]>} 推荐的标签列表
+ */
+export async function suggestTags(
+  repoName: string,
+  repoDescription: string | null,
+  language: string | null,
+  existingTags: string[] = [],
+  allTags: string[] = [],
+): Promise<string[]> {
+  try {
+    const prompt = `你是一个 GitHub 项目分类专家。请为以下项目推荐 3-8 个合适的标签。
+
+项目名称：${repoName}
+项目描述：${repoDescription || "无"}
+主要语言：${language || "未知"}
+已有标签：${existingTags.length > 0 ? existingTags.join("、") : "无"}
+可选标签池（优先从中选择）：${allTags.length > 0 ? allTags.slice(0, 30).join("、") : "无"}
+
+请返回一个 JSON 数组，只包含标签字符串，例如：
+["标签1", "标签2", "标签3"]
+
+要求：
+1. 标签要简洁（1-3个词）
+2. 可以从标签池中选择，也可以创建新标签
+3. 不要重复已有标签
+4. 只返回 JSON 数组，不要其他文字`;
+
+    const content = await chatRequest("你是标签推荐专家，只返回JSON数组。", prompt, 200);
+
+    if (!content) return [];
+
+    // 提取 JSON 数组
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const tags = JSON.parse(jsonMatch[0]);
+      return tags.filter((t) => !existingTags.includes(t));
+    }
+    return [];
+  } catch (error) {
+    console.error("AI 标签推荐失败:", error);
+    return [];
   }
 }
 
@@ -297,5 +336,6 @@ export default {
   generateSummary,
   generateEmbedding,
   batchGenerateEmbeddings,
+  suggestTags,
   testConnection,
 };

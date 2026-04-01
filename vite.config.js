@@ -104,6 +104,18 @@ export default defineConfig({
           });
         },
       },
+      // 代理 DeepSeek API 请求
+      "/api/deepseek": {
+        target: "https://api.deepseek.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deepseek/, ""),
+      },
+      // 代理 SiliconFlow Embedding API 请求
+      "/api/siliconflow": {
+        target: "https://api.siliconflow.cn",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/siliconflow/, ""),
+      },
     },
   },
   test: {
