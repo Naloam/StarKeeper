@@ -43,7 +43,6 @@ import LazyImage from "../components/common/LazyImage";
 import RelationGraph from "../components/common/RelationGraph";
 import { startBackgroundSync, stopBackgroundSync } from "../services/background-sync.service";
 import { useDebounce } from "../utils/performance";
-import { startBackgroundSync, stopBackgroundSync } from "../services/background-sync.service";
 import {
   findOrCreateMetadataGist,
   loadMetadataFromGist,

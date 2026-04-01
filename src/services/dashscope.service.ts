@@ -3,19 +3,83 @@ import { DASHSCOPE_CONFIG } from "../config";
 
 /**
  * DashScope API 服务封装
- * 阿里云通义千问 API 调用
+ * 支持阿里云通义千问 / DeepSeek (OpenAI 兼容) API 调用
  */
+
+// 检测是否使用 DeepSeek API（key 以 sk- 开头且非 DashScope 格式）
+const isDeepSeek =
+  DASHSCOPE_CONFIG.apiKey?.startsWith("sk-") && !DASHSCOPE_CONFIG.apiKey?.startsWith("sk-aaa");
+
+const DEEPSEEK_BASE_URL = "/api/deepseek/v1";
+
+/**
+ * 通用聊天请求 — 兼容 DashScope 和 DeepSeek
+ */
+async function chatRequest(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens = 800,
+): Promise<string> {
+  if (isDeepSeek) {
+    const response = await axios.post(
+      `${DEEPSEEK_BASE_URL}/chat/completions`,
+      {
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    return response.data.choices[0].message.content;
+  }
+
+  // DashScope (阿里云通义千问)
+  const response = await axios.post(
+    `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
+    {
+      model: DASHSCOPE_CONFIG.models.turbo,
+      input: {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      },
+      parameters: {
+        result_format: "message",
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        top_p: 0.8,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+        "Content-Type": "application/json",
+        "X-DashScope-SSE": "disable",
+      },
+    },
+  );
+  return response.data.output.choices[0].message.content;
+}
 
 /**
  * 为 GitHub 项目的 README 生成 AI 摘要
- * @param {string} readmeContent - README 内容
- * @param {string} repoName - 仓库名称
- * @param {string} repoDescription - 仓库描述
- * @returns {Promise<Object>} 包含摘要、功能点、适用场景等
  */
-export async function generateSummary(readmeContent, repoName, repoDescription) {
+export async function generateSummary(
+  readmeContent: string,
+  repoName: string,
+  repoDescription: string,
+) {
   try {
-    // 截取 README 内容（避免超过 token 限制）
     const truncatedContent = readmeContent.slice(0, 3000);
 
     const prompt = `你是一个 GitHub 项目分析专家。请为以下项目生成简洁的摘要。
@@ -40,45 +104,15 @@ ${truncatedContent}
 4. techStack 列出主要技术栈（语言、框架等）
 5. 只返回 JSON，不要其他说明文字`;
 
-    console.log("📤 发送 DashScope API 请求...");
-    console.log("URL:", `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`);
+    console.log("📤 发送 AI API 请求...");
 
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
-      {
-        model: DASHSCOPE_CONFIG.models.turbo,
-        input: {
-          messages: [
-            {
-              role: "system",
-              content: "你是一个专业的技术文档分析助手，擅长提取和总结 GitHub 项目的核心信息。",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        },
-        parameters: {
-          result_format: "message",
-          max_tokens: 800,
-          temperature: 0.7,
-          top_p: 0.8,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          "Content-Type": "application/json",
-          "X-DashScope-SSE": "disable",
-        },
-      },
+    const text = await chatRequest(
+      "你是一个专业的技术文档分析助手，擅长提取和总结 GitHub 项目的核心信息。",
+      prompt,
+      800,
     );
 
-    console.log("✅ API 响应成功:", response.status);
-
-    // 解析响应
-    const text = response.data.output.choices[0].message.content;
+    console.log("✅ API 响应成功");
     console.log("🤖 AI 返回内容:", text);
 
     // 尝试提取 JSON - 从第一个 { 到最后一个 } 匹配
@@ -264,31 +298,12 @@ export async function batchGenerateEmbeddings(texts) {
  * 测试 DashScope API 连接
  * @returns {Promise<boolean>} 是否连接成功
  */
-export async function testConnection() {
+export async function testConnection(): Promise<boolean> {
   try {
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
-      {
-        model: DASHSCOPE_CONFIG.models.turbo,
-        input: {
-          messages: [{ role: "user", content: "Hi" }],
-        },
-        parameters: {
-          result_format: "message",
-          max_tokens: 10,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    return response.status === 200;
+    const text = await chatRequest("You are a helpful assistant.", "Hi", 10);
+    return text.length > 0;
   } catch (error) {
-    console.error("DashScope 连接测试失败:", error);
+    console.error("AI 连接测试失败:", error);
     return false;
   }
 }
@@ -303,12 +318,12 @@ export async function testConnection() {
  * @returns {Promise<string[]>} 推荐的标签列表
  */
 export async function suggestTags(
-  repoName,
-  repoDescription,
-  language,
-  existingTags = [],
-  allTags = [],
-) {
+  repoName: string,
+  repoDescription: string | null,
+  language: string | null,
+  existingTags: string[] = [],
+  allTags: string[] = [],
+): Promise<string[]> {
   try {
     const prompt = `你是一个 GitHub 项目分类专家。请为以下项目推荐 3-8 个合适的标签。
 
@@ -327,32 +342,8 @@ export async function suggestTags(
 3. 不要重复已有标签
 4. 只返回 JSON 数组，不要其他文字`;
 
-    const response = await axios.post(
-      `${DASHSCOPE_CONFIG.baseUrl}${DASHSCOPE_CONFIG.endpoints.textGeneration}`,
-      {
-        model: DASHSCOPE_CONFIG.models.turbo,
-        input: {
-          messages: [
-            { role: "system", content: "你是标签推荐专家，只返回JSON数组。" },
-            { role: "user", content: prompt },
-          ],
-        },
-        parameters: {
-          result_format: "message",
-          max_tokens: 200,
-          temperature: 0.6,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
-          "Content-Type": "application/json",
-          "X-DashScope-SSE": "disable",
-        },
-      },
-    );
+    const content = await chatRequest("你是标签推荐专家，只返回JSON数组。", prompt, 200);
 
-    const content = response.data?.output?.choices?.[0]?.message?.content?.[0]?.text;
     if (!content) return [];
 
     // 提取 JSON 数组

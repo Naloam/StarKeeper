@@ -5,11 +5,11 @@ import { useStarsStore } from "../../store";
  * 项目关系图谱 — 基于语言/标签关联的 Canvas 可视化
  */
 export default function RelationGraph() {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { stars, metadata } = useStarsStore();
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [positionsRef] = useRef({});
+  const positionsRef = useRef({});
 
   const buildGraphData = () => {
     const nodes = [];

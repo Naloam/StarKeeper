@@ -104,6 +104,12 @@ export default defineConfig({
           });
         },
       },
+      // 代理 DeepSeek API 请求
+      "/api/deepseek": {
+        target: "https://api.deepseek.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deepseek/, ""),
+      },
     },
   },
   test: {
