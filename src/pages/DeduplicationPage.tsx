@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -7,33 +8,69 @@ import {
   ArrowLeft,
   Loader2,
   CheckCircle,
-  XCircle,
   AlertTriangle,
   Sparkles,
   Trash2,
 } from "lucide-react";
 import { useStarsStore, useAuthStore } from "../store";
-import {
-  detectSimilarRepos,
-  clusterByLanguage,
-  clusterByTopics,
-  generateDeduplicationReport,
-} from "../services/similarity.service";
+import type { StarredRepo, RepoMetadata } from "../types";
+import { generateDeduplicationReport } from "../services/similarity.service";
 import { saveMetadataToGist } from "../services/metadata.service";
 import SimilarReposCard from "../components/common/SimilarReposCard";
 import MainLayout from "../components/layout/MainLayout";
 
+/** 推荐信息 */
+interface Recommendation {
+  repoId: number;
+  repoName: string;
+  score: number;
+  reasons: string[];
+}
+
+/** 相似项目组 */
+interface DeduplicationGroup {
+  repos: StarredRepo[];
+  similarities: Array<{
+    repo1: number;
+    repo2: number;
+    score: number;
+    details: Record<string, number>;
+  }>;
+  averageSimilarity: number;
+  recommendation: Recommendation;
+}
+
+/** 去重报告 */
+interface DeduplicationReport {
+  totalRepos: number;
+  duplicateGroups: number;
+  totalDuplicates: number;
+  potentialSavings: number;
+  groups: DeduplicationGroup[];
+  summary: {
+    highSimilarity: number;
+    mediumSimilarity: number;
+    lowSimilarity: number;
+  };
+}
+
 export default function DeduplicationPage() {
   const navigate = useNavigate();
-  const { stars, metadata, setMetadata } = useStarsStore();
-  const { accessToken, gistId } = useAuthStore();
+  const { stars, metadata, setMetadata } = useStarsStore() as {
+    stars: StarredRepo[];
+    metadata: Record<number, RepoMetadata>;
+    setMetadata: (m: Record<number, RepoMetadata>) => void;
+  };
+  const { accessToken, gistId } = useAuthStore() as {
+    accessToken: string | null;
+    gistId: string | null;
+  };
 
-  const [report, setReport] = useState(null);
+  const [report, setReport] = useState<DeduplicationReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [threshold, setThreshold] = useState(0.6); // 相似度阈值
-  const [selectedRepos, setSelectedRepos] = useState(new Set());
+  const [selectedRepos, setSelectedRepos] = useState<Set<number>>(new Set());
   const [removing, setRemoving] = useState(false);
-  const [activeTab, setActiveTab] = useState("similar"); // similar | language | topics
 
   useEffect(() => {
     if (stars.length > 0) {
@@ -53,7 +90,7 @@ export default function DeduplicationPage() {
     }
   };
 
-  const handleSelectRepo = (repoId) => {
+  const handleSelectRepo = (repoId: number) => {
     const newSelected = new Set(selectedRepos);
     if (newSelected.has(repoId)) {
       newSelected.delete(repoId);
@@ -63,7 +100,7 @@ export default function DeduplicationPage() {
     setSelectedRepos(newSelected);
   };
 
-  const handleSelectAllInGroup = (group) => {
+  const handleSelectAllInGroup = (group: DeduplicationGroup) => {
     const newSelected = new Set(selectedRepos);
     const recommendedId = group.recommendation.repoId;
 
@@ -91,7 +128,10 @@ export default function DeduplicationPage() {
     setRemoving(true);
     try {
       // 将选中的项目标记为已归档
-      const updatedMetadata = { ...metadata };
+      const updatedMetadata = { ...metadata } as Record<
+        number,
+        RepoMetadata & Record<string, unknown>
+      >;
       const now = new Date().toISOString();
 
       selectedRepos.forEach((repoId) => {
@@ -122,7 +162,7 @@ export default function DeduplicationPage() {
     }
   };
 
-  const handleThresholdChange = (e) => {
+  const handleThresholdChange = (e: ChangeEvent<HTMLInputElement>) => {
     setThreshold(parseFloat(e.target.value));
   };
 
@@ -134,6 +174,16 @@ export default function DeduplicationPage() {
             <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
             <p className="text-gray-600">正在分析重复项目...</p>
           </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!report) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-600">暂无分析数据</p>
         </div>
       </MainLayout>
     );
@@ -321,8 +371,16 @@ export default function DeduplicationPage() {
 }
 
 // 统计卡片组件
-function StatCard({ icon, label, value, color, subtitle }) {
-  const colorClasses = {
+interface StatCardProps {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  color: "yellow" | "red" | "green" | "blue";
+  subtitle?: string;
+}
+
+function StatCard({ icon, label, value, color, subtitle }: StatCardProps) {
+  const colorClasses: Record<string, string> = {
     yellow: "bg-yellow-50 text-yellow-600 border-yellow-200",
     red: "bg-red-50 text-red-600 border-red-200",
     green: "bg-green-50 text-green-600 border-green-200",

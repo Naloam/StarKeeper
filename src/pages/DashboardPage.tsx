@@ -24,6 +24,14 @@ import { getAllStarredRepos, getRepoReadme } from "../services/github.service";
 import { generateSummary } from "../services/dashscope.service";
 import { calculateHealthScore, batchCalculateHealthScore } from "../services/health.service";
 import { generateStatsReport } from "../services/stats.service";
+import type {
+  StarredRepo,
+  RepoMetadata,
+  StatsReport,
+  Collection,
+  ShareConfig,
+  HealthScore,
+} from "../types";
 import TagModal from "../components/tags/TagModal";
 import TagBadge from "../components/tags/TagBadge";
 import AISummary from "../components/common/AISummary";
@@ -54,9 +62,25 @@ import {
 import CollectionModal from "../components/common/CollectionModal";
 import { APP_CONFIG } from "../config";
 
+interface SemanticSearchResult {
+  repo: StarredRepo;
+  score: number;
+  relevance: string;
+}
+
+interface ActiveFilter {
+  type: string;
+  label: string;
+  count: number;
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { accessToken, gistId, setGistId } = useAuthStore();
+  const { accessToken, gistId, setGistId } = useAuthStore() as {
+    accessToken: string | null;
+    gistId: string | null;
+    setGistId: (id: string | null) => void;
+  };
   const {
     stars,
     filteredStars,
@@ -72,42 +96,71 @@ export default function DashboardPage() {
     createCollection: storeCreateCollection,
     addRepoToCollection,
     deleteCollection,
-  } = useStarsStore();
-  const [progress, setProgress] = useState({ current: 0, hasMore: false });
-  const [selectedRepo, setSelectedRepo] = useState(null);
+  } = useStarsStore() as {
+    stars: StarredRepo[];
+    filteredStars: StarredRepo[];
+    setStars: (stars: StarredRepo[]) => void;
+    setLoading: (loading: boolean) => void;
+    loading: boolean;
+    updateRepoMetadata: (repoId: number | string, updates: Partial<RepoMetadata>) => void;
+    metadata: Record<number, RepoMetadata>;
+    getAllTags: () => string[];
+    setMetadata: (metadata: Record<number, RepoMetadata>) => void;
+    collections: Collection[];
+    setCollections: (collections: Collection[]) => void;
+    createCollection: (name: string, description?: string) => Collection;
+    addRepoToCollection: (collectionId: string, repoId: number) => void;
+    deleteCollection: (collectionId: string) => void;
+  };
+  const [progress, setProgress] = useState<{ current: number; hasMore: boolean }>({
+    current: 0,
+    hasMore: false,
+  });
+  const [selectedRepo, setSelectedRepo] = useState<StarredRepo | null>(null);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareConfig, setShareConfig] = useState(null);
-  const [generatingSummary, setGeneratingSummary] = useState({});
+  const [shareConfig, setShareConfig] = useState<ShareConfig | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState<Record<string, boolean>>({});
   const [batchGenerating, setBatchGenerating] = useState(false);
-  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
-
-  // 健康度分析相关状态
-  const [analyzingHealth, setAnalyzingHealth] = useState({});
-  const [batchAnalyzing, setBatchAnalyzing] = useState(false);
-  const [healthAnalysisProgress, setHealthAnalysisProgress] = useState({
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number }>({
     current: 0,
     total: 0,
   });
-  const [selectedHealthRepo, setSelectedHealthRepo] = useState(null);
+
+  // 健康度分析相关状态
+  const [analyzingHealth, setAnalyzingHealth] = useState<Record<number | string, boolean>>({});
+  const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+  const [healthAnalysisProgress, setHealthAnalysisProgress] = useState<{
+    current: number;
+    total: number;
+  }>({
+    current: 0,
+    total: 0,
+  });
+  const [selectedHealthRepo, setSelectedHealthRepo] = useState<{
+    repo: StarredRepo;
+    healthScore: HealthScore;
+  } | null>(null);
   const [showHealthModal, setShowHealthModal] = useState(false);
 
   // 统计数据状态
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<StatsReport | null>(null);
   const [showStats, setShowStats] = useState(true);
 
   // 自定义过滤状态
-  const [customFilteredStars, setCustomFilteredStars] = useState(null);
-  const [activeFilters, setActiveFilters] = useState([]);
+  const [customFilteredStars, setCustomFilteredStars] = useState<StarredRepo[] | null>(null);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
 
   // 语义搜索状态
-  const [semanticSearchResults, setSemanticSearchResults] = useState(null);
+  const [semanticSearchResults, setSemanticSearchResults] = useState<SemanticSearchResult[] | null>(
+    null,
+  );
 
   // Collections 状态
   const [showCollectionModal, setShowCollectionModal] = useState(false);
-  const [collectionModalMode, setCollectionModalMode] = useState("create"); // create | add
-  const [collectionRepoId, setCollectionRepoId] = useState(null);
+  const [collectionModalMode, setCollectionModalMode] = useState<string>("create"); // create | add
+  const [collectionRepoId, setCollectionRepoId] = useState<number | null>(null);
 
   const collectionsEnabled = APP_CONFIG.features.collections;
 
@@ -136,7 +189,7 @@ export default function DashboardPage() {
 
   const initializeMetadata = async () => {
     try {
-      const id = await findOrCreateMetadataGist(accessToken);
+      const id = await findOrCreateMetadataGist(accessToken!);
       setGistId(id);
       console.log("✅ Gist ID 已初始化:", id);
     } catch (error) {
@@ -146,7 +199,7 @@ export default function DashboardPage() {
 
   const loadMetadata = async () => {
     try {
-      const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
+      const gistMetadata = await loadMetadataFromGist(accessToken!, gistId!);
       const storeMetadata = convertGistToStoreFormat(gistMetadata);
       setMetadata(storeMetadata);
 
@@ -179,14 +232,14 @@ export default function DashboardPage() {
     if (collectionsEnabled && accessToken && gistId && collections.length >= 0) {
       // 跳过初始加载（空数组 + 未加载完）
       if (collections.length === 0 && !metadata) return;
-      saveCollections(accessToken, gistId, collections).catch((err) => {
+      saveCollections(accessToken, gistId, collections).catch((err: unknown) => {
         console.error("保存收藏夹失败:", err);
       });
     }
   }, [collections]);
 
   // 处理自定义过滤
-  const handleApplyCustomFilter = (filteredData, filters) => {
+  const handleApplyCustomFilter = (filteredData: StarredRepo[], filters: ActiveFilter[]) => {
     setCustomFilteredStars(filteredData);
     setActiveFilters(filters);
 
@@ -205,7 +258,7 @@ export default function DashboardPage() {
     setShowCollectionModal(true);
   };
 
-  const handleAddToCollection = (repoId) => {
+  const handleAddToCollection = (repoId: number) => {
     if (collections.length === 0) {
       // 没有收藏夹，先创建
       setCollectionModalMode("create");
@@ -218,9 +271,14 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCollectionSave = async (data) => {
+  const handleCollectionSave = async (data: {
+    name?: string;
+    description?: string;
+    collectionId?: string;
+    repoId?: number;
+  }) => {
     if (collectionModalMode === "create") {
-      const col = storeCreateCollection(data.name, data.description);
+      const col = storeCreateCollection(data.name!, data.description || "");
       // 如果有待添加的 repo
       if (collectionRepoId) {
         addRepoToCollection(col.id, collectionRepoId);
@@ -229,12 +287,12 @@ export default function DashboardPage() {
         toast.success(`收藏夹「${data.name}」已创建`);
       }
     } else if (collectionModalMode === "add" && data.collectionId) {
-      addRepoToCollection(data.collectionId, data.repoId);
+      addRepoToCollection(data.collectionId, data.repoId!);
       toast.success("已添加到收藏夹");
     }
   };
 
-  const handleDeleteCollection = async (collectionId) => {
+  const handleDeleteCollection = async (collectionId: string) => {
     deleteCollection(collectionId);
     toast.success("收藏夹已删除");
   };
@@ -244,20 +302,22 @@ export default function DashboardPage() {
   const displayStars = (() => {
     if (semanticSearchResults) {
       // 有语义搜索结果时，与 filteredStars 取交集
-      const semanticRepoIds = new Set(semanticSearchResults.map((r) => r.repo.id));
-      return filteredStars.filter((star) => semanticRepoIds.has(star.id));
+      const semanticRepoIds = new Set(
+        semanticSearchResults.map((r: SemanticSearchResult) => r.repo.id),
+      );
+      return filteredStars.filter((star: StarredRepo) => semanticRepoIds.has(star.id));
     }
     // 否则使用自定义过滤或默认的侧边栏筛选结果
     return customFilteredStars || filteredStars;
   })();
 
   // 处理语义搜索结果
-  const handleSemanticSearchResults = (results) => {
+  const handleSemanticSearchResults = (results: SemanticSearchResult[] | null) => {
     setSemanticSearchResults(results);
     if (results) {
       // 更新过滤标签，但不直接设置 customFilteredStars
       // 让 displayStars 逻辑自动计算交集
-      const semanticFilters = [
+      const semanticFilters: ActiveFilter[] = [
         {
           type: "semantic-search",
           label: `AI 搜索结果`,
@@ -265,35 +325,42 @@ export default function DashboardPage() {
         },
       ];
       // 保留原有的自定义过滤标签
-      setActiveFilters((prev) => {
-        const nonSemanticFilters = prev.filter((f) => f.type !== "semantic-search");
+      setActiveFilters((prev: ActiveFilter[]) => {
+        const nonSemanticFilters = prev.filter((f: ActiveFilter) => f.type !== "semantic-search");
         return [...nonSemanticFilters, ...semanticFilters];
       });
     } else {
       // 清除语义搜索标签
-      setActiveFilters((prev) => prev.filter((f) => f.type !== "semantic-search"));
+      setActiveFilters((prev: ActiveFilter[]) =>
+        prev.filter((f: ActiveFilter) => f.type !== "semantic-search"),
+      );
     }
   };
 
   const loadStars = async () => {
     setLoading(true);
     try {
-      const repos = await getAllStarredRepos(accessToken, setProgress);
+      const repos = await getAllStarredRepos(accessToken!, setProgress);
       setStars(repos);
     } catch (error) {
       console.error("加载 stars 失败:", error);
-      toast.error("加载失败：" + error.message);
+      toast.error("加载失败：" + (error as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenTagModal = (repo) => {
+  const handleOpenTagModal = (repo: StarredRepo) => {
     setSelectedRepo(repo);
     setShowTagModal(true);
   };
 
-  const handleSaveTag = async (data) => {
+  const handleSaveTag = async (data: {
+    repoId: number;
+    tags: string[];
+    notes: string;
+    color: string;
+  }) => {
     console.log("💾 保存标签数据:", data);
     console.log("📊 当前 metadata 状态:", metadata);
     console.log("🔑 repoId:", data.repoId, "type:", typeof data.repoId);
@@ -315,7 +382,7 @@ export default function DashboardPage() {
     if (gistId) {
       try {
         console.log("📤 上传到 Gist:", { gistId, repoId: data.repoId });
-        await saveRepoMetadataToGist(accessToken, gistId, data.repoId, {
+        await saveRepoMetadataToGist(accessToken!, gistId, data.repoId, {
           tags: data.tags,
           notes: data.notes,
           color: data.color,
@@ -323,14 +390,14 @@ export default function DashboardPage() {
         console.log("✅ 标签已保存到 Gist");
 
         // 重新加载元数据确保同步
-        const gistMetadata = await loadMetadataFromGist(accessToken, gistId);
+        const gistMetadata = await loadMetadataFromGist(accessToken!, gistId);
         const storeMetadata = convertGistToStoreFormat(gistMetadata);
         setMetadata(storeMetadata);
         console.log("✅ 元数据已重新加载，共", Object.keys(storeMetadata).length, "个仓库");
         console.log("✅ 重新加载后该仓库的 metadata:", storeMetadata[data.repoId]);
       } catch (error) {
         console.error("❌ 保存到 Gist 失败:", error);
-        toast.error("保存失败：" + error.message);
+        toast.error("保存失败：" + (error as Error).message);
         throw error; // 抛出错误，阻止 Modal 关闭
       }
     } else {
@@ -339,14 +406,19 @@ export default function DashboardPage() {
   };
 
   // 生成 AI 摘要
-  const handleGenerateSummary = async (repo) => {
+  const handleGenerateSummary = async (repo: StarredRepo) => {
     const repoId = `${repo.owner.login}/${repo.name}`;
     const repoMeta = metadata[repo.id] || {};
 
     // 检查是否已有摘要且未过期（7天内）
     const existingSummary = repoMeta.aiSummary;
-    if (existingSummary && existingSummary.timestamp) {
-      const daysSinceGeneration = (Date.now() - existingSummary.timestamp) / (1000 * 60 * 60 * 24);
+    if (
+      existingSummary &&
+      typeof existingSummary === "object" &&
+      "timestamp" in (existingSummary as Record<string, unknown>)
+    ) {
+      const daysSinceGeneration =
+        (Date.now() - (existingSummary as { timestamp: number }).timestamp) / (1000 * 60 * 60 * 24);
       if (daysSinceGeneration < 7) {
         const confirmed = window.confirm(
           `该项目已有 AI 摘要（生成于 ${Math.floor(daysSinceGeneration)} 天前）。是否重新生成？`,
@@ -355,13 +427,13 @@ export default function DashboardPage() {
       }
     }
 
-    setGeneratingSummary((prev) => ({ ...prev, [repoId]: true }));
+    setGeneratingSummary((prev: Record<string, boolean>) => ({ ...prev, [repoId]: true }));
 
     try {
       console.log("🚀 开始为项目生成摘要:", repoId);
 
       // 获取 README
-      const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
+      const readmeContent = await getRepoReadme(accessToken!, repo.owner.login, repo.name);
 
       if (!readmeContent) {
         toast.error("该项目没有 README 文件");
@@ -384,21 +456,21 @@ export default function DashboardPage() {
 
       // 保存到 Gist - 使用 repoId (owner/name) 格式
       if (gistId) {
-        await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+        await saveRepoMetadataToGist(accessToken!, gistId, repoId, {
           aiSummary: summary,
         });
         console.log("✅ AI 摘要已保存到 Gist");
       }
     } catch (error) {
       console.error("❌ 生成 AI 摘要失败:", error);
-      toast.error("生成失败：" + error.message);
+      toast.error("生成失败：" + (error as Error).message);
     } finally {
-      setGeneratingSummary((prev) => ({ ...prev, [repoId]: false }));
+      setGeneratingSummary((prev: Record<string, boolean>) => ({ ...prev, [repoId]: false }));
     }
   };
 
   // 保存编辑后的 AI 摘要
-  const handleSaveSummary = async (repo, updatedSummary) => {
+  const handleSaveSummary = async (repo: StarredRepo, updatedSummary: string) => {
     const repoId = `${repo.owner.login}/${repo.name}`;
 
     try {
@@ -409,7 +481,7 @@ export default function DashboardPage() {
 
       // 保存到 Gist
       if (gistId) {
-        await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+        await saveRepoMetadataToGist(accessToken!, gistId, repoId, {
           aiSummary: updatedSummary,
         });
         console.log("✅ 编辑的摘要已保存");
@@ -423,7 +495,7 @@ export default function DashboardPage() {
   // 批量生成 AI 摘要
   const handleBatchGenerateSummary = async () => {
     // 筛选出还没有 AI 摘要的项目
-    const reposWithoutSummary = filteredStars.filter((star) => {
+    const reposWithoutSummary = filteredStars.filter((star: StarredRepo) => {
       const repoMeta = metadata[star.id] || {};
       return !repoMeta.aiSummary;
     });
@@ -452,7 +524,7 @@ export default function DashboardPage() {
         console.log(`📝 [${i + 1}/${reposWithoutSummary.length}] 正在为 ${repoId} 生成摘要...`);
 
         // 获取 README
-        const readmeContent = await getRepoReadme(accessToken, repo.owner.login, repo.name);
+        const readmeContent = await getRepoReadme(accessToken!, repo.owner.login, repo.name);
 
         if (!readmeContent) {
           console.warn(`⚠️  ${repoId} 没有 README，跳过`);
@@ -473,7 +545,7 @@ export default function DashboardPage() {
 
         // 保存到 Gist - 使用 repoId (owner/name) 格式
         if (gistId) {
-          await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+          await saveRepoMetadataToGist(accessToken!, gistId, repoId, {
             aiSummary: summary,
           });
         }
@@ -487,7 +559,7 @@ export default function DashboardPage() {
 
         // 避免速率限制，每个请求之间等待 2 秒
         if (i < reposWithoutSummary.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, 2000));
         }
       } catch (error) {
         console.error(`❌ ${repoId} 生成失败:`, error);
@@ -501,7 +573,7 @@ export default function DashboardPage() {
   };
 
   // 分析单个项目健康度
-  const handleAnalyzeHealth = async (repo) => {
+  const handleAnalyzeHealth = async (repo: StarredRepo) => {
     const repoId = repo.id;
     const repoMeta = metadata[repoId] || {};
 
@@ -517,13 +589,13 @@ export default function DashboardPage() {
       }
     }
 
-    setAnalyzingHealth((prev) => ({ ...prev, [repoId]: true }));
+    setAnalyzingHealth((prev: Record<number | string, boolean>) => ({ ...prev, [repoId]: true }));
 
     try {
       console.log("🏥 开始分析项目健康度:", repo.fullName);
 
       // 计算健康度
-      const healthScore = await calculateHealthScore(accessToken, repo);
+      const healthScore = await calculateHealthScore(accessToken!, repo);
 
       console.log("✅ 健康度分析成功:", healthScore);
 
@@ -537,7 +609,7 @@ export default function DashboardPage() {
       // 保存到 Gist
       if (gistId) {
         const gistRepoId = `${repo.owner.login}/${repo.name}`;
-        await saveRepoMetadataToGist(accessToken, gistId, gistRepoId, {
+        await saveRepoMetadataToGist(accessToken!, gistId, gistRepoId, {
           healthScore: healthScore,
         });
         console.log("✅ 健康度数据已保存到 Gist");
@@ -548,16 +620,19 @@ export default function DashboardPage() {
       setShowHealthModal(true);
     } catch (error) {
       console.error("❌ 分析健康度失败:", error);
-      toast.error("分析失败：" + error.message);
+      toast.error("分析失败：" + (error as Error).message);
     } finally {
-      setAnalyzingHealth((prev) => ({ ...prev, [repoId]: false }));
+      setAnalyzingHealth((prev: Record<number | string, boolean>) => ({
+        ...prev,
+        [repoId]: false,
+      }));
     }
   };
 
   // 批量分析健康度
   const handleBatchAnalyzeHealth = async () => {
     // 筛选出还没有健康度数据或数据已过期的项目
-    const reposNeedingAnalysis = filteredStars.filter((star) => {
+    const reposNeedingAnalysis = filteredStars.filter((star: StarredRepo) => {
       const repoMeta = metadata[star.id] || {};
       const existingHealth = repoMeta.healthScore;
       if (!existingHealth) return true;
@@ -592,7 +667,7 @@ export default function DashboardPage() {
         console.log(`🏥 [${i + 1}/${reposNeedingAnalysis.length}] 正在分析 ${repoId}...`);
 
         // 计算健康度
-        const healthScore = await calculateHealthScore(accessToken, repo);
+        const healthScore = await calculateHealthScore(accessToken!, repo);
 
         // 更新本地状态
         updateRepoMetadata(repo.id, {
@@ -603,7 +678,7 @@ export default function DashboardPage() {
 
         // 保存到 Gist
         if (gistId) {
-          await saveRepoMetadataToGist(accessToken, gistId, repoId, {
+          await saveRepoMetadataToGist(accessToken!, gistId, repoId, {
             healthScore: healthScore,
           });
         }
@@ -620,7 +695,7 @@ export default function DashboardPage() {
 
         // 避免速率限制，每个请求之间等待 1 秒
         if (i < reposNeedingAnalysis.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, 1000));
         }
       } catch (error) {
         console.error(`❌ ${repoId} 分析失败:`, error);
@@ -637,7 +712,7 @@ export default function DashboardPage() {
   };
 
   // 显示健康度详情
-  const handleShowHealthDetail = (repo) => {
+  const handleShowHealthDetail = (repo: StarredRepo) => {
     const repoMeta = metadata[repo.id] || {};
     if (repoMeta.healthScore) {
       setSelectedHealthRepo({ repo, healthScore: repoMeta.healthScore });
@@ -648,17 +723,17 @@ export default function DashboardPage() {
     }
   };
 
-  const handleUpdateShare = async (newShareConfig) => {
+  const handleUpdateShare = async (newShareConfig: ShareConfig) => {
     console.log("🔄 开始更新分享配置:", newShareConfig);
 
     try {
       // 传递当前的 stars 数据，以便在分享页面展示
-      const shareId = await updateShareConfig(accessToken, gistId, newShareConfig, stars);
+      const shareId = await updateShareConfig(accessToken!, gistId!, newShareConfig, stars);
 
       console.log("✅ 收到 ShareId:", shareId);
 
       // 更新本地状态
-      const updatedConfig = {
+      const updatedConfig: ShareConfig = {
         ...newShareConfig,
         shareId,
       };
@@ -670,7 +745,7 @@ export default function DashboardPage() {
       toast.success("分享设置已更新！");
     } catch (error) {
       console.error("❌ 更新分享配置失败:", error);
-      toast.error("更新失败：" + error.message);
+      toast.error("更新失败：" + (error as Error).message);
       throw error; // 重新抛出错误，防止 Modal 关闭
     }
   };
@@ -824,7 +899,9 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               <LanguageDistribution languages={stats.languages} />
               <TagCloud tags={stats.tags} />
-              <RecentlyActiveRepos repos={stats.recentlyActive} />
+              <RecentlyActiveRepos
+                repos={(stats as StatsReport & { recentlyActive: StarredRepo[] }).recentlyActive}
+              />
             </div>
           </div>
         )}
@@ -835,7 +912,7 @@ export default function DashboardPage() {
             stars={stars}
             metadata={metadata}
             gistId={gistId}
-            accessToken={accessToken}
+            accessToken={accessToken!}
             onResults={handleSemanticSearchResults}
           />
         )}
@@ -905,9 +982,9 @@ export default function DashboardPage() {
           isOpen={showTagModal}
           onClose={() => setShowTagModal(false)}
           repo={selectedRepo}
-          currentTags={metadata[selectedRepo?.id]?.tags || []}
-          currentNotes={metadata[selectedRepo?.id]?.notes || ""}
-          currentColor={metadata[selectedRepo?.id]?.color || "#3B82F6"}
+          currentTags={metadata[selectedRepo?.id ?? 0]?.tags || []}
+          currentNotes={metadata[selectedRepo?.id ?? 0]?.notes || ""}
+          currentColor={metadata[selectedRepo?.id ?? 0]?.color || "#3B82F6"}
           allTags={getAllTags()}
           onSave={handleSaveTag}
         />
@@ -954,6 +1031,44 @@ export default function DashboardPage() {
   );
 }
 
+// --- Internal component type definitions ---
+
+interface StarsListProps {
+  stars: StarredRepo[];
+  onOpenTagModal: (repo: StarredRepo) => void;
+  onGenerateSummary: (repo: StarredRepo) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  generatingSummary: Record<string, boolean>;
+  onAnalyzeHealth: (repo: StarredRepo) => void;
+  onShowHealthDetail: (repo: StarredRepo) => void;
+  analyzingHealth: Record<number | string, boolean>;
+  onAddToCollection: ((repoId: number) => void) | null;
+}
+
+interface StarCardProps {
+  star: StarredRepo;
+  onOpenTagModal: (repo: StarredRepo) => void;
+  onGenerateSummary: (repo: StarredRepo) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  isGenerating: boolean | undefined;
+  onAnalyzeHealth: (repo: StarredRepo) => void;
+  onShowHealthDetail: (repo: StarredRepo) => void;
+  isAnalyzing: boolean | undefined;
+  onAddToCollection: ((repoId: number) => void) | null;
+}
+
+interface StarListItemProps {
+  star: StarredRepo;
+  onOpenTagModal: (repo: StarredRepo) => void;
+  onGenerateSummary: (repo: StarredRepo) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  isGenerating: boolean | undefined;
+  onAnalyzeHealth: (repo: StarredRepo) => void;
+  onShowHealthDetail: (repo: StarredRepo) => void;
+  isAnalyzing: boolean | undefined;
+  onAddToCollection: ((repoId: number) => void) | null;
+}
+
 function StarsList({
   stars,
   onOpenTagModal,
@@ -964,8 +1079,8 @@ function StarsList({
   onShowHealthDetail,
   analyzingHealth,
   onAddToCollection,
-}) {
-  const { viewMode } = useUIStore();
+}: StarsListProps) {
+  const { viewMode } = useUIStore() as { viewMode: string };
 
   if (stars.length === 0) {
     return (
@@ -978,7 +1093,7 @@ function StarsList({
   if (viewMode === "grid") {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        {stars.map((star) => (
+        {stars.map((star: StarredRepo) => (
           <StarCard
             key={star.id}
             star={star}
@@ -998,7 +1113,7 @@ function StarsList({
 
   return (
     <div className="space-y-4">
-      {stars.map((star) => (
+      {stars.map((star: StarredRepo) => (
         <StarListItem
           key={star.id}
           star={star}
@@ -1026,8 +1141,8 @@ function StarCard({
   onShowHealthDetail,
   isAnalyzing,
   onAddToCollection,
-}) {
-  const { metadata } = useStarsStore();
+}: StarCardProps) {
+  const { metadata } = useStarsStore() as { metadata: Record<number, RepoMetadata> };
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
@@ -1087,7 +1202,7 @@ function StarCard({
           summary={aiSummary}
           onGenerate={() => onGenerateSummary(star)}
           onRegenerate={() => onGenerateSummary(star)}
-          onSave={(updatedSummary) => onSaveSummary(star, updatedSummary)}
+          onSave={(updatedSummary: string) => onSaveSummary(star, updatedSummary)}
           loading={isGenerating}
           editable={true}
         />
@@ -1096,7 +1211,7 @@ function StarCard({
       {/* 标签显示 */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {tags.slice(0, 3).map((tag) => (
+          {tags.slice(0, 3).map((tag: string) => (
             <TagBadge key={tag} tag={tag} color={color} size="sm" />
           ))}
           {tags.length > 3 && (
@@ -1142,8 +1257,8 @@ function StarListItem({
   onShowHealthDetail,
   isAnalyzing,
   onAddToCollection,
-}) {
-  const { metadata } = useStarsStore();
+}: StarListItemProps) {
+  const { metadata } = useStarsStore() as { metadata: Record<number, RepoMetadata> };
   const repoId = `${star.owner.login}/${star.name}`;
   const repoMeta = metadata[star.id] || {};
   const tags = repoMeta.tags || [];
@@ -1197,7 +1312,7 @@ function StarListItem({
               summary={aiSummary}
               onGenerate={() => onGenerateSummary(star)}
               onRegenerate={() => onGenerateSummary(star)}
-              onSave={(updatedSummary) => onSaveSummary(star, updatedSummary)}
+              onSave={(updatedSummary: string) => onSaveSummary(star, updatedSummary)}
               loading={isGenerating}
               editable={true}
             />
@@ -1206,7 +1321,7 @@ function StarListItem({
           {/* 标签显示 */}
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {tags.map((tag) => (
+              {tags.map((tag: string) => (
                 <TagBadge key={tag} tag={tag} color={color} size="sm" />
               ))}
             </div>

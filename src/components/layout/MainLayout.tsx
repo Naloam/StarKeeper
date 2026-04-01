@@ -1,7 +1,13 @@
+import { ReactNode } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 
-export default function MainLayout({ children, sidebarProps }) {
+interface MainLayoutProps {
+  children: ReactNode;
+  sidebarProps?: Record<string, unknown>;
+}
+
+export default function MainLayout({ children, sidebarProps }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-surface">
       <Header />

@@ -69,9 +69,15 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
       setIsInitializing(false);
     } catch (err) {
       console.error("初始化 embeddings 失败:", err);
-      setError(err.message);
+      const msg = err instanceof Error ? err.message : String(err);
+      // 如果已有部分 embeddings，仍标记为就绪（降级模式）
+      if (Object.keys(embeddings).length > 0) {
+        setIsReady(true);
+        setError(`部分向量索引不可用: ${msg}`);
+      } else {
+        setError("向量索引初始化失败 — 语义搜索不可用，其他功能正常");
+      }
       setIsInitializing(false);
-      toast.error("向量索引初始化失败");
     }
   };
 
