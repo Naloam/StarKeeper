@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { StarredRepo, RepoMetadata, Collection } from "./types";
 
 // ============================================================
 // applyFilters 防抖 — 避免连续 setSearchQuery/setSortBy 等触发过多重计算
