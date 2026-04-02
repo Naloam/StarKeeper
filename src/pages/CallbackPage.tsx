@@ -37,25 +37,22 @@ export default function CallbackPage() {
         throw new Error("State 验证失败，可能存在安全风险");
       }
 
-      // 注意：这里需要后端支持
-      // 实际项目中，应该调用后端 API 来交换 token
-      setError("需要配置后端服务来完成 OAuth 流程。\n\n临时方案：请在浏览器控制台手动设置 token。");
+      // 通过 Vercel Serverless Function 交换 token
+      const tokenResponse = await fetch("/api/auth/callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
 
-      // 临时演示：直接使用模拟 token（仅用于开发）
-      // 生产环境必须通过后端交换
-      if (import.meta.env.DEV) {
-        // 开发模式提示
-        console.warn("⚠️ 开发模式：需要手动设置 token");
-        console.log("请在控制台执行：");
-        console.log('localStorage.setItem("github_token", btoa("your_github_token"))');
-        console.log("然后刷新页面");
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenResponse.ok || !tokenData.access_token) {
+        throw new Error(tokenData.error || "获取 access token 失败");
       }
 
-      // TODO: 实现后端 token 交换
-      // const { access_token } = await exchangeCodeForToken(code);
-      // const user = await getCurrentUser(access_token);
-      // login(user, access_token);
-      // navigate('/dashboard');
+      const user = await getCurrentUser(tokenData.access_token);
+      login(user, tokenData.access_token);
+      navigate("/dashboard");
     } catch (err) {
       console.error("OAuth 回调处理失败:", err);
       setError(err.message);
