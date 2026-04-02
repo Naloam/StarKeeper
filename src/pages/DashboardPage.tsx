@@ -8,6 +8,7 @@ import {
   Download,
   Upload,
   RefreshCw,
+  Settings,
   Share2,
   Sparkles,
   Activity,
@@ -61,6 +62,7 @@ import {
 } from "../services/metadata.service";
 import CollectionModal from "../components/common/CollectionModal";
 import { APP_CONFIG } from "../config";
+import { useSettingsStore } from "../store/settings";
 
 interface SemanticSearchResult {
   repo: StarredRepo;
@@ -795,6 +797,22 @@ export default function DashboardPage() {
   return (
     <MainLayout sidebarProps={sidebarProps}>
       <div>
+        {/* AI Key 配置提示 */}
+        {!useSettingsStore.getState().deepseekApiKey && (
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-between">
+            <p className="text-sm text-text-primary">
+              配置 AI Key 以启用智能摘要、标签推荐和语义搜索功能
+            </p>
+            <button
+              onClick={() => navigate("/settings")}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary/90"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              去设置
+            </button>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

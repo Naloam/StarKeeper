@@ -1,3 +1,16 @@
+import { useSettingsStore } from "../store/settings";
+
+/**
+ * 获取运行时 AI 配置（用户设置的 Key 优先，fallback 到环境变量）
+ */
+export function getAIConfig() {
+  const settings = useSettingsStore.getState();
+  return {
+    apiKey: settings.deepseekApiKey || import.meta.env.VITE_DASHSCOPE_API_KEY || "",
+    siliconflowApiKey: settings.siliconflowApiKey || import.meta.env.VITE_SILICONFLOW_API_KEY || "",
+  };
+}
+
 /**
  * 阿里云通义千问 DashScope API 配置
  */

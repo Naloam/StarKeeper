@@ -1,14 +1,15 @@
 import axios from "axios";
-import { DASHSCOPE_CONFIG } from "../config";
+import { DASHSCOPE_CONFIG, getAIConfig } from "../config";
 
 /**
  * DashScope API 服务封装
  * 支持阿里云通义千问 / DeepSeek (OpenAI 兼容) API 调用
  */
 
-// 检测是否使用 DeepSeek API（key 以 sk- 开头且非 DashScope 格式）
-const isDeepSeek =
-  DASHSCOPE_CONFIG.apiKey?.startsWith("sk-") && !DASHSCOPE_CONFIG.apiKey?.startsWith("sk-aaa");
+/** 判断当前 Key 是否走 DeepSeek 格式 */
+function isDeepSeekKey(key: string): boolean {
+  return key.startsWith("sk-") && !key.startsWith("sk-aaa");
+}
 
 const DEEPSEEK_BASE_URL = "/api/deepseek/v1";
 
@@ -20,7 +21,10 @@ async function chatRequest(
   userPrompt: string,
   maxTokens = 800,
 ): Promise<string> {
-  if (isDeepSeek) {
+  const { apiKey } = getAIConfig();
+  if (!apiKey) throw new Error("请先在设置中配置 DeepSeek API Key");
+
+  if (isDeepSeekKey(apiKey)) {
     const response = await axios.post(
       `${DEEPSEEK_BASE_URL}/chat/completions`,
       {
@@ -34,7 +38,7 @@ async function chatRequest(
       },
       {
         headers: {
-          Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
       },
@@ -62,7 +66,7 @@ async function chatRequest(
     },
     {
       headers: {
-        Authorization: `Bearer ${DASHSCOPE_CONFIG.apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "X-DashScope-SSE": "disable",
       },
@@ -172,7 +176,12 @@ ${truncatedContent}
 
 const SILICONFLOW_EMBEDDING_URL = "/api/siliconflow/v1/embeddings";
 const SILICONFLOW_EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5";
-const SILICONFLOW_API_KEY = import.meta.env.VITE_SILICONFLOW_API_KEY || DASHSCOPE_CONFIG.apiKey;
+
+/** 获取 SiliconFlow API Key（运行时） */
+function getSiliconflowKey(): string {
+  const { siliconflowApiKey } = getAIConfig();
+  return siliconflowApiKey;
+}
 
 /**
  * 为文本生成 embedding 向量（通过 SiliconFlow）
@@ -193,7 +202,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       },
       {
         headers: {
-          Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
+          Authorization: `Bearer ${getSiliconflowKey()}`,
           "Content-Type": "application/json",
         },
       },
@@ -245,7 +254,7 @@ export async function batchGenerateEmbeddings(texts: string[]): Promise<number[]
         },
         {
           headers: {
-            Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
+            Authorization: `Bearer ${getSiliconflowKey()}`,
             "Content-Type": "application/json",
           },
         },
