@@ -16,6 +16,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const CleanupPage = lazy(() => import("./pages/CleanupPage"));
 const DeduplicationPage = lazy(() => import("./pages/DeduplicationPage"));
 const SharePage = lazy(() => import("./pages/SharePage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 function App() {
   const { isAuthenticated, accessToken, login, logout } = useAuthStore();
@@ -99,6 +100,10 @@ function App() {
               element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
             />
             <Route path="/share/:shareId" element={<SharePage />} />
+            <Route
+              path="/settings"
+              element={isAuthenticated ? <SettingsPage /> : <Navigate to="/" />}
+            />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>

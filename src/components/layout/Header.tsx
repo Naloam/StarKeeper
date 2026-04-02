@@ -1,10 +1,12 @@
-import { Star, Github, LogOut, Settings, Menu, X, Sun, Moon } from "lucide-react";
+import { Star, Github, LogOut, Settings, Menu, Sun, Moon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore, useUIStore } from "../../store";
 import { APP_CONFIG } from "../../config";
 import LazyImage from "../common/LazyImage";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export default function Header() {
+  const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const { theme, toggleTheme } = useTheme();
@@ -85,6 +87,7 @@ export default function Header() {
                   </a>
 
                   <button
+                    onClick={() => navigate("/settings")}
                     className="hidden sm:block p-2 rounded-lg hover:bg-surface-darker transition-fast focus-ring"
                     title="设置"
                   >
