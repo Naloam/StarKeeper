@@ -60,3 +60,5 @@ CLAUDE.md
 CHANGELOG.md
 .playwright-mcp/
 *.png
+.vercel
+.env*.local
