@@ -389,7 +389,10 @@ export function exportStatsReport(statsData, stars, metadata) {
   }
 
   // 高 Star 项目
-  const topStarred = stars.sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
+  // 复制后再排序：sort 是原地操作，直接对调用方传入的 stars 排序会把
+  // 组件状态里的列表静默重排（上面"最近活跃"通过 filter 先生成了新数组，
+  // 这里必须同样避免副作用）。
+  const topStarred = [...stars].sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
 
   if (topStarred.length > 0) {
     markdown += `## ⭐ 最受欢迎项目 (Top 10)\n\n`;

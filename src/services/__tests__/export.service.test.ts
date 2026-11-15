@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  exportStatsReport,
   exportToMarkdown,
   exportToCSV,
   exportToJSON,
@@ -171,5 +172,24 @@ describe("export.service", () => {
       });
       expect(csv).toContain("总 Stars 数,10");
     });
+  });
+});
+
+describe("exportStatsReport", () => {
+  it("does not mutate the caller's stars array order", () => {
+    // 按 stars 数量升序构造，导出报告后原数组顺序必须保持不变
+    const stars = [
+      { ...mockStars[0], id: 101, name: "low-star", stargazersCount: 5, forksCount: 1, pushedAt: "2024-06-01T00:00:00Z" },
+      { ...mockStars[0], id: 102, name: "high-star", stargazersCount: 99999, forksCount: 2, pushedAt: "2024-06-02T00:00:00Z" },
+    ];
+    const orderBefore = stars.map((s) => s.name);
+    exportStatsReport({}, stars, {});
+    expect(stars.map((s) => s.name)).toEqual(orderBefore);
+  });
+
+  it("renders a markdown report", () => {
+    const md = exportStatsReport({ basic: { totalStars: 1 } }, mockStars.slice(0, 1), {});
+    expect(md).toContain("# StarKeeper 统计报告");
+    expect(md).toContain(`最受欢迎项目`);
   });
 });
