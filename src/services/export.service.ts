@@ -4,6 +4,23 @@
  */
 
 /**
+ * Markdown 表格单元格转义：用户自由文本（如标签）里的竖线会把表格
+ * 撑出多余列，按 GFM 约定转义为 \|。
+ */
+function escapeMarkdownCell(value) {
+  return String(value ?? "").replace(/\|/g, "\\|");
+}
+
+/**
+ * CSV 单元格：含逗号/引号/换行时加引号并对引号翻倍（RFC 4180）。
+ * 标签是用户自由文本，可能包含任意字符。
+ */
+function csvCell(value) {
+  const s = String(value ?? "");
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/**
  * 导出为 Markdown 格式（按标签分类）
  * @param {Array} stars - Stars 数据数组
  * @param {Object} metadata - 元数据对象（标签、笔记、摘要等）
@@ -325,7 +342,7 @@ export function exportStatsReport(statsData, stars, metadata) {
     markdown += `| 排名 | 语言 | 项目数 | 占比 |\n`;
     markdown += `|------|------|--------|------|\n`;
     languages.slice(0, 10).forEach((lang, index) => {
-      markdown += `| ${index + 1} | ${lang.language} | ${lang.count} | ${lang.percentage}% |\n`;
+      markdown += `| ${index + 1} | ${escapeMarkdownCell(lang.language)} | ${lang.count} | ${lang.percentage}% |\n`;
     });
     markdown += `\n`;
   }
@@ -336,7 +353,7 @@ export function exportStatsReport(statsData, stars, metadata) {
     markdown += `| 排名 | 标签 | 使用次数 | 占比 |\n`;
     markdown += `|------|------|----------|------|\n`;
     tags.slice(0, 15).forEach((tag, index) => {
-      markdown += `| ${index + 1} | ${tag.tag} | ${tag.count} | ${tag.percentage}% |\n`;
+      markdown += `| ${index + 1} | ${escapeMarkdownCell(tag.tag)} | ${tag.count} | ${tag.percentage}% |\n`;
     });
     markdown += `\n`;
   }
@@ -389,7 +406,10 @@ export function exportStatsReport(statsData, stars, metadata) {
   }
 
   // 高 Star 项目
-  const topStarred = stars.sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
+  // 复制后再排序：sort 是原地操作，直接对调用方传入的 stars 排序会把
+  // 组件状态里的列表静默重排（上面"最近活跃"通过 filter 先生成了新数组，
+  // 这里必须同样避免副作用）。
+  const topStarred = [...stars].sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
 
   if (topStarred.length > 0) {
     markdown += `## ⭐ 最受欢迎项目 (Top 10)\n\n`;
@@ -442,7 +462,7 @@ export function exportStatsCSV(statsData) {
   if (languages && languages.length > 0) {
     csv += `\n`;
     languages.slice(0, 10).forEach((lang) => {
-      csv += `语言分布,${lang.language},${lang.count},${lang.percentage}%\n`;
+      csv += `语言分布,${csvCell(lang.language)},${lang.count},${lang.percentage}%\n`;
     });
   }
 
@@ -450,7 +470,7 @@ export function exportStatsCSV(statsData) {
   if (tags && tags.length > 0) {
     csv += `\n`;
     tags.slice(0, 10).forEach((tag) => {
-      csv += `标签统计,${tag.tag},${tag.count},${tag.percentage}%\n`;
+      csv += `标签统计,${csvCell(tag.tag)},${tag.count},${tag.percentage}%\n`;
     });
   }
 
