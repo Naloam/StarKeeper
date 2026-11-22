@@ -14,6 +14,7 @@ import { validateGitHubToken } from "./utils/auth";
 import { setupNetworkListener } from "./utils/toast";
 
 // 路由级代码分割 — 懒加载页面组件
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const CleanupPage = lazy(() => import("./pages/CleanupPage"));
 const DeduplicationPage = lazy(() => import("./pages/DeduplicationPage"));
@@ -104,6 +105,10 @@ function App() {
             <Route
               path="/deduplication"
               element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/discover"
+              element={isAuthenticated ? <DiscoverPage /> : <Navigate to="/" />}
             />
             <Route path="/share/:shareId" element={<SharePage />} />
             <Route
