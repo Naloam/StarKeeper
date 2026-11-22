@@ -1,0 +1,32 @@
+name: StarKeeper v0.4 verification
+on:
+  push:
+    branches:
+      - ci/starkeeper-v0.4-verification
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript
+        id: typecheck
+        run: npx tsc --noEmit
+      - name: Project lint
+        if: always() && !cancelled()
+        run: npm run lint
+      - name: Vitest
+        if: always() && !cancelled()
+        run: npm test -- --run
+      - name: Vite build
+        if: always() && !cancelled()
+        run: npm run build
