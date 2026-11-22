@@ -26,14 +26,7 @@ import { loadSessionStars } from "../services/session-stars.service";
 import { generateSummary } from "../services/dashscope.service";
 import { calculateHealthScore, batchCalculateHealthScore } from "../services/health.service";
 import { generateStatsReport } from "../services/stats.service";
-import type {
-  StarredRepo,
-  RepoMetadata,
-  StatsReport,
-  Collection,
-  ShareConfig,
-  HealthScore,
-} from "../types";
+import type { StarredRepo, RepoMetadata, Collection, ShareConfig, HealthScore } from "../types";
 import TagModal from "../components/tags/TagModal";
 import TagBadge from "../components/tags/TagBadge";
 import AISummary from "../components/common/AISummary";
@@ -109,7 +102,7 @@ export default function DashboardPage() {
   const [showHealthModal, setShowHealthModal] = useState(false);
 
   // 统计数据状态
-  const [stats, setStats] = useState<StatsReport | null>(null);
+  const [stats, setStats] = useState<ReturnType<typeof generateStatsReport> | null>(null);
   const [showStats, setShowStats] = useState(true);
 
   // 自定义过滤状态
@@ -123,7 +116,7 @@ export default function DashboardPage() {
 
   // Collections 状态
   const [showCollectionModal, setShowCollectionModal] = useState(false);
-  const [collectionModalMode, setCollectionModalMode] = useState<string>("create"); // create | add
+  const [collectionModalMode, setCollectionModalMode] = useState<"create" | "add">("create"); // create | add
   const [collectionRepoId, setCollectionRepoId] = useState<number | null>(null);
 
   const collectionsEnabled = APP_CONFIG.features.collections;
@@ -741,9 +734,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               <LanguageDistribution languages={stats.languages} />
               <TagCloud tags={stats.tags} />
-              <RecentlyActiveRepos
-                repos={(stats as StatsReport & { recentlyActive: StarredRepo[] }).recentlyActive}
-              />
+              <RecentlyActiveRepos repos={stats.recentlyActive} />
             </div>
           </div>
         )}
@@ -819,16 +810,18 @@ export default function DashboardPage() {
         />
 
         {/* Tag Modal */}
-        <TagModal
-          isOpen={showTagModal}
-          onClose={() => setShowTagModal(false)}
-          repo={selectedRepo}
-          currentTags={metadata[selectedRepo?.id ?? 0]?.tags || []}
-          currentNotes={metadata[selectedRepo?.id ?? 0]?.notes || ""}
-          currentColor={metadata[selectedRepo?.id ?? 0]?.color || "#3B82F6"}
-          allTags={getAllTags()}
-          onSave={handleSaveTag}
-        />
+        {selectedRepo && (
+          <TagModal
+            isOpen={showTagModal}
+            onClose={() => setShowTagModal(false)}
+            repo={selectedRepo}
+            currentTags={metadata[selectedRepo?.id ?? 0]?.tags || []}
+            currentNotes={metadata[selectedRepo?.id ?? 0]?.notes || ""}
+            currentColor={metadata[selectedRepo?.id ?? 0]?.color || "#3B82F6"}
+            allTags={getAllTags()}
+            onSave={handleSaveTag}
+          />
+        )}
 
         {/* Export Modal */}
         <ExportModal

@@ -19,6 +19,7 @@ export async function createGist<T>(
     public: false,
     files: { [filename]: { content: JSON.stringify(value) } },
   });
+  if (!data.id) throw new Error("GitHub 未返回新 Gist 的 ID");
   return data.id;
 }
 

@@ -15,7 +15,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useStarsStore, useUIStore } from "../../store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type MouseEvent } from "react";
 import { useDebounce } from "../../utils/performance";
 import { NavLink } from "react-router-dom";
 import { APP_CONFIG } from "../../config";
@@ -57,12 +57,12 @@ export default function Sidebar({
   const tags = getAllTags();
 
   // 防抖更新搜索查询
-  const debouncedSetSearch = useDebounce((value) => {
+  const debouncedSetSearch = useDebounce((value: string) => {
     setSearchQuery(value);
   }, 300);
 
   // 处理搜索输入变化
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalSearchQuery(value);
     debouncedSetSearch(value);
@@ -94,11 +94,11 @@ export default function Sidebar({
   };
 
   // 阻止触摸滑动时关闭
-  const handleSidebarClick = (e) => {
+  const handleSidebarClick = (e: MouseEvent<HTMLElement>) => {
     e.stopPropagation();
   };
 
-  const toggleLanguage = (lang) => {
+  const toggleLanguage = (lang: string) => {
     if (selectedLanguages.includes(lang)) {
       setSelectedLanguages(selectedLanguages.filter((l) => l !== lang));
     } else {
@@ -106,7 +106,7 @@ export default function Sidebar({
     }
   };
 
-  const toggleTag = (tag) => {
+  const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
       setSelectedTags(selectedTags.filter((t) => t !== tag));
     } else {

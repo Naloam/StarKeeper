@@ -3,7 +3,22 @@
  * 基于 DashScope Embedding API 实现自然语言搜索
  */
 
+import type { RepoMetadata } from "../types";
 import { generateEmbedding, batchGenerateEmbeddings } from "./dashscope.service";
+
+type SearchRepo = {
+  name: string;
+  fullName?: string;
+  full_name?: string;
+  description?: string | null;
+  language?: string | null;
+  topics?: string[];
+};
+type RepoWithId = SearchRepo & { id: number };
+type VectorMap = Record<number, number[]>;
+type MetadataMap = Record<number, RepoMetadata>;
+type SearchOptions = { topK?: number; threshold?: number };
+type Relevance = "low" | "medium" | "high";
 
 // 预编译正则表达式
 const REGEX_FRONTEND = /react|vue|angular|svelte|component|ui|frontend|前端/;
@@ -19,7 +34,7 @@ const REGEX_VISUAL = /chart|graph|visual|echarts|d3|可视化|图表/;
  * @param {Array<number>} vec2 - 向量2
  * @returns {number} 相似度分数 (0-1)
  */
-export function cosineSimilarity(vec1, vec2) {
+export function cosineSimilarity(vec1: number[], vec2: number[]) {
   if (!vec1 || !vec2 || vec1.length !== vec2.length) {
     throw new Error("向量维度不匹配");
   }
@@ -46,7 +61,7 @@ export function cosineSimilarity(vec1, vec2) {
  * @param {Object} metadata - 项目元数据
  * @returns {string} 搜索文本
  */
-export function generateSearchText(repo, metadata) {
+export function generateSearchText(repo: SearchRepo, metadata?: RepoMetadata) {
   const parts = [];
 
   // 1. 项目名称（重复2次增加权重）
@@ -69,7 +84,7 @@ export function generateSearchText(repo, metadata) {
     parts.push(repo.language);
     parts.push(repo.language);
     // 添加常见的语言相关词汇
-    const langKeywords = {
+    const langKeywords: Record<string, string> = {
       JavaScript: "JS 前端 Web Node.js",
       TypeScript: "TS 前端 Web 类型安全",
       Python: "Python 脚本 数据分析 机器学习",
@@ -157,7 +172,7 @@ export function generateSearchText(repo, metadata) {
  * @param {Object} metadata - 项目元数据
  * @returns {Promise<Array<number>>} embedding 向量
  */
-export async function generateRepoEmbedding(repo, metadata) {
+export async function generateRepoEmbedding(repo: SearchRepo, metadata?: RepoMetadata) {
   const searchText = generateSearchText(repo, metadata);
 
   if (!searchText.trim()) {
@@ -174,8 +189,12 @@ export async function generateRepoEmbedding(repo, metadata) {
  * @param {Function} onProgress - 进度回调 (current, total)
  * @returns {Promise<Object>} {repoId: embedding} 映射
  */
-export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress) {
-  const embeddings = {};
+export async function batchGenerateRepoEmbeddings(
+  repos: RepoWithId[],
+  metadataMap: MetadataMap,
+  onProgress?: (completed: number, total: number) => void,
+) {
+  const embeddings: VectorMap = {};
   const batchSize = 10; // 每批处理 10 个
 
   for (let i = 0; i < repos.length; i += batchSize) {
@@ -224,7 +243,12 @@ export async function batchGenerateRepoEmbeddings(repos, metadataMap, onProgress
  * @param {number} options.threshold - 最小相似度阈值，默认 0.4
  * @returns {Promise<Array<Object>>} 搜索结果 [{repo, score, relevance}]
  */
-export async function semanticSearch(query, repos, embeddingsMap, options = {}) {
+export async function semanticSearch<T extends { id: number }>(
+  query: string,
+  repos: T[],
+  embeddingsMap: VectorMap,
+  options: SearchOptions = {},
+) {
   const { topK = 10, threshold = 0.4 } = options;
 
   if (!query || !query.trim()) {
@@ -235,7 +259,7 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
   const queryEmbedding = await generateEmbedding(query);
 
   // 计算相似度
-  const results = [];
+  const results: { repo: T; score: number; relevance: Relevance }[] = [];
   for (const repo of repos) {
     const repoEmbedding = embeddingsMap[repo.id];
     if (!repoEmbedding) continue;
@@ -245,7 +269,7 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
 
       if (score >= threshold) {
         // 确定相关度等级
-        let relevance = "low";
+        let relevance: Relevance = "low";
         if (score >= 0.7) {
           relevance = "high";
         } else if (score >= 0.55) {
@@ -272,7 +296,7 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
   const mediumRelevance = results.filter((r) => r.relevance === "medium");
   const lowRelevance = results.filter((r) => r.relevance === "low");
 
-  let finalResults = [];
+  let finalResults: typeof results = [];
 
   // 策略：优先返回高相关度，如果不足再补充中等相关度
   if (highRelevance.length >= 3) {
@@ -310,7 +334,12 @@ export async function semanticSearch(query, repos, embeddingsMap, options = {}) 
  * @param {number} options.threshold - 最小相似度阈值，默认 0.5
  * @returns {Array<Object>} 相似项目 [{repo, score}]
  */
-export function findSimilarRepos(targetRepo, repos, embeddingsMap, options = {}) {
+export function findSimilarRepos<T extends { id: number }>(
+  targetRepo: T,
+  repos: T[],
+  embeddingsMap: VectorMap,
+  options: SearchOptions = {},
+) {
   const { topK = 5, threshold = 0.5 } = options;
 
   const targetEmbedding = embeddingsMap[targetRepo.id];
@@ -351,8 +380,8 @@ export function findSimilarRepos(targetRepo, repos, embeddingsMap, options = {})
  * @param {Object} metadata - 元数据对象
  * @returns {Object} embeddings 映射
  */
-export function loadEmbeddingsFromMetadata(metadata) {
-  const embeddings = {};
+export function loadEmbeddingsFromMetadata(metadata: Record<string, RepoMetadata>) {
+  const embeddings: Record<string, number[]> = {};
 
   for (const [repoId, repoMeta] of Object.entries(metadata)) {
     if (repoMeta?.embedding && Array.isArray(repoMeta.embedding)) {
@@ -369,7 +398,10 @@ export function loadEmbeddingsFromMetadata(metadata) {
  * @param {Object} embeddingsMap - embeddings 映射
  * @returns {Object} 更新后的元数据
  */
-export function saveEmbeddingsToMetadata(metadata, embeddingsMap) {
+export function saveEmbeddingsToMetadata(
+  metadata: Record<string, RepoMetadata>,
+  embeddingsMap: Record<string, number[]>,
+) {
   const updatedMetadata = { ...metadata };
 
   for (const [repoId, embedding] of Object.entries(embeddingsMap)) {
@@ -385,7 +417,10 @@ export function saveEmbeddingsToMetadata(metadata, embeddingsMap) {
  * @param {Object} metadata - 元数据
  * @returns {Array<Object>} 需要更新的项目列表
  */
-export function getReposNeedingEmbedding(repos, metadata) {
+export function getReposNeedingEmbedding<T extends { id: number }>(
+  repos: T[],
+  metadata: MetadataMap,
+) {
   const needUpdate = [];
 
   for (const repo of repos) {

@@ -1,4 +1,4 @@
-name: Prepare StarKeeper lint dependency lock
+name: StarKeeper final candidate and baseline
 on:
   push:
     branches:
@@ -6,20 +6,63 @@ on:
 permissions:
   contents: read
 jobs:
-  prepare:
+  candidate:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 2684f74c7b1658ee7d80b9029fd01d47e82590a9
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Resolve TypeScript lint parser
-        run: npm install --save-dev --save-exact --package-lock-only --ignore-scripts @typescript-eslint/parser@8.73.0
-      - name: Show generated lockfile patch
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript
         run: |
-          echo STKEEPER_LOCK_PATCH_BEGIN
-          git diff -- package.json package-lock.json
-          echo STKEEPER_LOCK_PATCH_END
+          npx tsc --noEmit > /tmp/starkeeper-typechecks.txt 2>&1 && result=0 || result=$?
+          echo "STKEEPER_CANDIDATE_TS_ERRORS=$(grep -c 'error TS' /tmp/starkeeper-typechecks.txt || true)"
+          sed -n '1,8p' /tmp/starkeeper-typechecks.txt
+          grep -E '^(src/(services/(gist|metadata|share|discovery|recommendation|project-match|embedding-index|session|github|semantic-search|dashscope)|pages/(DashboardPage|DiscoverPage)|components/(discover|common/(MetadataConnection|SemanticSearch|CollectionModal|ShareModal))|hooks/useMetadataSession)|api/)' /tmp/starkeeper-typechecks.txt || true
+          exit "$result"
+      - name: TypeScript-aware ESLint
+        if: always() && !cancelled()
+        run: npm run lint
+      - name: Vitest
+        if: always() && !cancelled()
+        run: npm test -- --run
+      - name: Vite production build and credential exposure regression
+        if: always() && !cancelled()
+        env:
+          GITHUB_CLIENT_SECRET: stkeeper_server_only_sentinel
+          VITE_GITHUB_CLIENT_SECRET: stkeeper_legacy_secret_sentinel
+          VITE_GITHUB_TOKEN: stkeeper_legacy_pat_sentinel
+        run: |
+          npm run build
+          if grep -R -E 'stkeeper_(server_only|legacy_secret|legacy_pat)_sentinel' dist; then exit 1; fi
+          echo STKEEPER_BROWSER_CREDENTIAL_SENTINELS_ABSENT
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 51498c4bb2203072abd55a587730bb1a4d19e076
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Original TypeScript command
+        run: npx tsc --noEmit
+      - name: Baseline semantic diagnostics after skipping the baseUrl diagnostic
+        if: always() && !cancelled()
+        run: |
+          npx tsc --noEmit --ignoreDeprecations 6.0 --types node,vite/client > /tmp/starkeeper-typechecks.txt 2>&1 && result=0 || result=$?
+          echo "STKEEPER_BASELINE_TS_ERRORS=$(grep -c 'error TS' /tmp/starkeeper-typechecks.txt || true)"
+          sed -n '1,8p' /tmp/starkeeper-typechecks.txt
+          exit "$result"
+      - name: Original ESLint command
+        if: always() && !cancelled()
+        run: npm run lint

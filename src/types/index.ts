@@ -75,7 +75,7 @@ export interface HealthScore {
   details: {
     commitsLast30Days?: number;
     daysSinceLastUpdate?: number;
-    latestRelease?: { tagName: string; publishedAt: string } | null;
+    latestRelease?: { tagName: string; publishedAt: string | null } | null;
     openIssues?: number;
     openPRs?: number;
     contributors?: number;

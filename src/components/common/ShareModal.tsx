@@ -1,13 +1,22 @@
 import { useState, useEffect } from "react";
 import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from "lucide-react";
 import { isShareLink } from "../../services/share.service";
+import type { ShareConfig } from "../../types";
 import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 分享功能 Modal
  * 允许用户公开分享他们的 Stars Collection
  */
-export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare }) {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  shareConfig: ShareConfig | null;
+  onUpdateShare: (
+    value: Pick<ShareConfig, "isPublic" | "shareTitle" | "shareDescription">,
+  ) => Promise<void>;
+}
+export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare }: Props) {
   const [isPublic, setIsPublic] = useState(shareConfig?.isPublic || false);
   const [shareTitle, setShareTitle] = useState(shareConfig?.shareTitle || "");
   const [shareDescription, setShareDescription] = useState(shareConfig?.shareDescription || "");

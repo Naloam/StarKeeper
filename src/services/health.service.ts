@@ -104,7 +104,11 @@ export async function calculateHealthScore(
  * @param {Object} data
  * @returns {number}
  */
-export function calculateActivityScore(data) {
+export function calculateActivityScore(data: {
+  commitsLast30Days: number;
+  latestRelease: { publishedAt: string | null } | null;
+  pushedAt: string;
+}) {
   let score = 0;
 
   // 1. 最近30天 commits (15分)
@@ -117,7 +121,7 @@ export function calculateActivityScore(data) {
 
   // 2. Release 频率 (15分)
   const { latestRelease } = data;
-  if (latestRelease) {
+  if (latestRelease?.publishedAt) {
     const daysSinceRelease = Math.floor(
       (Date.now() - new Date(latestRelease.publishedAt).getTime()) / (1000 * 60 * 60 * 24),
     );
@@ -146,7 +150,12 @@ export function calculateActivityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-export function calculateCommunityScore(data) {
+export function calculateCommunityScore(data: {
+  openIssues: number;
+  openPRs: number;
+  contributors: number;
+  stargazersCount: number;
+}) {
   let score = 0;
   const { openIssues, openPRs, contributors, stargazersCount } = data;
 
@@ -181,7 +190,11 @@ export function calculateCommunityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-export function calculateMaintenanceScore(data) {
+export function calculateMaintenanceScore(data: {
+  archived: boolean;
+  hasCI: boolean;
+  updatedAt: string;
+}) {
   let score = 0;
   const { archived, hasCI, updatedAt } = data;
 
@@ -212,7 +225,7 @@ export function calculateMaintenanceScore(data) {
  * @param {number} score
  * @returns {string} - excellent | good | fair | poor | critical
  */
-export function getHealthLevel(score) {
+export function getHealthLevel(score: number): HealthScore["level"] {
   if (score >= 80) return "excellent"; // 优秀
   if (score >= 60) return "good"; // 良好
   if (score >= 40) return "fair"; // 一般
@@ -226,7 +239,10 @@ export function getHealthLevel(score) {
  * @param {Object} healthScore - 健康度评分
  * @returns {boolean}
  */
-export function detectStaleRepo(repo, healthScore) {
+export function detectStaleRepo(
+  repo: Pick<StarredRepo, "pushedAt">,
+  healthScore: Pick<HealthScore, "score">,
+) {
   // 条件: 健康度 < 30 且最后更新 > 365天
   if (healthScore.score < 30) {
     const daysSinceUpdate = Math.floor(
@@ -243,7 +259,7 @@ export function detectStaleRepo(repo, healthScore) {
  * @param {Object} healthScore
  * @returns {Object} - { trend, recommendation }
  */
-export function analyzeActivity(repo, healthScore) {
+export function analyzeActivity(repo: Pick<StarredRepo, "pushedAt">, healthScore: HealthScore) {
   const { score, details } = healthScore;
   let trend = "stable";
   let recommendation = "";
@@ -295,8 +311,18 @@ export function analyzeActivity(repo, healthScore) {
  * @param {Function} onProgress - 进度回调
  * @returns {Promise<Map>} - Map<repoId, healthScore>
  */
-export async function batchCalculateHealthScore(accessToken, repos, onProgress) {
-  const results = new Map();
+export async function batchCalculateHealthScore(
+  accessToken: string,
+  repos: StarredRepo[],
+  onProgress?: (data: {
+    current: number;
+    total: number;
+    repoName: string;
+    score?: number;
+    error?: string;
+  }) => void,
+) {
+  const results = new Map<number, HealthScore>();
   const total = repos.length;
 
   for (let i = 0; i < repos.length; i++) {

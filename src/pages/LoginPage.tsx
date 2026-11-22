@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Github, Star, Sparkles, Key } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || "");
+  const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -248,7 +248,15 @@ export default function LoginPage() {
   );
 }
 
-function Feature({ icon, title, description }) {
+function Feature({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex items-start space-x-3 group">
       <div className="flex-shrink-0 mt-1 transition-transform group-hover:scale-110 duration-200">

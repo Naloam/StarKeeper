@@ -60,7 +60,7 @@ GitHub 的未列出 Gist 仍可被掌握地址的人读取。主元数据 Gist �
 | `VITE_GITHUB_REDIRECT_URI` | 对应环境的完整回调 URL       |
 | `GITHUB_CLIENT_SECRET`     | 仅服务端读取的 Client Secret |
 
-如果旧环境曾配置 `VITE_GITHUB_CLIENT_SECRET`，维护者应轮换 OAuth Secret，并从对应部署环境移除旧变量。旧的 `VITE_*_API_KEY` 配置迁到设置页会话凭据。Preview 可用 PAT 验证，或配置专用 OAuth App 及固定 Preview 地址。生产环境的模型请求由浏览器直连服务商，需要服务商支持该站点的 CORS 请求。
+如果旧环境曾配置 `VITE_GITHUB_CLIENT_SECRET`，维护者应轮换 OAuth Secret，并从对应部署环境移除旧变量。旧的 `VITE_*_API_KEY` 和 `VITE_GITHUB_TOKEN` 应从构建环境移除，后续在设置页或登录页按会话输入凭据。Preview 可用 PAT 验证，或配置专用 OAuth App 及固定 Preview 地址。生产环境的模型请求由浏览器直连服务商，需要服务商支持该站点的 CORS 请求。
 
 ## 验证
 
