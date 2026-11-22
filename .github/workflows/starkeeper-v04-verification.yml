@@ -1,44 +1,22 @@
-name: Verify final StarKeeper v0.4 candidate
+name: Diagnose StarKeeper Pages publishing
 on:
   push:
-    branches:
-      - ci/starkeeper-v0.4-verification
+    branches: [ci/starkeeper-v0.4-verification]
 permissions:
   contents: read
+  checks: read
+  deployments: read
+  pages: read
 jobs:
-  candidate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: f33243df80ac4ac75579450fde2ad5f978499a0b
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Install locked dependencies
-        run: npm ci
-      - name: TypeScript
+      - name: Read the failed deployment annotations and Pages branch policy
         run: |
-          npx tsc --noEmit > /tmp/starkeeper-typechecks.txt 2>&1 && result=0 || result=$?
-          echo "STKEEPER_CANDIDATE_TS_ERRORS=$(grep -c 'error TS' /tmp/starkeeper-typechecks.txt || true)"
-          sed -n '1,8p' /tmp/starkeeper-typechecks.txt
-          grep -E '^(src/(services/(gist|metadata|share|discovery|recommendation|project-match|embedding-index|session|github|semantic-search|dashscope)|pages/(DashboardPage|DiscoverPage)|components/(discover|common/(MetadataConnection|SemanticSearch|CollectionModal|ShareModal))|hooks/useMetadataSession)|api/)' /tmp/starkeeper-typechecks.txt || true
-          exit "$result"
-      - name: TypeScript-aware ESLint
-        if: always() && !cancelled()
-        run: npm run lint
-      - name: Vitest
-        if: always() && !cancelled()
-        run: npm test -- --run
-      - name: Vite production build and credential exposure regression
-        if: always() && !cancelled()
-        env:
-          GITHUB_CLIENT_SECRET: stkeeper_server_only_sentinel
-          VITE_GITHUB_CLIENT_SECRET: stkeeper_legacy_secret_sentinel
-          VITE_GITHUB_TOKEN: stkeeper_legacy_pat_sentinel
-        run: |
-          npm run build
-          if grep -R -E 'stkeeper_(server_only|legacy_secret|legacy_pat)_sentinel' dist; then exit 1; fi
-          echo STKEEPER_BROWSER_CREDENTIAL_SENTINELS_ABSENT
+          gh api repos/Naloam/StarKeeper/check-runs/137090414029/annotations --jq '.[] | {annotation_level, message}'
+          gh api repos/Naloam/StarKeeper/environments/github-pages --jq '{deployment_branch_policy, protection_rules: [.protection_rules[] | .type]}' || true
+          gh api repos/Naloam/StarKeeper/environments/github-pages/deployment-branch-policies --jq '{branch_patterns: [.branch_policies[].name]}' || true
+          gh api repos/Naloam/StarKeeper/pages --jq '{html_url, build_type, status}' || true
