@@ -1,4 +1,4 @@
-name: StarKeeper final candidate and baseline
+name: Verify final StarKeeper v0.4 candidate
 on:
   push:
     branches:
@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 2684f74c7b1658ee7d80b9029fd01d47e82590a9
+          ref: f33243df80ac4ac75579450fde2ad5f978499a0b
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -42,27 +42,3 @@ jobs:
           npm run build
           if grep -R -E 'stkeeper_(server_only|legacy_secret|legacy_pat)_sentinel' dist; then exit 1; fi
           echo STKEEPER_BROWSER_CREDENTIAL_SENTINELS_ABSENT
-  baseline:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: 51498c4bb2203072abd55a587730bb1a4d19e076
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - run: npm ci
-      - name: Original TypeScript command
-        run: npx tsc --noEmit
-      - name: Baseline semantic diagnostics after skipping the baseUrl diagnostic
-        if: always() && !cancelled()
-        run: |
-          npx tsc --noEmit --ignoreDeprecations 6.0 --types node,vite/client > /tmp/starkeeper-typechecks.txt 2>&1 && result=0 || result=$?
-          echo "STKEEPER_BASELINE_TS_ERRORS=$(grep -c 'error TS' /tmp/starkeeper-typechecks.txt || true)"
-          sed -n '1,8p' /tmp/starkeeper-typechecks.txt
-          exit "$result"
-      - name: Original ESLint command
-        if: always() && !cancelled()
-        run: npm run lint

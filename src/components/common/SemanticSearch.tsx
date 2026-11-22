@@ -327,7 +327,7 @@ export default function SemanticSearch({ stars, metadata, scope, onResults }: Pr
             {results.map(({ repo, score, relevance }) => (
               <a
                 key={repo.id}
-                href={repo.html_url}
+                href={repo.htmlUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block p-4 bg-surface-card border border-border rounded-lg hover:shadow-card-hover hover:border-primary/30 transition-all group"
@@ -337,7 +337,7 @@ export default function SemanticSearch({ stars, metadata, scope, onResults }: Pr
                     {/* 项目名称 */}
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="text-body font-semibold text-text-primary group-hover:text-primary transition-fast truncate cursor-pointer underline-offset-2 group-hover:underline">
-                        {repo.full_name || repo.name}
+                        {repo.fullName}
                       </h4>
                       {/* 相关度标识 */}
                       {relevance === "high" && (
