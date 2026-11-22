@@ -1,3 +1,5 @@
+export const isPagesPreview = import.meta.env.MODE === "pages";
+
 import { useSettingsStore } from "../store/settings";
 
 /**

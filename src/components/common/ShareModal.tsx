@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useHref } from "react-router-dom";
 import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from "lucide-react";
 import { isShareLink } from "../../services/share.service";
 import type { ShareConfig } from "../../types";
@@ -23,6 +24,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const modalRef = useModalA11y(isOpen, onClose);
+  const sharePath = useHref(`/share/${shareConfig?.shareId ?? ""}`);
 
   useEffect(() => {
     if (isOpen) {
@@ -38,7 +40,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
   const legacyShare = !!shareConfig?.shareId && !isShareLink(shareConfig.shareId);
   const shareUrl =
     shareConfig?.shareId && shareConfig.isPublic && !legacyShare
-      ? `${window.location.origin}/share/${shareConfig.shareId}`
+      ? new URL(sharePath, window.location.href).href
       : "";
 
   const handleCopy = async () => {

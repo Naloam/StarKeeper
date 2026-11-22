@@ -50,6 +50,12 @@ npm start
 
 GitHub 的未列出 Gist 仍可被掌握地址的人读取。主元数据 Gist 地址应独立保存。
 
+## GitHub Pages 体验版
+
+构建命令为 `npm run build -- --mode pages`，站点路径为 `/StarKeeper/`。Pages 构建使用 hash 路由，访客可刷新和直接打开 `#/share/…` 链接。使用只需 `public_repo`、`gist`、`read:user` 范围的 GitHub 个人令牌体验。GitHub OAuth 入口部署在 Vercel，Pages 体验版提供个人令牌登录。
+
+仓库的 Settings → Pages → Source 设为 GitHub Actions 后，重新运行 `Publish StarKeeper Pages preview` 工作流即可发布。
+
 ## Vercel
 
 导入仓库，选择 Vite 框架，安装用 `npm ci`，构建用 `npm run build`，产物目录为 `dist`。OAuth 需在 GitHub OAuth App 注册对应的 `https://<domain>/auth/callback`，并在 Vercel 环境中设置：

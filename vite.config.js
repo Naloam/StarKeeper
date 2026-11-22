@@ -3,10 +3,12 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === "pages" ? "/StarKeeper/" : "/",
   plugins: [
     react(),
     VitePWA({
+      disable: mode === "pages",
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],
       manifest: {
@@ -97,4 +99,4 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
   },
-});
+}));

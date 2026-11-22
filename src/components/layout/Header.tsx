@@ -14,7 +14,7 @@ export default function Header() {
   const handleLogout = () => {
     if (window.confirm("确定要退出登录吗？")) {
       logout();
-      window.location.href = "/";
+      navigate("/", { replace: true });
     }
   };
 
@@ -23,6 +23,13 @@ export default function Header() {
       {/* Skip Navigation */}
       <a
         href="#main-content"
+        onClick={(event) => {
+          const mainContent = document.getElementById("main-content");
+          if (mainContent) {
+            event.preventDefault();
+            mainContent.focus();
+          }
+        }}
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg"
       >
         跳转到主要内容

@@ -3,7 +3,7 @@ import { Github, Star, Sparkles, Key } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { getGitHubAuthUrl } from "../utils/auth";
-import { APP_CONFIG } from "../config";
+import { APP_CONFIG, isPagesPreview } from "../config";
 import { useAuthStore } from "../store";
 
 export default function LoginPage() {
@@ -64,8 +64,7 @@ export default function LoginPage() {
         token.trim(),
       );
 
-      // 强制刷新页面以确保使用新的 token
-      window.location.href = "/dashboard";
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Token 验证失败");
     } finally {
@@ -97,6 +96,11 @@ export default function LoginPage() {
             {APP_CONFIG.name}
           </h1>
           <p className="text-lg text-text-secondary font-light">智能管理你的 GitHub Stars</p>
+          {isPagesPreview && (
+            <p className="mt-3 text-sm text-text-secondary">
+              v{APP_CONFIG.version} 体验版 · 使用 GitHub 个人令牌登录
+            </p>
+          )}
         </div>
 
         {/* Features - 纸张卡片质感 */}
@@ -122,14 +126,15 @@ export default function LoginPage() {
           {/* Login Methods */}
           {!showTokenInput ? (
             <>
-              {/* OAuth Login Button - 自然按钮 */}
-              <button
-                onClick={handleOAuthLogin}
-                className="w-full flex items-center justify-center space-x-3 bg-text-primary text-white px-6 py-3.5 rounded-soft hover:bg-text-secondary transition-all duration-200 font-medium mb-3 shadow-card hover:shadow-card-hover"
-              >
-                <Github className="w-5 h-5" strokeWidth={1.5} />
-                <span>使用 GitHub 登录</span>
-              </button>
+              {!isPagesPreview && (
+                <button
+                  onClick={handleOAuthLogin}
+                  className="w-full flex items-center justify-center space-x-3 bg-text-primary text-white px-6 py-3.5 rounded-soft hover:bg-text-secondary transition-all duration-200 font-medium mb-3 shadow-card hover:shadow-card-hover"
+                >
+                  <Github className="w-5 h-5" strokeWidth={1.5} />
+                  <span>使用 GitHub 登录</span>
+                </button>
+              )}
 
               {/* Token Login Link - 柔和链接 */}
               <button
@@ -171,12 +176,14 @@ export default function LoginPage() {
                 <div className="bg-info-light border border-info/20 rounded-soft p-3">
                   <p className="text-xs text-info-text leading-relaxed">
                     <strong>💡 提示：</strong> Token 需要以下权限：
-                    <code className="text-xs bg-info/10 px-1.5 py-0.5 rounded ml-1">repo</code>、
-                    <code className="text-xs bg-info/10 px-1.5 py-0.5 rounded mx-1">gist</code>、
+                    <code className="text-xs bg-info/10 px-1.5 py-0.5 rounded ml-1">
+                      public_repo
+                    </code>
+                    、<code className="text-xs bg-info/10 px-1.5 py-0.5 rounded mx-1">gist</code>、
                     <code className="text-xs bg-info/10 px-1.5 py-0.5 rounded">read:user</code>
                   </p>
                   <a
-                    href="https://github.com/settings/tokens/new?scopes=repo,gist,read:user&description=StarKeeper"
+                    href="https://github.com/settings/tokens/new?scopes=public_repo,gist,read:user&description=StarKeeper"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-info hover:text-info/80 underline mt-2 inline-block transition-colors"
@@ -223,7 +230,7 @@ export default function LoginPage() {
         </div>
 
         {/* Setup Notice */}
-        {!import.meta.env.VITE_GITHUB_CLIENT_ID && (
+        {!isPagesPreview && !import.meta.env.VITE_GITHUB_CLIENT_ID && (
           <div className="bg-warning-light border border-warning/20 rounded-soft p-4 shadow-subtle">
             <p className="text-sm text-warning-text">
               <strong>⚠️ 配置提示：</strong> 需要先配置 GitHub OAuth App。

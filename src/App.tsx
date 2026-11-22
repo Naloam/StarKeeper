@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { lazy, Suspense } from "react";
 import { useAuthStore } from "./store";
@@ -11,6 +11,7 @@ import MetadataConnection from "./components/common/MetadataConnection";
 import { startBackgroundSync, stopBackgroundSync } from "./services/background-sync.service";
 import { useEffect, useState } from "react";
 import { validateGitHubToken } from "./utils/auth";
+import { isPagesPreview } from "./config";
 import { setupNetworkListener } from "./utils/toast";
 
 // 路由级代码分割 — 懒加载页面组件
@@ -20,6 +21,8 @@ const CleanupPage = lazy(() => import("./pages/CleanupPage"));
 const DeduplicationPage = lazy(() => import("./pages/DeduplicationPage"));
 const SharePage = lazy(() => import("./pages/SharePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+
+const Router = isPagesPreview ? HashRouter : BrowserRouter;
 
 function App() {
   const { isAuthenticated, accessToken, login, logout } = useAuthStore();
@@ -80,7 +83,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <Router>
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen">
@@ -93,7 +96,7 @@ function App() {
               path="/"
               element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
             />
-            <Route path="/auth/callback" element={<CallbackPage />} />
+            {!isPagesPreview && <Route path="/auth/callback" element={<CallbackPage />} />}
             <Route
               path="/dashboard"
               element={isAuthenticated ? <DashboardPage /> : <Navigate to="/" />}
@@ -118,7 +121,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>
-      </BrowserRouter>
+      </Router>
 
       {/* PWA 安装提示 */}
       <PWAInstallPrompt />
