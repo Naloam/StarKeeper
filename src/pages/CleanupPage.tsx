@@ -14,24 +14,18 @@ import {
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
-import { useStarsStore, useAuthStore } from "../store";
+import { useStarsStore } from "../store";
 import {
   generateCleanupSuggestions,
   archiveRepos,
-  restoreArchivedRepos,
   getArchivedRepos,
 } from "../services/cleanup.service";
-import {
-  updateRepoMetadata,
-  batchUpdateMetadata,
-  saveMetadataToGist,
-} from "../services/metadata.service";
+import { updateSessionMetadata } from "../services/session-metadata.service";
 import HealthBadge from "../components/common/HealthBadge";
 
 export default function CleanupPage() {
   const navigate = useNavigate();
-  const { stars, metadata, setMetadata } = useStarsStore();
-  const { accessToken, gistId } = useAuthStore();
+  const { stars, metadata } = useStarsStore();
 
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -89,14 +83,11 @@ export default function CleanupPage() {
 
     setArchiving(true);
     try {
-      const updatedMetadata = archiveRepos(Array.from(selectedRepos), metadata);
-      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-      setMetadata(updatedMetadata);
+      const archived = archiveRepos(Array.from(selectedRepos), {});
+      await updateSessionMetadata([{ kind: "repos", changes: archived }]);
       setSelectedRepos(new Set());
-      analyzeStars(); // 重新分析
       setActiveTab("archived"); // 切换到归档标签页
-    } catch (error) {
-      console.error("归档失败:", error);
+    } catch {
       toast.error("归档失败，请重试");
     } finally {
       setArchiving(false);
@@ -108,13 +99,15 @@ export default function CleanupPage() {
 
     setArchiving(true);
     try {
-      const updatedMetadata = restoreArchivedRepos(Array.from(selectedRepos), metadata);
-      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-      setMetadata(updatedMetadata);
+      const changes = Object.fromEntries(
+        Array.from(selectedRepos, (id) => [
+          id,
+          { archived: null, archivedAt: null, archivedReason: null },
+        ]),
+      );
+      await updateSessionMetadata([{ kind: "repos", changes }]);
       setSelectedRepos(new Set());
-      analyzeStars(); // 重新分析
-    } catch (error) {
-      console.error("恢复失败:", error);
+    } catch {
       toast.error("恢复失败，请重试");
     } finally {
       setArchiving(false);

@@ -161,8 +161,6 @@ export const dismissAll = () => {
  * @param {string} defaultMessage - 默认错误消息
  */
 export const handleApiError = (error, defaultMessage = "操作失败") => {
-  console.error("API Error:", error);
-
   // GitHub API 特定错误
   if (error.status === 401) {
     showError("身份验证失败，请重新登录");
@@ -210,8 +208,7 @@ export const handleApiError = (error, defaultMessage = "操作失败") => {
   }
 
   // 默认错误消息
-  const message = error.message || error.toString() || defaultMessage;
-  showError(message);
+  showError(defaultMessage);
 };
 
 /**

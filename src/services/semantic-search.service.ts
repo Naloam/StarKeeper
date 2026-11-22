@@ -54,8 +54,8 @@ export function generateSearchText(repo, metadata) {
   parts.push(repo.name);
 
   // 2. 项目全名（owner/name 格式）
-  if (repo.full_name) {
-    parts.push(repo.full_name);
+  if (repo.fullName || repo.full_name) {
+    parts.push(repo.fullName || repo.full_name);
   }
 
   // 3. 描述（最重要的特征，重复2次）
@@ -373,11 +373,7 @@ export function saveEmbeddingsToMetadata(metadata, embeddingsMap) {
   const updatedMetadata = { ...metadata };
 
   for (const [repoId, embedding] of Object.entries(embeddingsMap)) {
-    if (!updatedMetadata[repoId]) {
-      updatedMetadata[repoId] = {};
-    }
-    updatedMetadata[repoId].embedding = embedding;
-    updatedMetadata[repoId].embeddingUpdatedAt = Date.now();
+    updatedMetadata[repoId] = { ...metadata[repoId], embedding, embeddingUpdatedAt: Date.now() };
   }
 
   return updatedMetadata;
@@ -403,7 +399,9 @@ export function getReposNeedingEmbedding(repos, metadata) {
 
     // 元数据更新时间晚于 embedding 生成时间（说明内容有更新）
     if (repoMeta.updatedAt && repoMeta.embeddingUpdatedAt) {
-      if (repoMeta.updatedAt > repoMeta.embeddingUpdatedAt) {
+      const asTimestamp = (value: string | number) =>
+        typeof value === "number" ? value : Date.parse(value);
+      if (asTimestamp(repoMeta.updatedAt) > asTimestamp(repoMeta.embeddingUpdatedAt)) {
         needUpdate.push(repo);
       }
     }

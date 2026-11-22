@@ -1,11 +1,93 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { StarredRepo, RepoMetadata, Collection } from "./types";
+import { createJSONStorage, persist } from "zustand/middleware";
+import type { StarredRepo, RepoMetadata, Collection, ShareConfig } from "../types";
+import { moveToSessionStorage } from "./session-storage";
+import { useSettingsStore } from "./settings";
+
+type User = { id: number; login: string; name: string | null; avatarUrl: string };
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  accessToken: string | null;
+  gistId: string | null;
+  login: (user: User, token: string, gistId?: string | null) => void;
+  logout: () => void;
+  updateUser: (user: User) => void;
+  setGistId: (id: string | null) => void;
+  getAccessToken: () => string | null;
+  getUser: () => User | null;
+  getGistId: () => string | null;
+}
+
+interface StarsState {
+  stars: StarredRepo[];
+  filteredStars: StarredRepo[];
+  loading: boolean;
+  error: string | null;
+  searchQuery: string;
+  selectedLanguages: string[];
+  selectedTags: string[];
+  sortBy: "updated" | "stars" | "name";
+  sortDirection: "asc" | "desc";
+  selectedCollection: string | null;
+  collections: Collection[];
+  shareConfig: ShareConfig | null;
+  metadata: Record<string, RepoMetadata>;
+  setStars: (stars: StarredRepo[]) => void;
+  addStar: (star: StarredRepo) => void;
+  removeStar: (id: number) => void;
+  clearStars: () => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setSearchQuery: (query: string) => void;
+  setSelectedLanguages: (languages: string[]) => void;
+  setSelectedTags: (tags: string[]) => void;
+  setSortBy: (sort: StarsState["sortBy"]) => void;
+  setSortDirection: (direction: StarsState["sortDirection"]) => void;
+  setSelectedCollection: (id: string | null) => void;
+  applyFilters: () => void;
+  setMetadata: (metadata: StarsState["metadata"]) => void;
+  setCollections: (collections: Collection[]) => void;
+  setShareConfig: (config: ShareConfig | null) => void;
+  getAllLanguages: () => string[];
+  getAllTags: () => string[];
+  getStarById: (id: number) => StarredRepo | undefined;
+}
+
+interface UIState {
+  sidebarOpen: boolean;
+  viewMode: "grid" | "list";
+  theme: "light" | "dark";
+  showLoginModal: boolean;
+  showSettingsModal: boolean;
+  showTagModal: boolean;
+  showAISummaryModal: boolean;
+  toggleSidebar: () => void;
+  setSidebarOpen: (open: boolean) => void;
+  setViewMode: (mode: UIState["viewMode"]) => void;
+  setTheme: (theme: UIState["theme"]) => void;
+  toggleTheme: () => void;
+  setShowLoginModal: (show: boolean) => void;
+  setShowSettingsModal: (show: boolean) => void;
+  setShowTagModal: (show: boolean) => void;
+  setShowAISummaryModal: (show: boolean) => void;
+}
+
+moveToSessionStorage("starkeeper-auth", (value) => {
+  const state = JSON.parse(value).state;
+  if (state?.user?.id && state.gistId)
+    localStorage.setItem(`starkeeper-gist:${state.user.id}`, state.gistId);
+});
+try {
+  localStorage.removeItem("github_token");
+} catch {
+  /* storage is unavailable */
+}
 
 // ============================================================
 // applyFilters 防抖 — 避免连续 setSearchQuery/setSortBy 等触发过多重计算
 // ============================================================
-let filterTimer = null;
+let filterTimer: ReturnType<typeof setTimeout> | null = null;
 const FILTER_DEBOUNCE_MS = 32; // ~1 帧间隔，足够合并同一 tick 内的多次 setState
 
 function debouncedApplyFilters() {
@@ -19,7 +101,7 @@ function debouncedApplyFilters() {
 /**
  * 认证状态管理
  */
-export const useAuthStore = create(
+export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       // 状态
@@ -30,6 +112,7 @@ export const useAuthStore = create(
 
       // Actions
       login: (user, accessToken, gistId = null) => {
+        if (get().user?.id !== user.id) useStarsStore.getState().clearStars();
         set({
           isAuthenticated: true,
           user,
@@ -47,6 +130,7 @@ export const useAuthStore = create(
         });
         // 清除其他 store
         useStarsStore.getState().clearStars();
+        useSettingsStore.getState().clearAll();
       },
 
       updateUser: (user) => {
@@ -64,6 +148,7 @@ export const useAuthStore = create(
     }),
     {
       name: "starkeeper-auth",
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
@@ -77,7 +162,7 @@ export const useAuthStore = create(
 /**
  * Stars 数据管理
  */
-export const useStarsStore = create((set, get) => ({
+export const useStarsStore = create<StarsState>((set, get) => ({
   // 状态
   stars: [],
   filteredStars: [],
@@ -94,6 +179,8 @@ export const useStarsStore = create((set, get) => ({
   metadata: {}, // { [repoId]: { tags: [], notes: '', color: '' } }
 
   // 收藏夹（Collections）
+  shareConfig: null,
+  setShareConfig: (shareConfig: ShareConfig | null) => set({ shareConfig }),
   collections: [], // [{ id, name, description, repoIds: [], createdAt, updatedAt }]
 
   // Actions
@@ -104,7 +191,7 @@ export const useStarsStore = create((set, get) => ({
 
   addStar: (star) => {
     set((state) => ({
-      stars: [star, ...state.stars],
+      stars: [star, ...state.stars.filter((item) => item.id !== star.id)],
     }));
     debouncedApplyFilters();
   },
@@ -120,12 +207,15 @@ export const useStarsStore = create((set, get) => ({
     set({
       stars: [],
       filteredStars: [],
+      loading: false,
+      error: null,
       metadata: {},
       searchQuery: "",
       selectedLanguages: [],
       selectedTags: [],
       selectedCollection: null,
       collections: [],
+      shareConfig: null,
     });
   },
 
@@ -189,7 +279,9 @@ export const useStarsStore = create((set, get) => ({
 
     // 语言过滤
     if (selectedLanguages.length > 0) {
-      filtered = filtered.filter((star) => selectedLanguages.includes(star.language));
+      filtered = filtered.filter(
+        (star) => star.language !== null && selectedLanguages.includes(star.language),
+      );
     }
 
     // 标签过滤
@@ -236,98 +328,17 @@ export const useStarsStore = create((set, get) => ({
   // 元数据管理
   setMetadata: (metadata) => {
     set({ metadata });
+    debouncedApplyFilters();
   },
 
-  updateRepoMetadata: (repoId, updates) => {
-    set((state) => ({
-      metadata: {
-        ...state.metadata,
-        [repoId]: {
-          ...state.metadata[repoId],
-          ...updates,
-        },
-      },
-    }));
-  },
-
-  addTag: (repoId, tag) => {
-    const current = get().metadata[repoId] || { tags: [], notes: "" };
-    if (!current.tags.includes(tag)) {
-      get().updateRepoMetadata(repoId, {
-        tags: [...current.tags, tag],
-      });
-    }
-  },
-
-  removeTag: (repoId, tag) => {
-    const current = get().metadata[repoId] || { tags: [], notes: "" };
-    get().updateRepoMetadata(repoId, {
-      tags: current.tags.filter((t) => t !== tag),
-    });
-  },
-
-  setNotes: (repoId, notes) => {
-    get().updateRepoMetadata(repoId, { notes });
-  },
-
-  // Collections 管理
   setCollections: (collections) => {
-    set({ collections });
-  },
-
-  createCollection: (name, description = "") => {
-    const collection = {
-      id: `col-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      description,
-      repoIds: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    set((state) => ({ collections: [...state.collections, collection] }));
-    return collection;
-  },
-
-  updateCollection: (collectionId, updates) => {
     set((state) => ({
-      collections: state.collections.map((c) =>
-        c.id === collectionId ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c,
-      ),
+      collections,
+      selectedCollection: collections.some((item) => item.id === state.selectedCollection)
+        ? state.selectedCollection
+        : null,
     }));
-  },
-
-  deleteCollection: (collectionId) => {
-    set((state) => ({
-      collections: state.collections.filter((c) => c.id !== collectionId),
-      selectedCollection:
-        state.selectedCollection === collectionId ? null : state.selectedCollection,
-    }));
-  },
-
-  addRepoToCollection: (collectionId, repoId) => {
-    set((state) => ({
-      collections: state.collections.map((c) => {
-        if (c.id === collectionId && !c.repoIds.includes(repoId)) {
-          return { ...c, repoIds: [...c.repoIds, repoId], updatedAt: new Date().toISOString() };
-        }
-        return c;
-      }),
-    }));
-  },
-
-  removeRepoFromCollection: (collectionId, repoId) => {
-    set((state) => ({
-      collections: state.collections.map((c) => {
-        if (c.id === collectionId) {
-          return {
-            ...c,
-            repoIds: c.repoIds.filter((id) => id !== repoId),
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return c;
-      }),
-    }));
+    debouncedApplyFilters();
   },
 
   setSelectedCollection: (collectionId) => {
@@ -338,13 +349,15 @@ export const useStarsStore = create((set, get) => ({
   // Getters
   getAllLanguages: () => {
     const stars = get().stars;
-    const languages = new Set(stars.map((s) => s.language).filter(Boolean));
+    const languages = new Set(
+      stars.map((s) => s.language).filter((language): language is string => !!language),
+    );
     return Array.from(languages).sort();
   },
 
   getAllTags: () => {
     const metadata = get().metadata;
-    const tags = new Set();
+    const tags = new Set<string>();
     Object.values(metadata).forEach((m) => {
       m.tags?.forEach((tag) => tags.add(tag));
     });
@@ -359,7 +372,7 @@ export const useStarsStore = create((set, get) => ({
 /**
  * UI 状态管理
  */
-export const useUIStore = create((set) => ({
+export const useUIStore = create<UIState>((set) => ({
   // 状态
   sidebarOpen: typeof window !== "undefined" ? window.innerWidth >= 1024 : true,
   viewMode: "grid", // grid | list

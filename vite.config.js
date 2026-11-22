@@ -39,23 +39,11 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.github\.com\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "github-api-cache",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 天
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
           {
             urlPattern: /^https:\/\/avatars\.githubusercontent\.com\/.*/i,
             handler: "CacheFirst",
@@ -89,21 +77,8 @@ export default defineConfig({
     host: true, // 允许外部访问
     port: 3000, // 使用 3000 端口
     strictPort: false,
-    hmr: {
-      clientPort: 443, // Codespaces 使用 443 端口
-    },
+    hmr: process.env.CODESPACES ? { clientPort: 443 } : undefined,
     proxy: {
-      // 代理 DashScope API 请求
-      "/api/dashscope": {
-        target: "https://dashscope.aliyuncs.com",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/dashscope/, ""),
-        configure: (proxy, options) => {
-          proxy.on("proxyReq", (proxyReq, req, res) => {
-            // Proxy request
-          });
-        },
-      },
       // 代理 DeepSeek API 请求
       "/api/deepseek": {
         target: "https://api.deepseek.com",

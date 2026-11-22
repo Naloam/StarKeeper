@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
-import { GITHUB_CONFIG } from "../config";
+import { APP_CONFIG, GITHUB_CONFIG } from "../config";
+import type { StarredRepo } from "../types";
 import { handleApiError } from "../utils/toast";
 
 /**
@@ -11,15 +12,9 @@ import { handleApiError } from "../utils/toast";
  * @param {Error} error - 错误对象
  * @param {string} context - 错误上下文描述
  */
-function handleGitHubError(error, context = "API 请求") {
-  console.error(`${context}失败:`, error);
-
+function handleGitHubError(error: unknown, context = "API 请求"): never {
   // 提取错误信息
-  const errorInfo = {
-    status: error.status,
-    message: error.message,
-    response: error.response,
-  };
+  const errorInfo = error as { status?: number; message?: string; response?: unknown };
 
   // 使用 toast 显示用户友好的错误信息
   handleApiError(errorInfo, `${context}失败`);
@@ -33,11 +28,15 @@ function handleGitHubError(error, context = "API 请求") {
  * @param {string} accessToken - GitHub access token
  * @returns {Octokit}
  */
-export function createOctokitClient(accessToken) {
+export function createOctokitClient(accessToken?: string) {
   return new Octokit({
     auth: accessToken,
     baseUrl: GITHUB_CONFIG.api.baseUrl,
-    userAgent: "StarKeeper v1.0",
+    userAgent: `StarKeeper/${APP_CONFIG.version}`,
+    request: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: "no-store" }),
+    },
   });
 }
 
@@ -46,7 +45,7 @@ export function createOctokitClient(accessToken) {
  * @param {string} accessToken
  * @returns {Promise<Object>}
  */
-export async function getCurrentUser(accessToken) {
+export async function getCurrentUser(accessToken: string) {
   try {
     const octokit = createOctokitClient(accessToken);
     const { data } = await octokit.users.getAuthenticated();
@@ -110,6 +109,7 @@ export async function getStarredRepos(accessToken, options = {}) {
       topics: repo.topics || [],
       license: repo.license?.name,
       visibility: repo.visibility,
+      isPrivate: repo.private,
       defaultBranch: repo.default_branch,
       createdAt: repo.created_at,
       updatedAt: repo.updated_at,
@@ -128,16 +128,19 @@ export async function getStarredRepos(accessToken, options = {}) {
  * @param {Function} onProgress - 进度回调
  * @returns {Promise<Array>}
  */
-export async function getAllStarredRepos(accessToken, onProgress) {
+export async function getAllStarredRepos(
+  accessToken: string,
+  onProgress?: (progress: { current: number; hasMore: boolean }) => void,
+): Promise<StarredRepo[]> {
   try {
     const octokit = createOctokitClient(accessToken);
-    let allRepos = [];
+    const allRepos: StarredRepo[] = [];
     let page = 1;
     const perPage = 100;
 
     while (true) {
       // 使用 star+json 格式以获取 starred_at 时间戳
-      const { data } = await octokit.activity.listReposStarredByAuthenticatedUser({
+      const response = await octokit.activity.listReposStarredByAuthenticatedUser({
         per_page: perPage,
         page: page,
         headers: {
@@ -145,9 +148,13 @@ export async function getAllStarredRepos(accessToken, onProgress) {
         },
       });
 
+      const data = response.data as unknown as {
+        starred_at: string;
+        repo: Awaited<ReturnType<typeof octokit.repos.get>>["data"];
+      }[];
       if (data.length === 0) break;
 
-      const formatted = data.map((item) => ({
+      const formatted: StarredRepo[] = data.map((item) => ({
         id: item.repo.id,
         nodeId: item.repo.node_id,
         name: item.repo.name,
@@ -165,14 +172,16 @@ export async function getAllStarredRepos(accessToken, onProgress) {
         openIssuesCount: item.repo.open_issues_count,
         topics: item.repo.topics || [],
         license: item.repo.license?.name,
-        createdAt: item.repo.created_at,
-        updatedAt: item.repo.updated_at,
-        pushedAt: item.repo.pushed_at,
+        createdAt: item.repo.created_at ?? "",
+        updatedAt: item.repo.updated_at ?? "",
+        pushedAt: item.repo.pushed_at ?? "",
         archived: item.repo.archived,
         starredAt: item.starred_at, // ⭐ 新增: Star 时间戳
+        isPrivate: item.repo.private,
+        visibility: item.repo.visibility ?? (item.repo.private ? "private" : "public"),
       }));
 
-      allRepos = [...allRepos, ...formatted];
+      allRepos.push(...formatted);
 
       // 调用进度回调
       if (onProgress) {
@@ -183,7 +192,7 @@ export async function getAllStarredRepos(accessToken, onProgress) {
       }
 
       // 如果返回的数据少于 perPage，说明已经是最后一页
-      if (data.length < perPage) break;
+      if (!response.headers.link?.includes('rel="next"') && data.length < perPage) break;
 
       page++;
 
@@ -204,7 +213,7 @@ export async function getAllStarredRepos(accessToken, onProgress) {
  * @param {string} repo
  * @returns {Promise<string>}
  */
-export async function getRepoReadme(accessToken, owner, repo) {
+export async function getRepoReadme(accessToken: string | undefined, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
     const { data } = await octokit.repos.getReadme({
@@ -223,10 +232,9 @@ export async function getRepoReadme(accessToken, owner, repo) {
     return content;
   } catch (error) {
     // README 不存在时返回空字符串
-    if (error.status === 404) {
+    if ((error as { status?: number }).status === 404) {
       return "";
     }
-    console.error("获取 README 失败:", error);
     throw error;
   }
 }
@@ -238,7 +246,7 @@ export async function getRepoReadme(accessToken, owner, repo) {
  * @param {string} repo
  * @returns {Promise<void>}
  */
-export async function starRepo(accessToken, owner, repo) {
+export async function starRepo(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
     await octokit.activity.starRepoForAuthenticatedUser({
@@ -246,7 +254,6 @@ export async function starRepo(accessToken, owner, repo) {
       repo,
     });
   } catch (error) {
-    console.error("Star 仓库失败:", error);
     throw error;
   }
 }
@@ -258,7 +265,7 @@ export async function starRepo(accessToken, owner, repo) {
  * @param {string} repo
  * @returns {Promise<void>}
  */
-export async function unstarRepo(accessToken, owner, repo) {
+export async function unstarRepo(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
     await octokit.activity.unstarRepoForAuthenticatedUser({
@@ -266,7 +273,6 @@ export async function unstarRepo(accessToken, owner, repo) {
       repo,
     });
   } catch (error) {
-    console.error("Unstar 仓库失败:", error);
     throw error;
   }
 }
@@ -278,7 +284,7 @@ export async function unstarRepo(accessToken, owner, repo) {
  * @param {string} repo
  * @returns {Promise<boolean>}
  */
-export async function checkRepoStarred(accessToken, owner, repo) {
+export async function checkRepoStarred(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
     await octokit.activity.checkRepoIsStarredByAuthenticatedUser({
@@ -287,132 +293,9 @@ export async function checkRepoStarred(accessToken, owner, repo) {
     });
     return true;
   } catch (error) {
-    if (error.status === 404) {
+    if ((error as { status?: number }).status === 404) {
       return false;
     }
-    throw error;
-  }
-}
-
-/**
- * 获取用户的 Gists 列表
- * @param {string} accessToken
- * @returns {Promise<Array>}
- */
-export async function getUserGists(accessToken) {
-  try {
-    const octokit = createOctokitClient(accessToken);
-    const { data } = await octokit.gists.list({
-      per_page: 100,
-    });
-    return data;
-  } catch (error) {
-    console.error("获取 Gists 失败:", error);
-    throw error;
-  }
-}
-
-/**
- * 创建 Gist（用于存储元数据）
- * @param {string} accessToken
- * @param {Object} metadata - 元数据对象
- * @returns {Promise<Object>}
- */
-export async function createMetadataGist(accessToken, metadata) {
-  try {
-    const octokit = createOctokitClient(accessToken);
-    const { data } = await octokit.gists.create({
-      description: "StarKeeper metadata (managed by app)",
-      public: false,
-      files: {
-        "starkeeper-metadata.json": {
-          content: JSON.stringify(metadata, null, 2),
-        },
-      },
-    });
-    return data;
-  } catch (error) {
-    console.error("创建 Gist 失败:", error);
-    throw error;
-  }
-}
-
-/**
- * 更新 Gist 内容
- * @param {string} accessToken
- * @param {string} gistId
- * @param {Object} metadata
- * @returns {Promise<Object>}
- */
-export async function updateMetadataGist(accessToken, gistId, metadata) {
-  try {
-    const octokit = createOctokitClient(accessToken);
-    const { data } = await octokit.gists.update({
-      gist_id: gistId,
-      files: {
-        "starkeeper-metadata.json": {
-          content: JSON.stringify(metadata, null, 2),
-        },
-      },
-    });
-    return data;
-  } catch (error) {
-    console.error("更新 Gist 失败:", error);
-    throw error;
-  }
-}
-
-/**
- * 获取 Gist 内容
- * @param {string} accessToken
- * @param {string} gistId
- * @returns {Promise<Object>}
- */
-export async function getMetadataGist(accessToken, gistId) {
-  try {
-    const octokit = createOctokitClient(accessToken);
-    const { data } = await octokit.gists.get({
-      gist_id: gistId,
-    });
-
-    const content = data.files["starkeeper-metadata.json"]?.content;
-    if (!content) {
-      throw new Error("Metadata file not found in gist");
-    }
-
-    return JSON.parse(content);
-  } catch (error) {
-    console.error("获取 Gist 失败:", error);
-    throw error;
-  }
-}
-
-/**
- * 获取公开的 Gist
- * @param {string} gistId - Gist ID
- * @param {string} [accessToken] - 可选的 access token，提供后可避免速率限制
- * @returns {Promise<Object>}
- */
-export async function getPublicGist(gistId, accessToken = null) {
-  try {
-    // 如果提供了 token，使用认证请求（速率限制更高）
-    // 否则使用匿名请求（每小时 60 次限制）
-    const octokit = accessToken
-      ? createOctokitClient(accessToken)
-      : new Octokit({
-          baseUrl: GITHUB_CONFIG.api.baseUrl,
-          userAgent: "StarKeeper v1.0",
-        });
-
-    console.log("🔑 请求 Gist:", gistId, accessToken ? "(已认证)" : "(匿名)");
-
-    const { data } = await octokit.gists.get({
-      gist_id: gistId,
-    });
-
-    return data;
-  } catch (error) {
-    console.error("获取公开 Gist 失败:", error);
     throw error;
   }
 }
@@ -424,7 +307,7 @@ export async function getPublicGist(gistId, accessToken = null) {
  * @param {string} repo
  * @returns {Promise<Object>} - { latestRelease, releaseCount }
  */
-export async function getRepoReleases(accessToken, owner, repo) {
+export async function getRepoReleases(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
 
@@ -459,7 +342,6 @@ export async function getRepoReleases(accessToken, owner, repo) {
         releaseCount: 0,
       };
     }
-    console.error("获取 Releases 失败:", error);
     throw error;
   }
 }
@@ -471,7 +353,7 @@ export async function getRepoReleases(accessToken, owner, repo) {
  * @param {string} repo
  * @returns {Promise<Object>} - { commitsLast30Days, openIssues, openPRs, contributors }
  */
-export async function getRepoActivity(accessToken, owner, repo) {
+export async function getRepoActivity(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
 
@@ -550,7 +432,6 @@ export async function getRepoActivity(accessToken, owner, repo) {
       contributors,
     };
   } catch (error) {
-    console.error("获取仓库活跃度失败:", error);
     // 返回默认值而不是抛出错误
     return {
       commitsLast30Days: 0,
@@ -568,7 +449,7 @@ export async function getRepoActivity(accessToken, owner, repo) {
  * @param {string} repo
  * @returns {Promise<Object>} - { hasCI, latestWorkflowRun }
  */
-export async function getRepoCIStatus(accessToken, owner, repo) {
+export async function getRepoCIStatus(accessToken: string, owner: string, repo: string) {
   try {
     const octokit = createOctokitClient(accessToken);
 
@@ -606,7 +487,6 @@ export async function getRepoCIStatus(accessToken, owner, repo) {
         latestWorkflowRun: null,
       };
     }
-    console.error("获取 CI 状态失败:", error);
     return {
       hasCI: false,
       latestWorkflowRun: null,
@@ -623,11 +503,6 @@ export default {
   starRepo,
   unstarRepo,
   checkRepoStarred,
-  getUserGists,
-  createMetadataGist,
-  updateMetadataGist,
-  getMetadataGist,
-  getPublicGist,
   // 健康度分析相关
   getRepoReleases,
   getRepoActivity,

@@ -8,6 +8,7 @@
  * - 维护状态 (30分): 未archived + 有CI + README更新
  */
 
+import type { HealthScore, StarredRepo } from "../types";
 import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
 
 /**
@@ -16,10 +17,11 @@ import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.serv
  * @param {Object} repo - 仓库基本信息
  * @returns {Promise<Object>} - { score, activity, community, maintenance, details, level }
  */
-export async function calculateHealthScore(accessToken, repo) {
+export async function calculateHealthScore(
+  accessToken: string,
+  repo: StarredRepo,
+): Promise<HealthScore> {
   try {
-    console.log(`🏥 开始分析健康度: ${repo.fullName}`);
-
     // 并行获取所需数据
     const [releasesData, activityData, ciData] = await Promise.all([
       getRepoReleases(accessToken, repo.owner.login, repo.name),
@@ -80,10 +82,8 @@ export async function calculateHealthScore(accessToken, repo) {
       cacheExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7天后过期
     };
 
-    console.log(`✅ 健康度分析完成: ${repo.fullName} - ${totalScore}分 (${level})`);
     return result;
   } catch (error) {
-    console.error(`❌ 健康度分析失败: ${repo.fullName}`, error);
     // 返回默认的低分
     return {
       score: 0,
@@ -92,7 +92,7 @@ export async function calculateHealthScore(accessToken, repo) {
       maintenance: 0,
       level: "critical",
       details: {},
-      error: error.message,
+      error: "GitHub 健康度查询未完成",
       calculatedAt: new Date().toISOString(),
       cacheExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
@@ -317,14 +317,13 @@ export async function batchCalculateHealthScore(accessToken, repos, onProgress) 
       // 避免速率限制，每个请求间隔 500ms
       await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
-      console.error(`批量分析失败: ${repo.fullName}`, error);
       // 继续处理下一个
       if (onProgress) {
         onProgress({
           current: i + 1,
           total,
           repoName: repo.fullName,
-          error: error.message,
+          error: "GitHub 健康度查询未完成",
         });
       }
     }

@@ -1,82 +1,97 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, Sparkles, Loader2, AlertCircle, X, TrendingUp } from "lucide-react";
+import { semanticSearch } from "../../services/semantic-search.service";
 import {
-  semanticSearch,
-  loadEmbeddingsFromMetadata,
-  batchGenerateRepoEmbeddings,
-  saveEmbeddingsToMetadata,
-  getReposNeedingEmbedding,
-} from "../../services/semantic-search.service";
-import { saveMetadataToGist } from "../../services/metadata.service";
+  EMBEDDING_BATCH_SIZE,
+  indexEmbeddingBatch,
+  loadEmbeddingIndex,
+} from "../../services/embedding-index.service";
+import { useSettingsStore } from "../../store/settings";
+import type { RepoMetadata, StarredRepo } from "../../types";
 import toast from "react-hot-toast";
 
-/**
- * 语义搜索组件
- * 提供基于 AI 的自然语言搜索功能
- */
-export default function SemanticSearch({ stars, metadata, gistId, accessToken, onResults }) {
+interface SearchResult {
+  repo: StarredRepo;
+  score: number;
+  relevance: string;
+}
+interface Props {
+  stars: StarredRepo[];
+  metadata: Record<string, RepoMetadata>;
+  scope: string;
+  onResults: (results: SearchResult[] | null) => void;
+}
+
+export default function SemanticSearch({ stars, metadata, scope, onResults }: Props) {
+  const key = useSettingsStore((state) => state.siliconflowApiKey);
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initProgress, setInitProgress] = useState({ current: 0, total: 0 });
-  const [embeddings, setEmbeddings] = useState({});
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState(null);
-  const [results, setResults] = useState([]);
+  const [index, setIndex] = useState<Awaited<ReturnType<typeof loadEmbeddingIndex>>>();
+  const [includeNotes, setIncludeNotes] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const halt = useRef(false);
+  const isReady = !!key && !!index && Object.keys(index.vectors).length > 0;
 
-  // 加载或生成 embeddings
   useEffect(() => {
-    initializeEmbeddings();
-  }, [stars, metadata]);
+    if (!key) return;
+    let active = true;
+    setIndex(undefined);
+    void loadEmbeddingIndex(scope, stars, metadata, includeNotes).then(
+      (value) => {
+        if (active) setIndex(value);
+      },
+      () => {
+        if (active) setError("浏览器无法加载本地向量索引");
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [scope, stars, metadata, key, includeNotes]);
 
-  const initializeEmbeddings = async () => {
+  useEffect(
+    () => () => {
+      halt.current = true;
+    },
+    [],
+  );
+
+  const buildIndex = async () => {
+    if (!index || !key || isInitializing) return;
+    const entries = index.pending.slice(0, 100);
+    const requests = Math.ceil(entries.length / EMBEDDING_BATCH_SIZE);
+    const fields = includeNotes ? "公开仓库信息、标签、摘要和笔记" : "公开仓库信息";
+    if (
+      !entries.length ||
+      !window.confirm(
+        `向 SiliconFlow 发送 ${entries.length} 个项目的${fields}，预计 ${requests} 次请求。继续？`,
+      )
+    )
+      return;
+    halt.current = false;
+    setError(null);
+    setIsInitializing(true);
+    const vectors = { ...index.vectors };
+    let current = 0;
+    setInitProgress({ current, total: entries.length });
     try {
-      setError(null);
-
-      // 从 metadata 加载现有 embeddings
-      const existingEmbeddings = loadEmbeddingsFromMetadata(metadata);
-      setEmbeddings(existingEmbeddings);
-
-      // 检查是否有项目需要生成 embedding
-      const needUpdate = getReposNeedingEmbedding(stars, metadata);
-
-      if (needUpdate.length > 0) {
-        console.log(`需要为 ${needUpdate.length} 个项目生成 embedding`);
-        setIsInitializing(true);
-        setInitProgress({ current: 0, total: needUpdate.length });
-
-        // 批量生成 embeddings
-        const newEmbeddings = await batchGenerateRepoEmbeddings(
-          needUpdate,
-          metadata,
-          (current, total) => {
-            setInitProgress({ current, total });
-          },
-        );
-
-        // 合并 embeddings
-        const allEmbeddings = { ...existingEmbeddings, ...newEmbeddings };
-        setEmbeddings(allEmbeddings);
-
-        // 保存到 Gist
-        const updatedMetadata = saveEmbeddingsToMetadata(metadata, newEmbeddings);
-        await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-
-        toast.success(`已为 ${needUpdate.length} 个项目生成向量索引`);
+      while (current < entries.length && !halt.current) {
+        const batch = entries.slice(current, current + EMBEDDING_BATCH_SIZE);
+        await indexEmbeddingBatch(batch, vectors);
+        current += batch.length;
+        setInitProgress({ current, total: entries.length });
       }
-
-      setIsReady(true);
-      setIsInitializing(false);
-    } catch (err) {
-      console.error("初始化 embeddings 失败:", err);
-      const msg = err instanceof Error ? err.message : String(err);
-      // 如果已有部分 embeddings，仍标记为就绪（降级模式）
-      if (Object.keys(embeddings).length > 0) {
-        setIsReady(true);
-        setError(`部分向量索引不可用: ${msg}`);
-      } else {
-        setError("向量索引初始化失败 — 语义搜索不可用，其他功能正常");
-      }
+    } catch {
+      setError("索引生成遇到错误，已完成的批次保存在本机");
+    } finally {
+      setIndex((value) =>
+        value === index
+          ? { vectors, pending: index.pending.filter((entry) => !vectors[entry.id]) }
+          : value,
+      );
       setIsInitializing(false);
     }
   };
@@ -98,7 +113,7 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
     setError(null);
 
     try {
-      const searchResults = await semanticSearch(query, stars, embeddings, {
+      const searchResults = await semanticSearch(query, stars, index?.vectors ?? {}, {
         topK: 12,
         threshold: 0.4,
       });
@@ -122,8 +137,7 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
         toast.success(message);
       }
     } catch (err) {
-      console.error("搜索失败:", err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "语义搜索失败");
       toast.error("搜索失败，请重试");
     } finally {
       setIsSearching(false);
@@ -138,7 +152,7 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
   };
 
   // 回车搜索
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSearch();
@@ -154,7 +168,7 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
     "前端工程化工具",
   ];
 
-  const handleExampleClick = (example) => {
+  const handleExampleClick = (example: string) => {
     setQuery(example);
   };
 
@@ -169,6 +183,40 @@ export default function SemanticSearch({ stars, metadata, gistId, accessToken, o
 
         {isReady && (
           <span className="text-caption text-success bg-success/10 px-2 py-1 rounded">已就绪</span>
+        )}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+        {!key ? (
+          <span>在设置中添加 SiliconFlow Key 后可使用语义搜索。</span>
+        ) : (
+          <>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={includeNotes}
+                disabled={isInitializing}
+                onChange={(event) => setIncludeNotes(event.target.checked)}
+              />
+              在发给 SiliconFlow 的索引文本中包含我的标签、摘要和笔记
+            </label>
+            {!!index?.pending.length && !isInitializing && (
+              <button type="button" className="btn-secondary" onClick={buildIndex}>
+                生成本地索引（待索引 {index.pending.length}）
+              </button>
+            )}
+            {isInitializing && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  halt.current = true;
+                }}
+              >
+                在本批次后暂停
+              </button>
+            )}
+          </>
         )}
       </div>
 
