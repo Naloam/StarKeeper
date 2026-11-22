@@ -33,7 +33,7 @@ export default function CollectionModal({
   mode = "create",
   collection,
   repoId,
-  collections,
+  collections = [],
   onSave,
   onDelete,
 }: Props) {
@@ -146,7 +146,7 @@ export default function CollectionModal({
 
           {/* 操作按钮 */}
           <div className="flex items-center justify-between pt-2">
-            {mode === "edit" && onDelete ? (
+            {mode === "edit" && collection ? (
               <button
                 type="button"
                 onClick={() => {
