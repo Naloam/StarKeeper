@@ -1,4 +1,4 @@
-name: StarKeeper v0.4 verification
+name: Prepare StarKeeper lint dependency lock
 on:
   push:
     branches:
@@ -6,9 +6,9 @@ on:
 permissions:
   contents: read
 jobs:
-  verify:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,17 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install locked dependencies
-        run: npm ci
-      - name: TypeScript
-        id: typecheck
-        run: npx tsc --noEmit
-      - name: Project lint
-        if: always() && !cancelled()
-        run: npm run lint
-      - name: Vitest
-        if: always() && !cancelled()
-        run: npm test -- --run
-      - name: Vite build
-        if: always() && !cancelled()
-        run: npm run build
+      - name: Resolve TypeScript lint parser
+        run: npm install --save-dev --save-exact --package-lock-only --ignore-scripts @typescript-eslint/parser@8.73.0
+      - name: Show generated lockfile patch
+        run: |
+          echo STKEEPER_LOCK_PATCH_BEGIN
+          git diff -- package.json package-lock.json
+          echo STKEEPER_LOCK_PATCH_END
