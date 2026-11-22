@@ -127,14 +127,14 @@ export async function findOrCreateMetadataGist(
       }
     }
 
-    const candidates = (await listOwnedGists(token))
-      .filter(
-        (gist) =>
-          gist.owner?.id === ownerId &&
-          !!gist.files?.[METADATA_FILE] &&
-          !gist.files?.[RETIRED_FILE],
-      )
-      .map((gist) => ({ id: gist.id, updatedAt: gist.updated_at }));
+    const candidates = (await listOwnedGists(token)).flatMap((gist) =>
+      gist.id &&
+      gist.owner?.id === ownerId &&
+      gist.files?.[METADATA_FILE] &&
+      !gist.files?.[RETIRED_FILE]
+        ? [{ id: gist.id, updatedAt: gist.updated_at }]
+        : [],
+    );
     if (candidates.length > 1) throw new DuplicateMetadataGists(candidates);
     if (candidates.length === 1) {
       const id = candidates[0].id;

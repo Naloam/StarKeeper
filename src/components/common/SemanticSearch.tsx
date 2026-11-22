@@ -367,9 +367,9 @@ export default function SemanticSearch({ stars, metadata, scope, onResults }: Pr
                           {repo.language}
                         </span>
                       )}
-                      {repo.stargazers_count !== undefined && (
+                      {repo.stargazersCount !== undefined && (
                         <span className="flex items-center gap-1">
-                          ⭐ {repo.stargazers_count.toLocaleString()}
+                          ⭐ {repo.stargazersCount.toLocaleString()}
                         </span>
                       )}
                       {repo.topics && repo.topics.length > 0 && (

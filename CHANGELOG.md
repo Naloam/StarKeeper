@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 大体积向量使用 IndexedDB，依据输入哈希和模型复用，旧向量保留。
 - OAuth 使用随机 state 和 PKCE，Client Secret 只由服务端读取。浏览器凭据改用会话存储。
 - 分享路由只拉取独立快照文件，旧主 Gist 链接显示停用提示。
+- ESLint 覆盖 TS、TSX 和 API 源码。
 
 ## [0.3.0] - 2025-11-24
 

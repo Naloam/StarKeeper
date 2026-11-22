@@ -16,6 +16,13 @@ export default function TagBadge({
   onRemove,
   size = "md",
   className = "",
+}: {
+  tag: string;
+  color?: string;
+  removable?: boolean;
+  onRemove?: (tag: string) => void;
+  size?: "sm" | "md" | "lg";
+  className?: string;
 }) {
   const sizeClasses = {
     sm: "text-xs px-2 py-0.5",

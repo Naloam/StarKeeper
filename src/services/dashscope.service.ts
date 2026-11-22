@@ -284,8 +284,11 @@ export async function suggestTags(
     // 提取 JSON 数组
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      const tags = JSON.parse(jsonMatch[0]);
-      return tags.filter((t) => !existingTags.includes(t));
+      const tags: unknown = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(tags))
+        return tags.filter(
+          (tag): tag is string => typeof tag === "string" && !existingTags.includes(tag),
+        );
     }
     return [];
   } catch (error) {

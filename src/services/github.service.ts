@@ -72,7 +72,15 @@ export async function getCurrentUser(accessToken: string) {
  * @param {Object} options - { page, perPage, sort }
  * @returns {Promise<Array>}
  */
-export async function getStarredRepos(accessToken, options = {}) {
+export async function getStarredRepos(
+  accessToken: string,
+  options: {
+    page?: number;
+    perPage?: number;
+    sort?: "created" | "updated";
+    direction?: "asc" | "desc";
+  } = {},
+) {
   try {
     const {
       page = 1,
@@ -336,7 +344,7 @@ export async function getRepoReleases(accessToken: string, owner: string, repo: 
     };
   } catch (error) {
     // 如果没有 releases 权限或仓库没有 releases，返回 null
-    if (error.status === 404 || error.status === 403) {
+    if ([403, 404].includes((error as { status?: number }).status ?? 0)) {
       return {
         latestRelease: null,
         releaseCount: 0,
@@ -481,7 +489,7 @@ export async function getRepoCIStatus(accessToken: string, owner: string, repo: 
     };
   } catch (error) {
     // 如果没有 Actions 权限或仓库没有 Actions，返回 false
-    if (error.status === 404 || error.status === 403) {
+    if ([403, 404].includes((error as { status?: number }).status ?? 0)) {
       return {
         hasCI: false,
         latestWorkflowRun: null,
