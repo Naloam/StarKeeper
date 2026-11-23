@@ -1,3 +1,4 @@
+import type { CSSProperties, ReactNode } from "react";
 import React from "react";
 
 /**
@@ -6,7 +7,17 @@ import React from "react";
  */
 
 // 基础骨架屏元素
-export const SkeletonBox = ({ className = "", width, height, rounded = "rounded" }) => (
+export const SkeletonBox = ({
+  className = "",
+  width,
+  height,
+  rounded = "rounded",
+}: {
+  className?: string;
+  width?: CSSProperties["width"];
+  height?: CSSProperties["height"];
+  rounded?: string;
+}) => (
   <div
     className={`animate-pulse bg-gradient-to-r from-border-light via-border to-border-light bg-[length:200%_100%] ${rounded} ${className}`}
     style={{ width, height }}
@@ -218,7 +229,17 @@ export const LoadingOverlay = ({ message = "加载中..." }) => (
 );
 
 // 空状态骨架屏
-export const EmptySkeleton = ({ icon, title, description, action }) => (
+export const EmptySkeleton = ({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon?: ReactNode;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) => (
   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
     {icon && <div className="w-24 h-24 mb-6 text-text-muted">{icon}</div>}
     {title && <h3 className="text-xl font-semibold text-text-primary mb-2">{title}</h3>}

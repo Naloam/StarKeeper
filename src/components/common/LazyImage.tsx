@@ -12,11 +12,16 @@ export default function LazyImage({
   alt = "",
   className = "",
   placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3C/svg%3E',
+}: {
+  src: string;
+  alt?: string;
+  className?: string;
+  placeholder?: string;
 }) {
   const [imageSrc, setImageSrc] = useState(placeholder);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
-  const imgRef = useRef(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // 使用 Intersection Observer 检测图片是否进入视口
   useEffect(() => {

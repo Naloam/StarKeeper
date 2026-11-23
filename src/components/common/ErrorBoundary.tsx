@@ -1,12 +1,19 @@
 import React from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+  errorCount: number;
+}
+
 /**
  * ErrorBoundary 组件
  * 捕获 React 组件树中的 JavaScript 错误，记录错误并显示降级 UI
  */
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBoundaryState> {
+  constructor(props: React.PropsWithChildren) {
     super(props);
     this.state = {
       hasError: false,
@@ -16,12 +23,12 @@ class ErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     // 更新 state 以显示降级 UI
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // 记录错误到控制台
     console.error("ErrorBoundary caught an error:", error, errorInfo);
 

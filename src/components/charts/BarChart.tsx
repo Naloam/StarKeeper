@@ -33,7 +33,7 @@ export default function BarChart({ data, options: customOptions, height = 300 }:
           font: {
             family: "Inter, sans-serif",
             size: 12,
-            weight: "400",
+            weight: 400,
           },
           color: "#6B665F",
           usePointStyle: true,
@@ -53,12 +53,12 @@ export default function BarChart({ data, options: customOptions, height = 300 }:
         titleFont: {
           family: "Inter, sans-serif",
           size: 13,
-          weight: "600",
+          weight: 600,
         },
         bodyFont: {
           family: "Inter, sans-serif",
           size: 12,
-          weight: "400",
+          weight: 400,
         },
         boxPadding: 6,
         usePointStyle: true,
@@ -66,32 +66,32 @@ export default function BarChart({ data, options: customOptions, height = 300 }:
     },
     scales: {
       x: {
+        border: { display: false },
         grid: {
           display: false,
-          drawBorder: false,
         },
         ticks: {
           font: {
             family: "Inter, sans-serif",
             size: 11,
-            weight: "400",
+            weight: 400,
           },
           color: "#9B968E",
           padding: 8,
         },
       },
       y: {
+        border: { display: false },
         grid: {
           display: true,
           color: "rgba(232, 227, 217, 0.4)",
           lineWidth: 1,
-          drawBorder: false,
         },
         ticks: {
           font: {
             family: "Inter, sans-serif",
             size: 11,
-            weight: "400",
+            weight: 400,
           },
           color: "#9B968E",
           padding: 8,

@@ -1,3 +1,4 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useStarsStore } from "../store";
 import {
+  type CleanupReport,
   generateCleanupSuggestions,
   archiveRepos,
   getArchivedRepos,
@@ -23,14 +25,21 @@ import {
 import { updateSessionMetadata } from "../services/session-metadata.service";
 import HealthBadge from "../components/common/HealthBadge";
 
+interface CleanupSelection {
+  metadata: Record<string, RepoMetadata>;
+  selectedRepos: Set<number>;
+  onSelect: (id: number) => void;
+  onSelectAll: (repos: readonly Pick<StarredRepo, "id">[]) => void;
+}
+
 export default function CleanupPage() {
   const navigate = useNavigate();
   const { stars, metadata } = useStarsStore();
 
-  const [analysis, setAnalysis] = useState(null);
+  const [analysis, setAnalysis] = useState<CleanupReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("abandoned"); // abandoned | similar | lowEngagement | archived
-  const [selectedRepos, setSelectedRepos] = useState(new Set());
+  const [selectedRepos, setSelectedRepos] = useState(new Set<number>());
   const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
@@ -51,7 +60,7 @@ export default function CleanupPage() {
     }
   };
 
-  const handleSelectRepo = (repoId) => {
+  const handleSelectRepo = (repoId: number) => {
     const newSelected = new Set(selectedRepos);
     if (newSelected.has(repoId)) {
       newSelected.delete(repoId);
@@ -61,7 +70,7 @@ export default function CleanupPage() {
     setSelectedRepos(newSelected);
   };
 
-  const handleSelectAll = (repos) => {
+  const handleSelectAll = (repos: readonly Pick<StarredRepo, "id">[]) => {
     const repoIds = repos.map((r) => r.id);
     const allSelected = repoIds.every((id) => selectedRepos.has(id));
 
@@ -343,7 +352,13 @@ export default function CleanupPage() {
 }
 
 // Abandoned Repos View
-function AbandonedReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function AbandonedReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: CleanupReport["categories"]["abandoned"] }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -454,7 +469,13 @@ function AbandonedReposView({ repos, metadata, selectedRepos, onSelect, onSelect
 }
 
 // Similar Repos View
-function SimilarReposView({ groups, metadata, selectedRepos, onSelect, onSelectAll }) {
+function SimilarReposView({
+  groups,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { groups: CleanupReport["categories"]["similar"] }) {
   if (groups.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -573,7 +594,13 @@ function SimilarReposView({ groups, metadata, selectedRepos, onSelect, onSelectA
 }
 
 // Low Engagement Repos View
-function LowEngagementReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function LowEngagementReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: CleanupReport["categories"]["lowEngagement"] }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -670,7 +697,13 @@ function LowEngagementReposView({ repos, metadata, selectedRepos, onSelect, onSe
 }
 
 // Archived Repos View
-function ArchivedReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function ArchivedReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: ReturnType<typeof getArchivedRepos<StarredRepo>> }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">

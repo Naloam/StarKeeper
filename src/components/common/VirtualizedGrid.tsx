@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
-import { FixedSizeGrid as Grid } from "react-window";
+import { Grid, type CellComponentProps } from "react-window";
+import type { Key, ReactNode } from "react";
 
 /**
  * 虚拟化网格组件 - 优化大量数据渲染性能
@@ -10,15 +11,45 @@ import { FixedSizeGrid as Grid } from "react-window";
  * @param {Number} columnCount - 列数
  * @param {Number} gap - 项之间的间距
  */
-export default function VirtualizedGrid({
+interface GridItems<T> {
+  items: readonly T[];
+  renderItem: (item: T, index: number) => ReactNode;
+}
+
+interface VirtualizedGridProps<T> extends GridItems<T> {
+  itemWidth?: number;
+  itemHeight?: number;
+  columnCount?: number;
+  gap?: number;
+}
+
+function GridCell<T>({
+  ariaAttributes,
+  columnIndex,
+  rowIndex,
+  style,
+  items,
+  renderItem,
+  columns,
+  gap,
+}: CellComponentProps<GridItems<T> & { columns: number; gap: number }>) {
+  const index = rowIndex * columns + columnIndex;
+  return (
+    <div {...ariaAttributes} style={{ ...style, padding: gap / 2, boxSizing: "border-box" }}>
+      {index < items.length && renderItem(items[index], index)}
+    </div>
+  );
+}
+
+export default function VirtualizedGrid<T extends { id?: Key }>({
   items,
   renderItem,
   itemWidth = 384,
   itemHeight = 400,
   columnCount = 3,
   gap = 24,
-}) {
-  const containerRef = useRef(null);
+}: VirtualizedGridProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // 监听容器大小变化
@@ -50,31 +81,6 @@ export default function VirtualizedGrid({
   const actualColumnCount = calculateColumnCount();
   const rowCount = Math.ceil(items.length / actualColumnCount);
 
-  // 渲染单元格
-  const Cell = ({ columnIndex, rowIndex, style }) => {
-    const index = rowIndex * actualColumnCount + columnIndex;
-
-    if (index >= items.length) {
-      return null;
-    }
-
-    const item = items[index];
-
-    return (
-      <div
-        style={{
-          ...style,
-          left: style.left + gap / 2,
-          top: style.top + gap / 2,
-          width: style.width - gap,
-          height: style.height - gap,
-        }}
-      >
-        {renderItem(item, index)}
-      </div>
-    );
-  };
-
   // 如果数据少于一屏，使用普通渲染
   if (items.length <= actualColumnCount * 2) {
     return (
@@ -98,15 +104,14 @@ export default function VirtualizedGrid({
         <Grid
           columnCount={actualColumnCount}
           columnWidth={itemWidth + gap}
-          height={dimensions.height || 600}
           rowCount={rowCount}
           rowHeight={itemHeight + gap}
-          width={dimensions.width}
+          style={{ width: dimensions.width, height: dimensions.height || 600 }}
           className="custom-scrollbar"
-          overscanRowCount={1}
-        >
-          {Cell}
-        </Grid>
+          overscanCount={1}
+          cellComponent={GridCell<T>}
+          cellProps={{ items, renderItem, columns: actualColumnCount, gap }}
+        />
       )}
     </div>
   );

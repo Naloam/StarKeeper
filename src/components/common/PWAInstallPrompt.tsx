@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { X, Download, Star } from "lucide-react";
 
+interface InstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 /**
  * PWA 安装提示组件
  * 在支持 PWA 的浏览器中显示安装横幅
  */
 export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<InstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
@@ -19,11 +24,12 @@ export default function PWAInstallPrompt() {
     }
 
     // 监听 beforeinstallprompt 事件
-    const handleBeforeInstallPrompt = (e) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       // 阻止默认的浏览器安装提示
+      if (!("prompt" in e) || !("userChoice" in e)) return;
       e.preventDefault();
       // 保存事件以便稍后触发
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as InstallPromptEvent);
       // 延迟 3 秒显示我们的自定义提示
       setTimeout(() => {
         setShowPrompt(true);
@@ -66,7 +72,7 @@ export default function PWAInstallPrompt() {
     setShowPrompt(false);
     // 记住用户关闭了提示（7天内不再显示）
     const dismissedUntil = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    localStorage.setItem("pwa-install-dismissed", dismissedUntil);
+    localStorage.setItem("pwa-install-dismissed", String(dismissedUntil));
   };
 
   if (!showPrompt) return null;

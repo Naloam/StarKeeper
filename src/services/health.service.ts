@@ -1,3 +1,6 @@
+import type { HealthScore, StarredRepo } from "../types";
+import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
+
 /**
  * 健康度分析服务
  *
@@ -7,9 +10,6 @@
  * - 社区健康 (30分): issue响应 + PR合并率 + contributors
  * - 维护状态 (30分): 未archived + 有CI + README更新
  */
-
-import type { HealthScore, StarredRepo } from "../types";
-import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
 
 /**
  * 计算项目健康度评分
@@ -287,13 +287,13 @@ export function analyzeActivity(repo: Pick<StarredRepo, "pushedAt">, healthScore
 
   // 额外建议
   const suggestions = [];
-  if (details.daysSinceLastUpdate > 180) {
+  if ((details.daysSinceLastUpdate ?? 0) > 180) {
     suggestions.push("超过6个月未更新");
   }
   if (!details.hasCI) {
     suggestions.push("缺少自动化测试");
   }
-  if (details.openIssues > 200) {
+  if ((details.openIssues ?? 0) > 200) {
     suggestions.push("积压的 Issues 较多");
   }
 

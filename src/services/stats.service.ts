@@ -1,3 +1,15 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
+
+type Metadata = Record<string, RepoMetadata>;
+export type HealthStats = ReturnType<typeof calculateHealthStats>;
+export type StatsReport = ReturnType<typeof generateStatsReport>;
+
+interface GrowthPoint {
+  month: string;
+  count: number;
+  cumulative: number;
+}
+
 /**
  * 统计分析服务
  * 提供项目数据的统计和趋势分析
@@ -9,7 +21,7 @@
  * @param {Object} metadata - 元数据
  * @returns {Object} 统计数据
  */
-export function calculateBasicStats(stars, metadata) {
+export function calculateBasicStats(stars: readonly StarredRepo[], metadata: Metadata) {
   const totalStars = stars.length;
 
   // 统计标签数
@@ -56,7 +68,7 @@ export function calculateBasicStats(stars, metadata) {
  * @param {Object} metadata - 元数据
  * @returns {Object} 健康度统计
  */
-export function calculateHealthStats(stars, metadata) {
+export function calculateHealthStats(stars: readonly StarredRepo[], metadata: Metadata) {
   const healthDistribution = {
     excellent: 0, // 80-100
     good: 0, // 60-79
@@ -98,8 +110,8 @@ export function calculateHealthStats(stars, metadata) {
  * @param {Array} stars - 项目列表
  * @returns {Array} 语言统计数组
  */
-export function calculateLanguageStats(stars) {
-  const languageMap = {};
+export function calculateLanguageStats(stars: readonly StarredRepo[]) {
+  const languageMap: Record<string, number> = {};
 
   stars.forEach((star) => {
     if (star.language) {
@@ -126,8 +138,8 @@ export function calculateLanguageStats(stars) {
  * @param {Object} metadata - 元数据
  * @returns {Array} 标签统计数组
  */
-export function calculateTagStats(metadata) {
-  const tagMap = {};
+export function calculateTagStats(metadata: Metadata) {
+  const tagMap: Record<string, number> = {};
 
   Object.values(metadata).forEach((meta) => {
     if (meta.tags && Array.isArray(meta.tags)) {
@@ -138,10 +150,12 @@ export function calculateTagStats(metadata) {
   });
 
   // 转换为数组并排序
+  const totalRepositories = Object.keys(metadata).length;
   const tagStats = Object.entries(tagMap)
     .map(([tag, count]) => ({
       tag,
       count,
+      percentage: Math.round((count / totalRepositories) * 100),
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -153,8 +167,8 @@ export function calculateTagStats(metadata) {
  * @param {Array} stars - 项目列表
  * @returns {Array} 月度统计数组
  */
-export function calculateStarsGrowthTrend(stars) {
-  const monthlyMap = {};
+export function calculateStarsGrowthTrend(stars: readonly StarredRepo[]) {
+  const monthlyMap: Record<string, number> = {};
 
   stars.forEach((star) => {
     if (star.starredAt) {
@@ -165,10 +179,11 @@ export function calculateStarsGrowthTrend(stars) {
   });
 
   // 转换为数组并排序
-  const monthlyStats = Object.entries(monthlyMap)
+  const monthlyStats: GrowthPoint[] = Object.entries(monthlyMap)
     .map(([month, count]) => ({
       month,
       count,
+      cumulative: 0,
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -188,10 +203,10 @@ export function calculateStarsGrowthTrend(stars) {
  * @param {number} limit - 返回数量限制
  * @returns {Array} 最近活跃项目列表
  */
-export function getRecentlyActiveRepos(stars, limit = 10) {
+export function getRecentlyActiveRepos(stars: readonly StarredRepo[], limit = 10) {
   return stars
     .filter((star) => star.pushedAt)
-    .sort((a, b) => new Date(b.pushedAt) - new Date(a.pushedAt))
+    .sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt))
     .slice(0, limit)
     .map((star) => ({
       id: star.id,
@@ -211,8 +226,8 @@ export function getRecentlyActiveRepos(stars, limit = 10) {
  * @param {number} limit - 返回数量限制
  * @returns {Array} 最热门项目列表
  */
-export function getTopStarredRepos(stars, limit = 10) {
-  return stars
+export function getTopStarredRepos(stars: readonly StarredRepo[], limit = 10) {
+  return [...stars]
     .sort((a, b) => b.stargazersCount - a.stargazersCount)
     .slice(0, limit)
     .map((star) => ({
@@ -231,11 +246,11 @@ export function getTopStarredRepos(stars, limit = 10) {
  * @param {Array} stars - 项目列表
  * @returns {Array} 热力图数据
  */
-export function calculateActivityHeatmap(stars) {
+export function calculateActivityHeatmap(stars: readonly StarredRepo[]) {
   // 初始化 7x24 的矩阵（星期 x 小时）
   const heatmap = Array(7)
     .fill(0)
-    .map(() => Array(24).fill(0));
+    .map(() => Array<number>(24).fill(0));
 
   stars.forEach((star) => {
     if (star.pushedAt) {
@@ -255,7 +270,7 @@ export function calculateActivityHeatmap(stars) {
  * @param {Object} metadata - 元数据
  * @returns {Object} 完整统计报告
  */
-export function generateStatsReport(stars, metadata) {
+export function generateStatsReport(stars: readonly StarredRepo[], metadata: Metadata) {
   return {
     basic: calculateBasicStats(stars, metadata),
     health: calculateHealthStats(stars, metadata),
@@ -274,7 +289,7 @@ export function generateStatsReport(stars, metadata) {
  * @param {Object} healthStats - 健康度统计
  * @returns {Array} 图表数据
  */
-export function getHealthChartData(healthStats) {
+export function getHealthChartData(healthStats: HealthStats) {
   const { distribution } = healthStats;
 
   return [
@@ -292,7 +307,7 @@ export function getHealthChartData(healthStats) {
  * @param {Array} languageStats - 语言统计
  * @returns {Array} 图表数据
  */
-export function getLanguageChartData(languageStats) {
+export function getLanguageChartData(languageStats: ReturnType<typeof calculateLanguageStats>) {
   return languageStats.slice(0, 10).map((item, index) => ({
     ...item,
     color: getLanguageColor(item.language, index),
@@ -305,8 +320,8 @@ export function getLanguageChartData(languageStats) {
  * @param {number} index - 索引（用于默认颜色）
  * @returns {string} 颜色值
  */
-function getLanguageColor(language, index) {
-  const colorMap = {
+function getLanguageColor(language: string, index: number) {
+  const colorMap: Record<string, string> = {
     JavaScript: "#f7df1e",
     TypeScript: "#3178c6",
     Python: "#3776ab",
@@ -347,7 +362,7 @@ function getLanguageColor(language, index) {
  * @param {string} period - 时间周期：'month', 'quarter', 'year'
  * @returns {Object} Chart.js 格式的数据
  */
-export function getStarsGrowthChartData(stars, period = "month") {
+export function getStarsGrowthChartData(stars: readonly StarredRepo[], period = "month") {
   const trend = calculateStarsGrowthTrend(stars);
 
   // 根据周期聚合数据
@@ -386,7 +401,7 @@ export function getStarsGrowthChartData(stars, period = "month") {
  * @param {Array} stars - 项目列表
  * @returns {Object} Chart.js 格式的数据
  */
-export function getLanguagePieChartData(stars) {
+export function getLanguagePieChartData(stars: readonly StarredRepo[]) {
   const languages = calculateLanguageStats(stars);
   const topLanguages = languages.slice(0, 8);
 
@@ -420,7 +435,7 @@ export function getLanguagePieChartData(stars) {
  * @param {Object} healthStats - 健康度统计数据
  * @returns {Object} Chart.js 格式的数据
  */
-export function getHealthDistributionChartData(healthStats) {
+export function getHealthDistributionChartData(healthStats: HealthStats) {
   const { distribution } = healthStats;
 
   return {
@@ -456,8 +471,8 @@ export function getHealthDistributionChartData(healthStats) {
  * @param {Object} metadata - 元数据
  * @returns {Object} Chart.js 格式的数据
  */
-export function getTagTrendChartData(stars, metadata) {
-  const tags = calculateTagStats(stars, metadata);
+export function getTagTrendChartData(stars: readonly StarredRepo[], metadata: Metadata) {
+  const tags = calculateTagStats(metadata);
   const topTags = tags.slice(0, 10);
 
   return {
@@ -478,8 +493,8 @@ export function getTagTrendChartData(stars, metadata) {
 /**
  * 按季度聚合数据
  */
-function aggregateByQuarter(monthlyData) {
-  const quarterMap = {};
+function aggregateByQuarter(monthlyData: GrowthPoint[]) {
+  const quarterMap: Record<string, GrowthPoint> = {};
 
   monthlyData.forEach((item) => {
     const [year, month] = item.month.split("-");
@@ -502,8 +517,8 @@ function aggregateByQuarter(monthlyData) {
 /**
  * 按年度聚合数据
  */
-function aggregateByYear(monthlyData) {
-  const yearMap = {};
+function aggregateByYear(monthlyData: GrowthPoint[]) {
+  const yearMap: Record<string, GrowthPoint> = {};
 
   monthlyData.forEach((item) => {
     const year = item.month.split("-")[0];
@@ -522,8 +537,8 @@ function aggregateByYear(monthlyData) {
  * @param {Array} stars - 项目列表
  * @returns {Array} 活跃度数据
  */
-export function getActivityHeatmapData(stars) {
-  const activityMap = {};
+export function getActivityHeatmapData(stars: readonly StarredRepo[]) {
+  const activityMap: Record<string, number> = {};
 
   stars.forEach((star) => {
     if (star.pushedAt) {

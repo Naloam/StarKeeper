@@ -1,24 +1,41 @@
+import type { HealthScore, StarredRepo } from "@/types";
 import React from "react";
 import { HealthProgressBar } from "./HealthBadge";
 import useModalA11y from "../../hooks/useModalA11y";
+
+interface HealthDetailProps {
+  repo?: StarredRepo | null;
+  healthScore?: HealthScore | null;
+  onClose: () => void;
+}
 
 /**
  * 健康度详情弹窗
  * 显示详细的评分分解和建议
  */
-const HealthDetailModal = ({ repo, healthScore, onClose }) => {
-  if (!healthScore) return null;
+const HealthDetailModal = ({ repo, healthScore, onClose }: HealthDetailProps) => {
+  if (!repo || !healthScore) return null;
 
   return <HealthDetailContent repo={repo} healthScore={healthScore} onClose={onClose} />;
 };
 
-function HealthDetailContent({ repo, healthScore, onClose }) {
+function HealthDetailContent({
+  repo,
+  healthScore,
+  onClose,
+}: {
+  repo: StarredRepo;
+  healthScore: HealthScore;
+  onClose: () => void;
+}) {
   const modalRef = useModalA11y(true, onClose);
 
   const { score, activity, community, maintenance, level, details } = healthScore;
 
+  const { daysSinceLastUpdate = 0, openIssues = 0, commitsLast30Days, contributors } = details;
+
   // 获取等级配置
-  const getLevelConfig = (level) => {
+  const getLevelConfig = (level: HealthScore["level"]) => {
     switch (level) {
       case "excellent":
         return { color: "text-green-600", bg: "bg-green-50", label: "优秀 🎉" };
@@ -47,7 +64,7 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
 
   // 生成建议
   const getRecommendations = () => {
-    const recommendations = [];
+    const recommendations: { type: "success" | "warning" | "info" | "error"; text: string }[] = [];
 
     if (details.archived) {
       recommendations.push({
@@ -56,24 +73,24 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
       });
     }
 
-    if (details.daysSinceLastUpdate > 365) {
+    if (daysSinceLastUpdate > 365) {
       recommendations.push({
         type: "warning",
-        text: `已超过 ${Math.floor(details.daysSinceLastUpdate / 30)} 个月未更新，可能已停止维护。`,
+        text: `已超过 ${Math.floor(daysSinceLastUpdate / 30)} 个月未更新，可能已停止维护。`,
       });
-    } else if (details.daysSinceLastUpdate > 180) {
+    } else if (daysSinceLastUpdate > 180) {
       recommendations.push({
         type: "info",
-        text: `已超过 ${Math.floor(details.daysSinceLastUpdate / 30)} 个月未更新，建议关注项目动态。`,
+        text: `已超过 ${Math.floor(daysSinceLastUpdate / 30)} 个月未更新，建议关注项目动态。`,
       });
     }
 
-    if (details.commitsLast30Days === 0) {
+    if (commitsLast30Days === 0) {
       recommendations.push({
         type: "warning",
         text: "最近 30 天无提交记录，项目活跃度较低。",
       });
-    } else if (details.commitsLast30Days >= 20) {
+    } else if ((commitsLast30Days ?? 0) >= 20) {
       recommendations.push({
         type: "success",
         text: `最近 30 天有 ${details.commitsLast30Days} 次提交，项目非常活跃！`,
@@ -87,14 +104,14 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
       });
     }
 
-    if (details.openIssues > 500) {
+    if (openIssues > 500) {
       recommendations.push({
         type: "warning",
         text: `积压了 ${details.openIssues} 个 Issues，维护压力较大。`,
       });
     }
 
-    if (details.contributors < 2) {
+    if ((contributors ?? Infinity) < 2) {
       recommendations.push({
         type: "info",
         text: "仅有单人维护，项目持续性可能存在风险。",
@@ -114,7 +131,7 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
   const recommendations = getRecommendations();
 
   // 格式化日期
-  const formatDate = (dateString) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "未知";
     const date = new Date(dateString);
     return date.toLocaleDateString("zh-CN");
@@ -183,7 +200,7 @@ function HealthDetailContent({ repo, healthScore, onClose }) {
                 <HealthProgressBar score={(activity / 40) * 100} showLabel={false} />
                 <div className="mt-2 text-xs text-text-secondary space-y-1">
                   <div>• 最近 30 天提交: {details.commitsLast30Days} 次</div>
-                  <div>• 距今更新: {details.daysSinceLastUpdate} 天</div>
+                  <div>• 距今更新: {daysSinceLastUpdate} 天</div>
                   {details.latestRelease && (
                     <div>
                       • 最新版本: {details.latestRelease.tagName} (

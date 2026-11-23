@@ -29,7 +29,7 @@ import { generateStatsReport } from "../services/stats.service";
 import type { StarredRepo, RepoMetadata, Collection, ShareConfig, HealthScore } from "../types";
 import TagModal from "../components/tags/TagModal";
 import TagBadge from "../components/tags/TagBadge";
-import AISummary from "../components/common/AISummary";
+import AISummary, { type Summary } from "../components/common/AISummary";
 import ExportModal from "../components/common/ExportModal";
 import ShareModal from "../components/common/ShareModal";
 import HealthBadge from "../components/common/HealthBadge";
@@ -60,7 +60,7 @@ interface SemanticSearchResult {
 interface ActiveFilter {
   type: string;
   label: string;
-  count: number;
+  count?: number;
 }
 
 export default function DashboardPage() {
@@ -347,7 +347,7 @@ export default function DashboardPage() {
   };
 
   // 保存编辑后的 AI 摘要
-  const handleSaveSummary = async (repo: StarredRepo, updatedSummary: string) => {
+  const handleSaveSummary = async (repo: StarredRepo, updatedSummary: Summary) => {
     const repoId = repo.id;
 
     await saveRepoMetadataToGist(repoId, { aiSummary: updatedSummary });
@@ -871,7 +871,7 @@ interface StarsListProps {
   stars: StarredRepo[];
   onOpenTagModal: (repo: StarredRepo) => void;
   onGenerateSummary: (repo: StarredRepo) => void;
-  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: Summary) => void;
   generatingSummary: Record<string, boolean>;
   onAnalyzeHealth: (repo: StarredRepo) => void;
   onShowHealthDetail: (repo: StarredRepo) => void;
@@ -883,7 +883,7 @@ interface StarCardProps {
   star: StarredRepo;
   onOpenTagModal: (repo: StarredRepo) => void;
   onGenerateSummary: (repo: StarredRepo) => void;
-  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: Summary) => void;
   isGenerating: boolean | undefined;
   onAnalyzeHealth: (repo: StarredRepo) => void;
   onShowHealthDetail: (repo: StarredRepo) => void;
@@ -895,7 +895,7 @@ interface StarListItemProps {
   star: StarredRepo;
   onOpenTagModal: (repo: StarredRepo) => void;
   onGenerateSummary: (repo: StarredRepo) => void;
-  onSaveSummary: (repo: StarredRepo, updatedSummary: string) => void;
+  onSaveSummary: (repo: StarredRepo, updatedSummary: Summary) => void;
   isGenerating: boolean | undefined;
   onAnalyzeHealth: (repo: StarredRepo) => void;
   onShowHealthDetail: (repo: StarredRepo) => void;
@@ -934,7 +934,7 @@ function StarsList({
             onOpenTagModal={onOpenTagModal}
             onGenerateSummary={onGenerateSummary}
             onSaveSummary={onSaveSummary}
-            isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+            isGenerating={generatingSummary[star.id]}
             onAnalyzeHealth={onAnalyzeHealth}
             onShowHealthDetail={onShowHealthDetail}
             isAnalyzing={analyzingHealth[star.id]}
@@ -954,7 +954,7 @@ function StarsList({
           onOpenTagModal={onOpenTagModal}
           onGenerateSummary={onGenerateSummary}
           onSaveSummary={onSaveSummary}
-          isGenerating={generatingSummary[`${star.owner.login}/${star.name}`]}
+          isGenerating={generatingSummary[star.id]}
           onAnalyzeHealth={onAnalyzeHealth}
           onShowHealthDetail={onShowHealthDetail}
           isAnalyzing={analyzingHealth[star.id]}
@@ -1036,7 +1036,7 @@ function StarCard({
           summary={aiSummary}
           onGenerate={() => onGenerateSummary(star)}
           onRegenerate={() => onGenerateSummary(star)}
-          onSave={(updatedSummary: string) => onSaveSummary(star, updatedSummary)}
+          onSave={(updatedSummary: Summary) => onSaveSummary(star, updatedSummary)}
           loading={isGenerating}
           editable={true}
         />
@@ -1146,7 +1146,7 @@ function StarListItem({
               summary={aiSummary}
               onGenerate={() => onGenerateSummary(star)}
               onRegenerate={() => onGenerateSummary(star)}
-              onSave={(updatedSummary: string) => onSaveSummary(star, updatedSummary)}
+              onSave={(updatedSummary: Summary) => onSaveSummary(star, updatedSummary)}
               loading={isGenerating}
               editable={true}
             />

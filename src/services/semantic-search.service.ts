@@ -1,10 +1,10 @@
+import type { RepoMetadata } from "../types";
+import { generateEmbedding, batchGenerateEmbeddings } from "./dashscope.service";
+
 /**
  * 语义搜索服务
  * 基于 DashScope Embedding API 实现自然语言搜索
  */
-
-import type { RepoMetadata } from "../types";
-import { generateEmbedding, batchGenerateEmbeddings } from "./dashscope.service";
 
 type SearchRepo = {
   name: string;
@@ -34,7 +34,7 @@ const REGEX_VISUAL = /chart|graph|visual|echarts|d3|可视化|图表/;
  * @param {Array<number>} vec2 - 向量2
  * @returns {number} 相似度分数 (0-1)
  */
-export function cosineSimilarity(vec1: number[], vec2: number[]) {
+export function cosineSimilarity(vec1: readonly number[] | null, vec2: readonly number[] | null) {
   if (!vec1 || !vec2 || vec1.length !== vec2.length) {
     throw new Error("向量维度不匹配");
   }

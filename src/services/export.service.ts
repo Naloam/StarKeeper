@@ -1,3 +1,10 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
+import type { StatsReport } from "./stats.service";
+
+type ExportRepo = Omit<StarredRepo, "archived" | "isPrivate"> & { watchersCount?: number };
+type Metadata = Record<string, RepoMetadata>;
+type ExportStats = Partial<Omit<StatsReport, "basic">> & { basic?: Partial<StatsReport["basic"]> };
+
 /**
  * 导入/导出服务
  * 支持 Markdown、CSV、JSON 格式
@@ -9,15 +16,15 @@
  * @param {Object} metadata - 元数据对象（标签、笔记、摘要等）
  * @returns {string} Markdown 文本
  */
-export function exportToMarkdown(stars, metadata) {
+export function exportToMarkdown(stars: readonly ExportRepo[], metadata: Metadata) {
   let markdown = `# My GitHub Stars Collection\n\n`;
   markdown += `> 导出时间: ${new Date().toLocaleString("zh-CN")}\n`;
   markdown += `> 项目总数: ${stars.length}\n\n`;
   markdown += `---\n\n`;
 
   // 按标签分组
-  const tagGroups = {};
-  const untagged = [];
+  const tagGroups: Record<string, ExportRepo[]> = {};
+  const untagged: ExportRepo[] = [];
 
   stars.forEach((star) => {
     const repoMeta = metadata[star.id] || {};
@@ -51,10 +58,10 @@ export function exportToMarkdown(stars, metadata) {
       }
 
       // AI 摘要
-      if (repoMeta.aiSummary?.summary) {
+      if (typeof repoMeta.aiSummary === "object" && repoMeta.aiSummary?.summary) {
         markdown += `**AI 摘要:** ${repoMeta.aiSummary.summary}\n\n`;
 
-        if (repoMeta.aiSummary.features?.length > 0) {
+        if (repoMeta.aiSummary.features?.length) {
           markdown += `**主要功能:**\n`;
           repoMeta.aiSummary.features.forEach((feature) => {
             markdown += `- ${feature}\n`;
@@ -94,7 +101,7 @@ export function exportToMarkdown(stars, metadata) {
         markdown += `**描述:** ${star.description}\n\n`;
       }
 
-      if (repoMeta.aiSummary?.summary) {
+      if (typeof repoMeta.aiSummary === "object" && repoMeta.aiSummary?.summary) {
         markdown += `**AI 摘要:** ${repoMeta.aiSummary.summary}\n\n`;
       }
 
@@ -121,7 +128,7 @@ export function exportToMarkdown(stars, metadata) {
  * @param {Object} metadata - 元数据对象
  * @returns {string} CSV 文本
  */
-export function exportToCSV(stars, metadata) {
+export function exportToCSV(stars: readonly ExportRepo[], metadata: Metadata) {
   // CSV 头部
   let csv =
     "Name,Full Name,Owner,Description,URL,Language,Stars,Forks,Updated,Tags,Notes,AI Summary\n";
@@ -130,7 +137,9 @@ export function exportToCSV(stars, metadata) {
     const repoMeta = metadata[star.id] || {};
     const tags = (repoMeta.tags || []).join("; ");
     const notes = (repoMeta.notes || "").replace(/"/g, '""').replace(/\n/g, " ");
-    const aiSummary = (repoMeta.aiSummary?.summary || "").replace(/"/g, '""');
+    const aiSummary = (
+      typeof repoMeta.aiSummary === "object" ? repoMeta.aiSummary?.summary || "" : ""
+    ).replace(/"/g, '""');
     const description = (star.description || "").replace(/"/g, '""');
 
     csv += `"${star.name}",`;
@@ -156,7 +165,7 @@ export function exportToCSV(stars, metadata) {
  * @param {Object} metadata - 元数据对象
  * @returns {string} JSON 文本
  */
-export function exportToJSON(stars, metadata) {
+export function exportToJSON(stars: readonly ExportRepo[], metadata: Metadata) {
   const exportData = {
     version: "1.0.0",
     exportedAt: new Date().toISOString(),
@@ -205,7 +214,7 @@ export function exportToJSON(stars, metadata) {
  * @param {string} filename - 文件名
  * @param {string} mimeType - MIME 类型
  */
-export function downloadFile(content, filename, mimeType = "text/plain") {
+export function downloadFile(content: string, filename: string, mimeType = "text/plain") {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -220,7 +229,7 @@ export function downloadFile(content, filename, mimeType = "text/plain") {
 /**
  * 导出为 Markdown 并下载
  */
-export function exportAndDownloadMarkdown(stars, metadata) {
+export function exportAndDownloadMarkdown(stars: readonly ExportRepo[], metadata: Metadata) {
   const markdown = exportToMarkdown(stars, metadata);
   const filename = `github-stars-${new Date().toISOString().split("T")[0]}.md`;
   downloadFile(markdown, filename, "text/markdown");
@@ -229,7 +238,7 @@ export function exportAndDownloadMarkdown(stars, metadata) {
 /**
  * 导出为 CSV 并下载
  */
-export function exportAndDownloadCSV(stars, metadata) {
+export function exportAndDownloadCSV(stars: readonly ExportRepo[], metadata: Metadata) {
   const csv = exportToCSV(stars, metadata);
   const filename = `github-stars-${new Date().toISOString().split("T")[0]}.csv`;
   downloadFile(csv, filename, "text/csv");
@@ -238,7 +247,7 @@ export function exportAndDownloadCSV(stars, metadata) {
 /**
  * 导出为 JSON 并下载
  */
-export function exportAndDownloadJSON(stars, metadata) {
+export function exportAndDownloadJSON(stars: readonly ExportRepo[], metadata: Metadata) {
   const json = exportToJSON(stars, metadata);
   const filename = `github-stars-${new Date().toISOString().split("T")[0]}.json`;
   downloadFile(json, filename, "application/json");
@@ -247,7 +256,7 @@ export function exportAndDownloadJSON(stars, metadata) {
 /**
  * 获取导出统计信息
  */
-export function getExportStats(stars, metadata) {
+export function getExportStats(stars: readonly ExportRepo[], metadata: Metadata) {
   const taggedCount = stars.filter((star) => {
     const repoMeta = metadata[star.id] || {};
     return (repoMeta.tags || []).length > 0;
@@ -260,7 +269,7 @@ export function getExportStats(stars, metadata) {
 
   const withAISummaryCount = stars.filter((star) => {
     const repoMeta = metadata[star.id] || {};
-    return repoMeta.aiSummary && repoMeta.aiSummary.summary;
+    return typeof repoMeta.aiSummary === "object" && repoMeta.aiSummary?.summary;
   }).length;
 
   const allTags = new Set();
@@ -286,8 +295,12 @@ export function getExportStats(stars, metadata) {
  * @param {Object} metadata - 元数据
  * @returns {string} Markdown 格式的统计报告
  */
-export function exportStatsReport(statsData, stars, metadata) {
-  const { basic = {}, health, languages = [], tags = [], growth } = statsData || {};
+export function exportStatsReport(
+  statsData: ExportStats | null,
+  stars: readonly ExportRepo[],
+  metadata: Metadata,
+) {
+  const { basic, health, languages = [], tags = [], growth } = statsData || {};
 
   let markdown = `# StarKeeper 统计报告\n\n`;
   markdown += `> 生成时间: ${new Date().toLocaleString("zh-CN")}\n`;
@@ -298,13 +311,13 @@ export function exportStatsReport(statsData, stars, metadata) {
   markdown += `## 📊 基础统计\n\n`;
   markdown += `| 指标 | 数值 | 占比 |\n`;
   markdown += `|------|------|------|\n`;
-  markdown += `| 总 Stars 数 | ${basic.totalStars ?? 0} | 100% |\n`;
-  markdown += `| 标签数 | ${basic.totalTags ?? 0} | - |\n`;
-  markdown += `| 有笔记 | ${basic.withNotes ?? 0} | ${basic.notesPercentage ?? 0}% |\n`;
-  markdown += `| 有 AI 摘要 | ${basic.withAISummary ?? 0} | ${basic.aiSummaryPercentage ?? 0}% |\n\n`;
+  markdown += `| 总 Stars 数 | ${basic?.totalStars ?? 0} | 100% |\n`;
+  markdown += `| 标签数 | ${basic?.totalTags ?? 0} | - |\n`;
+  markdown += `| 有笔记 | ${basic?.withNotes ?? 0} | ${basic?.notesPercentage ?? 0}% |\n`;
+  markdown += `| 有 AI 摘要 | ${basic?.withAISummary ?? 0} | ${basic?.aiSummaryPercentage ?? 0}% |\n\n`;
 
   // 健康度分析
-  const totalStars = basic.totalStars || 1; // 避免除零
+  const totalStars = basic?.totalStars || 1; // 避免除零
   if (health && health.analyzedCount > 0) {
     markdown += `## 🏥 健康度分析\n\n`;
     markdown += `**平均健康度:** ${health.averageScore} 分\n\n`;
@@ -374,7 +387,7 @@ export function exportStatsReport(statsData, stars, metadata) {
   // 活跃度分析
   const recentlyActive = stars
     .filter((star) => star.pushedAt)
-    .sort((a, b) => new Date(b.pushedAt) - new Date(a.pushedAt))
+    .sort((a, b) => Date.parse(b.pushedAt) - Date.parse(a.pushedAt))
     .slice(0, 10);
 
   if (recentlyActive.length > 0) {
@@ -389,7 +402,10 @@ export function exportStatsReport(statsData, stars, metadata) {
   }
 
   // 高 Star 项目
-  const topStarred = stars.sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
+  // 复制后再排序：sort 是原地操作，直接对调用方传入的 stars 排序会把
+  // 组件状态里的列表静默重排（上面"最近活跃"通过 filter 先生成了新数组，
+  // 这里必须同样避免副作用）。
+  const topStarred = [...stars].sort((a, b) => b.stargazersCount - a.stargazersCount).slice(0, 10);
 
   if (topStarred.length > 0) {
     markdown += `## ⭐ 最受欢迎项目 (Top 10)\n\n`;
@@ -412,7 +428,7 @@ export function exportStatsReport(statsData, stars, metadata) {
  * @param {Object} statsData - 统计数据
  * @returns {string} JSON 字符串
  */
-export function exportStatsJSON(statsData) {
+export function exportStatsJSON(statsData: ExportStats | null) {
   return JSON.stringify(statsData, null, 2);
 }
 
@@ -421,16 +437,16 @@ export function exportStatsJSON(statsData) {
  * @param {Object} statsData - 统计数据
  * @returns {string} CSV 文本
  */
-export function exportStatsCSV(statsData) {
-  const { basic = {}, health, languages = [], tags = [] } = statsData || {};
+export function exportStatsCSV(statsData: ExportStats | null) {
+  const { basic, health, languages = [], tags = [] } = statsData || {};
 
   let csv = `统计类型,指标,数值,占比\n`;
 
   // 基础统计
-  csv += `基础统计,总 Stars 数,${basic.totalStars ?? 0},100%\n`;
-  csv += `基础统计,标签数,${basic.totalTags ?? 0},-\n`;
-  csv += `基础统计,有笔记,${basic.withNotes ?? 0},${basic.notesPercentage ?? 0}%\n`;
-  csv += `基础统计,有 AI 摘要,${basic.withAISummary ?? 0},${basic.aiSummaryPercentage ?? 0}%\n`;
+  csv += `基础统计,总 Stars 数,${basic?.totalStars ?? 0},100%\n`;
+  csv += `基础统计,标签数,${basic?.totalTags ?? 0},-\n`;
+  csv += `基础统计,有笔记,${basic?.withNotes ?? 0},${basic?.notesPercentage ?? 0}%\n`;
+  csv += `基础统计,有 AI 摘要,${basic?.withAISummary ?? 0},${basic?.aiSummaryPercentage ?? 0}%\n`;
 
   // 健康度
   if (health) {
