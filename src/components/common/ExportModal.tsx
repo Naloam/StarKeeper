@@ -1,3 +1,4 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
 import { X, Download, FileText, Table, Code } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -12,7 +13,17 @@ import useModalA11y from "../../hooks/useModalA11y";
 /**
  * 导出模态框组件
  */
-export default function ExportModal({ isOpen, onClose, stars, metadata }) {
+export default function ExportModal({
+  isOpen,
+  onClose,
+  stars,
+  metadata,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  stars: readonly StarredRepo[];
+  metadata: Record<string, RepoMetadata>;
+}) {
   const [selectedFormat, setSelectedFormat] = useState("markdown");
   const [isExporting, setIsExporting] = useState(false);
   const modalRef = useModalA11y(isOpen, onClose);
@@ -74,7 +85,7 @@ export default function ExportModal({ isOpen, onClose, stars, metadata }) {
         }, 500);
       } catch (error) {
         console.error("导出失败:", error);
-        toast.error("导出失败：" + error.message);
+        toast.error("导出失败：" + (error instanceof Error ? error.message : String(error)));
         setIsExporting(false);
       }
     }, 300);

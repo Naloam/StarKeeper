@@ -1,3 +1,4 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
 import React, { useState, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { TrendingUp, PieChart as PieChartIcon, BarChart3, Download } from "lucide-react";
@@ -5,25 +6,36 @@ import LineChart from "../charts/LineChart";
 import PieChart from "../charts/PieChart";
 import BarChart from "../charts/BarChart";
 import {
+  type HealthStats,
   getStarsGrowthChartData,
   getLanguagePieChartData,
   getHealthDistributionChartData,
   getTagTrendChartData,
 } from "../../services/stats.service";
 
+type ChartTab = "growth" | "language" | "health" | "tags";
+
 /**
  * 统计可视化仪表板组件
  */
-export default function StatsVisualization({ stars, metadata, healthStats }) {
+export default function StatsVisualization({
+  stars,
+  metadata,
+  healthStats,
+}: {
+  stars: StarredRepo[];
+  metadata: Record<string, RepoMetadata>;
+  healthStats?: HealthStats | null;
+}) {
   const [period, setPeriod] = useState("month"); // month, quarter, year
-  const [activeTab, setActiveTab] = useState("growth"); // growth, language, health, tags
+  const [activeTab, setActiveTab] = useState<ChartTab>("growth"); // growth, language, health, tags
 
   // 图表引用
   const chartRefs = {
-    growth: useRef(null),
-    language: useRef(null),
-    health: useRef(null),
-    tags: useRef(null),
+    growth: useRef<HTMLDivElement>(null),
+    language: useRef<HTMLDivElement>(null),
+    health: useRef<HTMLDivElement>(null),
+    tags: useRef<HTMLDivElement>(null),
   };
 
   // 生成图表数据
@@ -85,7 +97,7 @@ export default function StatsVisualization({ stars, metadata, healthStats }) {
       }, "image/png");
     } catch (error) {
       console.error("导出图表失败:", error);
-      toast.error("导出失败：" + error.message);
+      toast.error("导出失败：" + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -94,7 +106,7 @@ export default function StatsVisualization({ stars, metadata, healthStats }) {
     { id: "language", label: "语言分布", icon: PieChartIcon },
     { id: "health", label: "健康度分布", icon: BarChart3 },
     { id: "tags", label: "标签统计", icon: BarChart3 },
-  ];
+  ] as const;
 
   return (
     <div className="card mb-6">

@@ -1,3 +1,18 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
+
+type CleanupRepo = Pick<StarredRepo, "id" | "updatedAt"> &
+  Partial<
+    Pick<
+      StarredRepo,
+      "name" | "archived" | "starredAt" | "stargazersCount" | "language" | "description" | "topics"
+    >
+  >;
+type CleanupMetadata = Record<
+  string,
+  Pick<RepoMetadata, "tags" | "notes" | "aiSummary"> & { healthScore?: { score: number } }
+>;
+export type CleanupReport = ReturnType<typeof generateCleanupSuggestions<StarredRepo>>;
+
 /**
  * 智能清理分析服务
  * 提供废弃项目检测、相似项目分析、低交互项目识别等功能
@@ -9,7 +24,10 @@
  * @param {Object} metadata - 项目元数据（包含健康度信息）
  * @returns {Array} 废弃项目列表
  */
-export function detectAbandonedRepos(stars, metadata) {
+export function detectAbandonedRepos<T extends Pick<CleanupRepo, "id" | "updatedAt" | "archived">>(
+  stars: readonly T[],
+  metadata: CleanupMetadata,
+) {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -29,7 +47,9 @@ export function detectAbandonedRepos(stars, metadata) {
     .map((star) => {
       const meta = metadata[star.id] || {};
       const lastUpdate = new Date(star.updatedAt);
-      const daysSinceUpdate = Math.floor((Date.now() - lastUpdate) / (1000 * 60 * 60 * 24));
+      const daysSinceUpdate = Math.floor(
+        (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
       return {
         ...star,
@@ -52,7 +72,7 @@ export function detectAbandonedRepos(stars, metadata) {
  * @param {string} str2
  * @returns {number} 相似度 (0-100)
  */
-function calculateStringSimilarity(str1, str2) {
+function calculateStringSimilarity(str1?: string, str2?: string) {
   if (!str1 || !str2) return 0;
 
   const s1 = str1.toLowerCase();
@@ -61,7 +81,7 @@ function calculateStringSimilarity(str1, str2) {
   if (s1 === s2) return 100;
 
   // 计算 Levenshtein 距离
-  const matrix = [];
+  const matrix: number[][] = [];
   const n = s1.length;
   const m = s2.length;
 
@@ -96,8 +116,8 @@ function calculateStringSimilarity(str1, str2) {
  * @param {string} text
  * @returns {Set} 关键词集合
  */
-function extractKeywords(text) {
-  if (!text) return new Set();
+function extractKeywords(text: string) {
+  if (!text) return new Set<string>();
 
   const stopWords = new Set([
     "the",
@@ -136,10 +156,10 @@ function extractKeywords(text) {
  * @param {Object} repo2
  * @returns {Object} 相似度评分和详情
  */
-function calculateRepoSimilarity(repo1, repo2) {
+function calculateRepoSimilarity(repo1: CleanupRepo, repo2: CleanupRepo) {
   let totalScore = 0;
   let maxScore = 0;
-  const details = {};
+  const details: Record<string, number> = {};
 
   // 1. 名称相似度 (30%)
   const nameSimilarity = calculateStringSimilarity(repo1.name, repo2.name);
@@ -198,7 +218,11 @@ function calculateRepoSimilarity(repo1, repo2) {
  * @param {number} threshold - 相似度阈值 (默认 60)
  * @returns {Array} 相似项目组列表
  */
-export function detectSimilarRepos(stars, metadata, threshold = 60) {
+export function detectSimilarRepos<T extends CleanupRepo>(
+  stars: readonly T[],
+  metadata: CleanupMetadata,
+  threshold = 60,
+) {
   const similarGroups = [];
   const processed = new Set();
 
@@ -206,7 +230,10 @@ export function detectSimilarRepos(stars, metadata, threshold = 60) {
     if (processed.has(stars[i].id)) continue;
 
     const repo1 = stars[i];
-    const similarRepos = [repo1];
+    const similarRepos: (T & {
+      similarityScore?: number;
+      similarityDetails?: Record<string, number>;
+    })[] = [repo1];
 
     for (let j = i + 1; j < stars.length; j++) {
       if (processed.has(stars[j].id)) continue;
@@ -264,7 +291,9 @@ export function detectSimilarRepos(stars, metadata, threshold = 60) {
  * @param {Object} metadata - 项目元数据
  * @returns {Array} 低交互项目列表
  */
-export function detectLowEngagementRepos(stars, metadata) {
+export function detectLowEngagementRepos<
+  T extends Pick<CleanupRepo, "id" | "updatedAt" | "starredAt">,
+>(stars: readonly T[], metadata: CleanupMetadata) {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -283,7 +312,9 @@ export function detectLowEngagementRepos(stars, metadata) {
     })
     .map((star) => {
       const starredAt = new Date(star.starredAt || star.updatedAt);
-      const daysSinceStarred = Math.floor((Date.now() - starredAt) / (1000 * 60 * 60 * 24));
+      const daysSinceStarred = Math.floor(
+        (Date.now() - starredAt.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
       return {
         ...star,
@@ -302,7 +333,10 @@ export function detectLowEngagementRepos(stars, metadata) {
  * @param {Object} metadata - 项目元数据
  * @returns {Object} 清理分析报告
  */
-export function generateCleanupSuggestions(stars, metadata) {
+export function generateCleanupSuggestions<T extends CleanupRepo>(
+  stars: readonly T[],
+  metadata: CleanupMetadata,
+) {
   const abandoned = detectAbandonedRepos(stars, metadata);
   const similar = detectSimilarRepos(stars, metadata);
   const lowEngagement = detectLowEngagementRepos(stars, metadata);
@@ -347,7 +381,7 @@ export function generateCleanupSuggestions(stars, metadata) {
         title: `审查 ${lowEngagement.length} 个低交互项目`,
         description: "这些项目收藏已久但从未整理，建议重新评估价值",
       },
-    ].filter((rec) => rec.title.match(/\d+/)[0] !== "0"), // 过滤掉数量为0的建议
+    ].filter((rec) => rec.title.match(/\d+/)?.[0] !== "0"), // 过滤掉数量为0的建议
   };
 }
 
@@ -357,7 +391,10 @@ export function generateCleanupSuggestions(stars, metadata) {
  * @param {Object} metadata - 当前元数据
  * @returns {Object} 更新后的元数据
  */
-export function archiveRepos(repoIds, metadata) {
+export function archiveRepos(
+  repoIds: readonly (string | number)[],
+  metadata: Record<string, RepoMetadata>,
+) {
   const now = Date.now();
   const updatedMetadata = { ...metadata };
 
@@ -382,7 +419,10 @@ export function archiveRepos(repoIds, metadata) {
  * @param {Object} metadata - 当前元数据
  * @returns {Object} 更新后的元数据
  */
-export function restoreArchivedRepos(repoIds, metadata) {
+export function restoreArchivedRepos(
+  repoIds: readonly (string | number)[],
+  metadata: Record<string, RepoMetadata>,
+) {
   const updatedMetadata = { ...metadata };
 
   repoIds.forEach((repoId) => {
@@ -400,22 +440,27 @@ export function restoreArchivedRepos(repoIds, metadata) {
  * @param {Object} metadata - 项目元数据
  * @returns {Array} 归档项目列表（包含剩余天数）
  */
-export function getArchivedRepos(stars, metadata) {
+export function getArchivedRepos<T extends Pick<StarredRepo, "id">>(
+  stars: readonly T[],
+  metadata: Record<string, RepoMetadata>,
+) {
   const now = Date.now();
 
   return stars
-    .filter((star) => metadata[star.id]?.archived)
-    .map((star) => {
-      const archived = metadata[star.id].archived;
+    .flatMap((star) => {
+      const archived = metadata[star.id]?.archived;
+      if (typeof archived !== "object") return [];
       const daysRemaining = Math.ceil((archived.expiresAt - now) / (1000 * 60 * 60 * 24));
 
-      return {
-        ...star,
-        archivedAt: archived.archivedAt,
-        expiresAt: archived.expiresAt,
-        daysRemaining: Math.max(0, daysRemaining),
-        canRestore: archived.canRestore && daysRemaining > 0,
-      };
+      return [
+        {
+          ...star,
+          archivedAt: archived.archivedAt,
+          expiresAt: archived.expiresAt,
+          daysRemaining: Math.max(0, daysRemaining),
+          canRestore: archived.canRestore && daysRemaining > 0,
+        },
+      ];
     })
     .sort((a, b) => a.daysRemaining - b.daysRemaining);
 }

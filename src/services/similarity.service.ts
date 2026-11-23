@@ -1,3 +1,18 @@
+import type { StarredRepo } from "@/types";
+
+type SimilarRepo = Pick<StarredRepo, "name"> & { id: number } & Partial<
+    Pick<
+      StarredRepo,
+      | "fullName"
+      | "description"
+      | "language"
+      | "topics"
+      | "stargazersCount"
+      | "forksCount"
+      | "updatedAt"
+    >
+  >;
+
 /**
  * 项目相似度分析服务
  * 提供基于多维度的项目相似度计算和聚类功能
@@ -9,12 +24,12 @@
  * @param {string} str2
  * @returns {number} 编辑距离
  */
-function levenshteinDistance(str1, str2) {
+function levenshteinDistance(str1: string, str2: string) {
   const len1 = str1.length;
   const len2 = str2.length;
   const matrix = Array(len1 + 1)
     .fill(null)
-    .map(() => Array(len2 + 1).fill(0));
+    .map(() => Array<number>(len2 + 1).fill(0));
 
   for (let i = 0; i <= len1; i++) matrix[i][0] = i;
   for (let j = 0; j <= len2; j++) matrix[0][j] = j;
@@ -39,7 +54,7 @@ function levenshteinDistance(str1, str2) {
  * @param {string} str2
  * @returns {number} 相似度 0-1
  */
-export function calculateStringSimilarity(str1, str2) {
+export function calculateStringSimilarity(str1: string, str2: string) {
   if (!str1 || !str2) return 0;
 
   const s1 = str1.toLowerCase();
@@ -58,8 +73,8 @@ export function calculateStringSimilarity(str1, str2) {
  * @param {string} text
  * @returns {Set<string>} 关键词集合
  */
-function extractKeywords(text) {
-  if (!text) return new Set();
+function extractKeywords(text: string) {
+  if (!text) return new Set<string>();
 
   // 停用词列表
   const stopWords = new Set([
@@ -109,7 +124,7 @@ function extractKeywords(text) {
  * @param {Set} set2
  * @returns {number} 0-1
  */
-function jaccardSimilarity(set1, set2) {
+function jaccardSimilarity(set1: ReadonlySet<string>, set2: ReadonlySet<string>) {
   if (set1.size === 0 && set2.size === 0) return 1;
   if (set1.size === 0 || set2.size === 0) return 0;
 
@@ -125,7 +140,10 @@ function jaccardSimilarity(set1, set2) {
  * @param {Object} repo2 - 项目2
  * @returns {Object} { score: number, details: Object }
  */
-export function calculateRepoSimilarity(repo1, repo2) {
+export function calculateRepoSimilarity(
+  repo1: Omit<SimilarRepo, "id">,
+  repo2: Omit<SimilarRepo, "id">,
+) {
   // 1. 名称相似度 (权重: 40%)
   const nameSimilarity = calculateStringSimilarity(repo1.name, repo2.name);
 
@@ -166,7 +184,7 @@ export function calculateRepoSimilarity(repo1, repo2) {
  * @param {number} threshold - 相似度阈值 (0-1)，默认 0.6
  * @returns {Array} 相似项目组列表
  */
-export function detectSimilarRepos(repos, threshold = 0.6) {
+export function detectSimilarRepos<T extends SimilarRepo>(repos: readonly T[], threshold = 0.6) {
   const similarGroups = [];
   const processed = new Set();
 
@@ -211,7 +229,7 @@ export function detectSimilarRepos(repos, threshold = 0.6) {
  * @param {Array} repos - 相似项目列表
  * @returns {Object} 推荐信息
  */
-function recommendBestRepo(repos) {
+function recommendBestRepo(repos: readonly SimilarRepo[]) {
   // 评分标准：
   // - Stars 数量 (40%)
   // - Fork 数量 (20%)
@@ -219,18 +237,17 @@ function recommendBestRepo(repos) {
   // - 健康度 (20%)
 
   const scored = repos.map((repo) => {
-    const daysSinceUpdate = (Date.now() - new Date(repo.updatedAt)) / (1000 * 60 * 60 * 24);
+    const daysSinceUpdate = (Date.now() - Date.parse(repo.updatedAt ?? "")) / (1000 * 60 * 60 * 24);
     const recencyScore = Math.max(0, 1 - daysSinceUpdate / 365); // 1年内满分
 
-    const starsScore = Math.min(repo.stargazersCount / 10000, 1); // 10k stars 满分
-    const forksScore = Math.min(repo.forksCount / 1000, 1); // 1k forks 满分
+    const starsScore = Math.min((repo.stargazersCount ?? 0) / 10000, 1); // 10k stars 满分
+    const forksScore = Math.min((repo.forksCount ?? 0) / 1000, 1); // 1k forks 满分
 
     const totalScore = starsScore * 0.4 + forksScore * 0.2 + recencyScore * 0.2 + 0.2; // 健康度预留，如果有 healthScore 则替换
 
     return {
       repo,
       score: totalScore,
-      reasons: [],
     };
   });
 
@@ -240,23 +257,21 @@ function recommendBestRepo(repos) {
 
   // 生成推荐理由
   const reasons = [];
-  if (best.repo.stargazersCount === Math.max(...repos.map((r) => r.stargazersCount))) {
+  if (best.repo.stargazersCount === Math.max(...repos.map((r) => r.stargazersCount ?? 0))) {
     reasons.push(`⭐ Star 数最多 (${best.repo.stargazersCount.toLocaleString()})`);
   }
-  if (best.repo.forksCount === Math.max(...repos.map((r) => r.forksCount))) {
+  if (best.repo.forksCount === Math.max(...repos.map((r) => r.forksCount ?? 0))) {
     reasons.push(`🔀 Fork 数最多 (${best.repo.forksCount.toLocaleString()})`);
   }
 
-  const latestUpdate = Math.max(...repos.map((r) => new Date(r.updatedAt).getTime()));
-  if (new Date(best.repo.updatedAt).getTime() === latestUpdate) {
+  const latestUpdate = Math.max(...repos.map((r) => Date.parse(r.updatedAt ?? "")));
+  if (Date.parse(best.repo.updatedAt ?? "") === latestUpdate) {
     reasons.push("🕒 最近更新");
   }
 
-  best.reasons = reasons;
-
   return {
     repoId: best.repo.id,
-    repoName: best.repo.fullName,
+    repoName: best.repo.fullName ?? best.repo.name,
     score: best.score,
     reasons,
   };
@@ -267,8 +282,8 @@ function recommendBestRepo(repos) {
  * @param {Array} repos
  * @returns {Object} { language: repos[] }
  */
-export function clusterByLanguage(repos) {
-  const clusters = {};
+export function clusterByLanguage<T extends Pick<StarredRepo, "language">>(repos: readonly T[]) {
+  const clusters: Record<string, T[]> = {};
 
   repos.forEach((repo) => {
     const lang = repo.language || "Other";
@@ -287,8 +302,8 @@ export function clusterByLanguage(repos) {
  * @param {Array} repos
  * @returns {Object} { topic: repos[] }
  */
-export function clusterByTopics(repos) {
-  const topicMap = {};
+export function clusterByTopics<T extends Pick<StarredRepo, "topics">>(repos: readonly T[]) {
+  const topicMap: Record<string, T[]> = {};
 
   repos.forEach((repo) => {
     (repo.topics || []).forEach((topic) => {
@@ -313,7 +328,10 @@ export function clusterByTopics(repos) {
  * @param {number} threshold
  * @returns {Object} 去重报告
  */
-export function generateDeduplicationReport(repos, threshold = 0.6) {
+export function generateDeduplicationReport<T extends SimilarRepo>(
+  repos: readonly T[],
+  threshold = 0.6,
+) {
   const similarGroups = detectSimilarRepos(repos, threshold);
   const totalDuplicates = similarGroups.reduce((sum, g) => sum + (g.repos.length - 1), 0);
 

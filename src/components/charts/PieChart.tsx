@@ -25,7 +25,7 @@ export default function PieChart({ data, options: customOptions, height = 300 }:
           font: {
             family: "Inter, sans-serif",
             size: 12,
-            weight: "400",
+            weight: 400,
           },
           color: "#6B665F",
           usePointStyle: true,
@@ -33,11 +33,10 @@ export default function PieChart({ data, options: customOptions, height = 300 }:
           boxWidth: 12,
           boxHeight: 12,
           generateLabels: (chart) => {
-            const datasets = chart.data.datasets;
-            return chart.data.labels!.map((label, i) => ({
-              text: label as string,
-              fillStyle: datasets[0].backgroundColor[i] as string,
-              strokeStyle: (datasets[0].borderColor as string[])?.[i] || "#FAF8F3",
+            return (chart.data.labels ?? []).map((label, i) => ({
+              text: String(label),
+              fillStyle: chart.getDatasetMeta(0).controller.getStyle(i, false).backgroundColor,
+              strokeStyle: chart.getDatasetMeta(0).controller.getStyle(i, false).borderColor,
               lineWidth: 2,
               hidden: false,
               index: i,
@@ -56,12 +55,12 @@ export default function PieChart({ data, options: customOptions, height = 300 }:
         titleFont: {
           family: "Inter, sans-serif",
           size: 13,
-          weight: "600",
+          weight: 600,
         },
         bodyFont: {
           family: "Inter, sans-serif",
           size: 12,
-          weight: "400",
+          weight: 400,
         },
         boxPadding: 6,
         usePointStyle: true,

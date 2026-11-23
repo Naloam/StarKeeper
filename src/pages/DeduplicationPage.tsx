@@ -20,40 +20,8 @@ import { archiveRepos } from "../services/cleanup.service";
 import SimilarReposCard from "../components/common/SimilarReposCard";
 import MainLayout from "../components/layout/MainLayout";
 
-/** 推荐信息 */
-interface Recommendation {
-  repoId: number;
-  repoName: string;
-  score: number;
-  reasons: string[];
-}
-
-/** 相似项目组 */
-interface DeduplicationGroup {
-  repos: StarredRepo[];
-  similarities: Array<{
-    repo1: number;
-    repo2: number;
-    score: number;
-    details: Record<string, number>;
-  }>;
-  averageSimilarity: number;
-  recommendation: Recommendation;
-}
-
-/** 去重报告 */
-interface DeduplicationReport {
-  totalRepos: number;
-  duplicateGroups: number;
-  totalDuplicates: number;
-  potentialSavings: number;
-  groups: DeduplicationGroup[];
-  summary: {
-    highSimilarity: number;
-    mediumSimilarity: number;
-    lowSimilarity: number;
-  };
-}
+type DeduplicationReport = ReturnType<typeof generateDeduplicationReport<StarredRepo>>;
+type DeduplicationGroup = DeduplicationReport["groups"][number];
 
 export default function DeduplicationPage() {
   const navigate = useNavigate();

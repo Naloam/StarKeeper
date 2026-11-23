@@ -1,4 +1,17 @@
-import toast from "react-hot-toast";
+import toast, { type Renderable, type ToastOptions } from "react-hot-toast";
+
+interface ToastMessages<T> {
+  loading?: Renderable;
+  success?: Renderable | ((value: T) => Renderable);
+  error?: Renderable | ((error: unknown) => Renderable);
+}
+
+interface ApiError {
+  status?: number;
+  message?: string;
+  code?: string;
+  response?: { headers?: Record<string, string | undefined> };
+}
 
 /**
  * Toast 通知工具函数
@@ -6,7 +19,7 @@ import toast from "react-hot-toast";
  */
 
 // 默认配置
-const defaultOptions = {
+const defaultOptions: ToastOptions = {
   duration: 4000,
   position: "top-right",
   style: {
@@ -24,7 +37,7 @@ const defaultOptions = {
  * @param {string} message - 提示消息
  * @param {object} options - 可选配置
  */
-export const showSuccess = (message, options = {}) => {
+export const showSuccess = (message: Renderable, options: ToastOptions = {}) => {
   return toast.success(message, {
     ...defaultOptions,
     ...options,
@@ -40,7 +53,7 @@ export const showSuccess = (message, options = {}) => {
  * @param {string} message - 错误消息
  * @param {object} options - 可选配置
  */
-export const showError = (message, options = {}) => {
+export const showError = (message: Renderable, options: ToastOptions = {}) => {
   return toast.error(message, {
     ...defaultOptions,
     duration: 5000, // 错误信息显示更长时间
@@ -57,7 +70,7 @@ export const showError = (message, options = {}) => {
  * @param {string} message - 警告消息
  * @param {object} options - 可选配置
  */
-export const showWarning = (message, options = {}) => {
+export const showWarning = (message: Renderable, options: ToastOptions = {}) => {
   return toast(message, {
     ...defaultOptions,
     ...options,
@@ -74,7 +87,7 @@ export const showWarning = (message, options = {}) => {
  * @param {string} message - 信息消息
  * @param {object} options - 可选配置
  */
-export const showInfo = (message, options = {}) => {
+export const showInfo = (message: Renderable, options: ToastOptions = {}) => {
   return toast(message, {
     ...defaultOptions,
     ...options,
@@ -92,7 +105,7 @@ export const showInfo = (message, options = {}) => {
  * @param {object} options - 可选配置
  * @returns {string} toast ID，可用于后续更新或关闭
  */
-export const showLoading = (message, options = {}) => {
+export const showLoading = (message: Renderable, options: ToastOptions = {}) => {
   return toast.loading(message, {
     ...defaultOptions,
     ...options,
@@ -106,7 +119,11 @@ export const showLoading = (message, options = {}) => {
  * @param {object} messages - 不同状态的消息 { loading, success, error }
  * @param {object} options - 可选配置
  */
-export const showPromise = (promise, messages, options = {}) => {
+export const showPromise = <T>(
+  promise: Promise<T>,
+  messages: ToastMessages<T>,
+  options: ToastOptions = {},
+) => {
   return toast.promise(
     promise,
     {
@@ -132,7 +149,7 @@ export const showPromise = (promise, messages, options = {}) => {
  * @param {string} message - 消息
  * @param {object} options - 可选配置
  */
-export const showCustom = (message, options = {}) => {
+export const showCustom = (message: Renderable, options: ToastOptions = {}) => {
   return toast(message, {
     ...defaultOptions,
     ...options,
@@ -143,7 +160,7 @@ export const showCustom = (message, options = {}) => {
  * 关闭指定的 toast
  * @param {string} toastId - toast ID
  */
-export const dismissToast = (toastId) => {
+export const dismissToast = (toastId?: string) => {
   toast.dismiss(toastId);
 };
 
@@ -160,7 +177,7 @@ export const dismissAll = () => {
  * @param {Error} error - 错误对象
  * @param {string} defaultMessage - 默认错误消息
  */
-export const handleApiError = (error, defaultMessage = "操作失败") => {
+export const handleApiError = (error: ApiError, defaultMessage = "操作失败") => {
   // GitHub API 特定错误
   if (error.status === 401) {
     showError("身份验证失败，请重新登录");
@@ -171,7 +188,7 @@ export const handleApiError = (error, defaultMessage = "操作失败") => {
     const isRateLimit = error.response?.headers?.["x-ratelimit-remaining"] === "0";
     if (isRateLimit) {
       const resetTime = error.response?.headers?.["x-ratelimit-reset"];
-      const resetDate = resetTime ? new Date(resetTime * 1000) : null;
+      const resetDate = resetTime ? new Date(Number(resetTime) * 1000) : null;
       const resetStr = resetDate ? resetDate.toLocaleTimeString("zh-CN") : "稍后";
       showWarning(`API 调用次数已达上限，请在 ${resetStr} 后重试`);
       return;
@@ -190,7 +207,7 @@ export const handleApiError = (error, defaultMessage = "操作失败") => {
     return;
   }
 
-  if (error.status >= 500) {
+  if ((error.status ?? 0) >= 500) {
     showError("服务器错误，请稍后重试");
     return;
   }

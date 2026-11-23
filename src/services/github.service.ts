@@ -14,7 +14,7 @@ import { handleApiError } from "../utils/toast";
  */
 function handleGitHubError(error: unknown, context = "API 请求"): never {
   // 提取错误信息
-  const errorInfo = error as { status?: number; message?: string; response?: unknown };
+  const errorInfo = error as Parameters<typeof handleApiError>[0];
 
   // 使用 toast 显示用户友好的错误信息
   handleApiError(errorInfo, `${context}失败`);

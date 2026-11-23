@@ -94,7 +94,7 @@ describe("cleanup.service", () => {
       const metadata = { 1: { tags: ["react"] } };
       const result = archiveRepos(["1"], metadata);
       expect(result["1"].archived).toBeDefined();
-      expect(result["1"].archived.canRestore).toBe(true);
+      expect(result["1"].archived).toMatchObject({ canRestore: true });
       expect(result["1"].tags).toEqual(["react"]); // preserve existing
     });
 
@@ -108,7 +108,7 @@ describe("cleanup.service", () => {
 
   describe("restoreArchivedRepos", () => {
     it("should remove archived status", () => {
-      const metadata = { 1: { archived: { archivedAt: Date.now() }, tags: ["react"] } };
+      const metadata = archiveRepos(["1"], { 1: { tags: ["react"] } });
       const result = restoreArchivedRepos(["1"], metadata);
       expect(result["1"].archived).toBeUndefined();
       expect(result["1"].tags).toEqual(["react"]);
