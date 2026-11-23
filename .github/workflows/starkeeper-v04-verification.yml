@@ -1,22 +1,31 @@
-name: Diagnose StarKeeper Pages publishing
+name: Export StarKeeper compiler diagnostics
 on:
   push:
     branches: [ci/starkeeper-v0.4-verification]
 permissions:
   contents: read
-  checks: read
-  deployments: read
-  pages: read
 jobs:
-  diagnose:
+  diagnostics:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-    env:
-      GH_TOKEN: ${{ github.token }}
+    timeout-minutes: 10
     steps:
-      - name: Read the failed deployment annotations and Pages branch policy
+      - uses: actions/checkout@v4
+        with:
+          ref: f33243df80ac4ac75579450fde2ad5f978499a0b
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Capture TypeScript diagnostics and locked declarations
         run: |
-          gh api repos/Naloam/StarKeeper/check-runs/137090414029/annotations --jq '.[] | {annotation_level, message}'
-          gh api repos/Naloam/StarKeeper/environments/github-pages --jq '{deployment_branch_policy, protection_rules: [.protection_rules[] | .type]}' || true
-          gh api repos/Naloam/StarKeeper/environments/github-pages/deployment-branch-policies --jq '{branch_patterns: [.branch_policies[].name]}' || true
-          gh api repos/Naloam/StarKeeper/pages --jq '{html_url, build_type, status}' || true
+          npx tsc --noEmit --pretty false > typecheck.log 2>&1 || true
+          cat typecheck.log
+          find node_modules -type f \( -name package.json -o -name '*.d.ts' -o -name '*.d.cts' -o -name '*.d.mts' \) -print0 | tar -czf declarations.tgz --null -T -
+      - uses: actions/upload-artifact@v4
+        with:
+          name: starkeeper-typecheck-inputs
+          path: |
+            declarations.tgz
+            typecheck.log
+          retention-days: 1
