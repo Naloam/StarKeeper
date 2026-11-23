@@ -1,5 +1,22 @@
+import type { MouseEvent } from "react";
+import type { StarredRepo } from "@/types";
 import { useRef, useEffect, useState } from "react";
 import { useStarsStore } from "../../store";
+
+interface GraphNode {
+  id: string;
+  label: string;
+  type: "language" | "tag";
+  count: number;
+  radius: number;
+}
+
+interface Position {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
 
 /**
  * 项目关系图谱 — 基于语言/标签关联的 Canvas 可视化
@@ -8,14 +25,14 @@ export default function RelationGraph() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { stars, metadata } = useStarsStore();
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const positionsRef = useRef({});
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const positionsRef = useRef<Record<string, Position>>({});
 
   const buildGraphData = () => {
-    const nodes = [];
-    const links = [];
+    const nodes: GraphNode[] = [];
+    const links: { source: string; target: string; weight: number }[] = [];
 
-    const langGroups = {};
+    const langGroups: Record<string, StarredRepo[]> = Object.create(null);
     stars.forEach((star) => {
       const lang = star.language || "Unknown";
       if (!langGroups[lang]) langGroups[lang] = [];
@@ -32,7 +49,7 @@ export default function RelationGraph() {
       });
     });
 
-    const tagCounts = {};
+    const tagCounts: Record<string, number> = Object.create(null);
     Object.values(metadata).forEach((meta) => {
       meta.tags?.forEach((tag) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -52,7 +69,7 @@ export default function RelationGraph() {
       });
 
     Object.entries(langGroups).forEach(([lang, repos]) => {
-      const tagSet = new Map();
+      const tagSet = new Map<string, number>();
       repos.forEach((repo) => {
         const repoTags = metadata[repo.id]?.tags || [];
         repoTags.forEach((tag) => {
@@ -82,6 +99,7 @@ export default function RelationGraph() {
     if (nodes.length === 0) return;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const width = container.clientWidth;
     const height = 400;
     const dpr = window.devicePixelRatio || 1;
@@ -97,7 +115,7 @@ export default function RelationGraph() {
 
     const centerX = realWidth / 2;
     const centerY = realHeight / 2;
-    const positions = {};
+    const positions: Record<string, Position> = {};
 
     nodes.forEach((node, i) => {
       const angle = (2 * Math.PI * i) / nodes.length;
@@ -236,7 +254,7 @@ export default function RelationGraph() {
     ctx.fillText("标签", 102, realHeight - 26);
   }, [stars, metadata, hoveredNode]);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();

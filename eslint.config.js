@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import tsParser from "@typescript-eslint/parser";
 import prettier from "eslint-config-prettier";
 
 export default [
@@ -33,6 +34,19 @@ export default [
       "react/prop-types": "off",
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "no-console": "warn",
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}", "api/**/*.ts"],
+    languageOptions: { parser: tsParser },
+    plugins: { "react-hooks": reactHooks },
+    rules: {
+      "no-debugger": "error",
+      "no-dupe-keys": "error",
+      "no-invalid-regexp": "error",
+      "no-unreachable": "error",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
   prettier,

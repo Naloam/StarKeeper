@@ -1,3 +1,4 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -14,29 +15,31 @@ import {
   ArrowLeft,
   Sparkles,
 } from "lucide-react";
-import { useStarsStore, useAuthStore } from "../store";
+import { useStarsStore } from "../store";
 import {
+  type CleanupReport,
   generateCleanupSuggestions,
   archiveRepos,
-  restoreArchivedRepos,
   getArchivedRepos,
 } from "../services/cleanup.service";
-import {
-  updateRepoMetadata,
-  batchUpdateMetadata,
-  saveMetadataToGist,
-} from "../services/metadata.service";
+import { updateSessionMetadata } from "../services/session-metadata.service";
 import HealthBadge from "../components/common/HealthBadge";
+
+interface CleanupSelection {
+  metadata: Record<string, RepoMetadata>;
+  selectedRepos: Set<number>;
+  onSelect: (id: number) => void;
+  onSelectAll: (repos: readonly Pick<StarredRepo, "id">[]) => void;
+}
 
 export default function CleanupPage() {
   const navigate = useNavigate();
-  const { stars, metadata, setMetadata } = useStarsStore();
-  const { accessToken, gistId } = useAuthStore();
+  const { stars, metadata } = useStarsStore();
 
-  const [analysis, setAnalysis] = useState(null);
+  const [analysis, setAnalysis] = useState<CleanupReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("abandoned"); // abandoned | similar | lowEngagement | archived
-  const [selectedRepos, setSelectedRepos] = useState(new Set());
+  const [selectedRepos, setSelectedRepos] = useState(new Set<number>());
   const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function CleanupPage() {
     }
   };
 
-  const handleSelectRepo = (repoId) => {
+  const handleSelectRepo = (repoId: number) => {
     const newSelected = new Set(selectedRepos);
     if (newSelected.has(repoId)) {
       newSelected.delete(repoId);
@@ -67,7 +70,7 @@ export default function CleanupPage() {
     setSelectedRepos(newSelected);
   };
 
-  const handleSelectAll = (repos) => {
+  const handleSelectAll = (repos: readonly Pick<StarredRepo, "id">[]) => {
     const repoIds = repos.map((r) => r.id);
     const allSelected = repoIds.every((id) => selectedRepos.has(id));
 
@@ -89,14 +92,11 @@ export default function CleanupPage() {
 
     setArchiving(true);
     try {
-      const updatedMetadata = archiveRepos(Array.from(selectedRepos), metadata);
-      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-      setMetadata(updatedMetadata);
+      const archived = archiveRepos(Array.from(selectedRepos), {});
+      await updateSessionMetadata([{ kind: "repos", changes: archived }]);
       setSelectedRepos(new Set());
-      analyzeStars(); // 重新分析
       setActiveTab("archived"); // 切换到归档标签页
-    } catch (error) {
-      console.error("归档失败:", error);
+    } catch {
       toast.error("归档失败，请重试");
     } finally {
       setArchiving(false);
@@ -108,13 +108,15 @@ export default function CleanupPage() {
 
     setArchiving(true);
     try {
-      const updatedMetadata = restoreArchivedRepos(Array.from(selectedRepos), metadata);
-      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-      setMetadata(updatedMetadata);
+      const changes = Object.fromEntries(
+        Array.from(selectedRepos, (id) => [
+          id,
+          { archived: null, archivedAt: null, archivedReason: null },
+        ]),
+      );
+      await updateSessionMetadata([{ kind: "repos", changes }]);
       setSelectedRepos(new Set());
-      analyzeStars(); // 重新分析
-    } catch (error) {
-      console.error("恢复失败:", error);
+    } catch {
       toast.error("恢复失败，请重试");
     } finally {
       setArchiving(false);
@@ -350,7 +352,13 @@ export default function CleanupPage() {
 }
 
 // Abandoned Repos View
-function AbandonedReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function AbandonedReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: CleanupReport["categories"]["abandoned"] }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -461,7 +469,13 @@ function AbandonedReposView({ repos, metadata, selectedRepos, onSelect, onSelect
 }
 
 // Similar Repos View
-function SimilarReposView({ groups, metadata, selectedRepos, onSelect, onSelectAll }) {
+function SimilarReposView({
+  groups,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { groups: CleanupReport["categories"]["similar"] }) {
   if (groups.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -580,7 +594,13 @@ function SimilarReposView({ groups, metadata, selectedRepos, onSelect, onSelectA
 }
 
 // Low Engagement Repos View
-function LowEngagementReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function LowEngagementReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: CleanupReport["categories"]["lowEngagement"] }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -677,7 +697,13 @@ function LowEngagementReposView({ repos, metadata, selectedRepos, onSelect, onSe
 }
 
 // Archived Repos View
-function ArchivedReposView({ repos, metadata, selectedRepos, onSelect, onSelectAll }) {
+function ArchivedReposView({
+  repos,
+  metadata,
+  selectedRepos,
+  onSelect,
+  onSelectAll,
+}: CleanupSelection & { repos: ReturnType<typeof getArchivedRepos<StarredRepo>> }) {
   if (repos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">

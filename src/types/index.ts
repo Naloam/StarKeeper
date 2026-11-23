@@ -19,7 +19,7 @@ export interface StarredRepo {
   owner: {
     login: string;
     avatarUrl: string;
-    htmlUrl: string;
+    htmlUrl?: string;
   };
   description: string | null;
   language: string | null;
@@ -31,6 +31,13 @@ export interface StarredRepo {
   pushedAt: string;
   archived: boolean;
   isPrivate: boolean;
+  visibility?: string;
+  topics?: string[];
+  license?: string;
+  starredAt?: string;
+  nodeId?: string;
+  homepage?: string | null;
+  openIssuesCount?: number;
 }
 
 /** 仓库元数据（存储在 Gist 中） */
@@ -39,10 +46,23 @@ export interface RepoMetadata {
   notes?: string;
   color?: string;
   healthScore?: HealthScore;
-  aiSummary?: string;
+  aiSummary?:
+    | string
+    | {
+        summary: string;
+        features?: string[];
+        useCase?: string;
+        techStack?: string[];
+        timestamp?: number;
+      };
   embedding?: number[];
-  embeddingUpdatedAt?: string;
-  archived?: boolean;
+  embeddingUpdatedAt?: string | number;
+  archived?: boolean | { archivedAt: number; expiresAt: number; canRestore: boolean };
+  archivedAt?: string;
+  archivedReason?: string;
+  repoFullName?: string;
+  legacyRepoKey?: string;
+  updatedAt?: string;
 }
 
 /** 健康度评分 */
@@ -55,7 +75,7 @@ export interface HealthScore {
   details: {
     commitsLast30Days?: number;
     daysSinceLastUpdate?: number;
-    latestRelease?: { tagName: string; publishedAt: string } | null;
+    latestRelease?: { tagName: string; publishedAt: string | null } | null;
     openIssues?: number;
     openPRs?: number;
     contributors?: number;
@@ -86,6 +106,8 @@ export interface GistMetadata {
   sharedStars?: SharedStar[];
   createdAt?: string;
   updatedAt: string;
+  legacyShareConfig?: ShareConfig;
+  legacySharingRetired?: boolean;
 }
 
 /** 分享配置 */

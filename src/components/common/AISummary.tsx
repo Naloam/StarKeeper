@@ -1,19 +1,31 @@
+import type { RepoMetadata } from "@/types";
 import { Sparkles, RefreshCw, Edit2, Check, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+
+export type Summary = Exclude<RepoMetadata["aiSummary"], string | undefined>;
+interface AISummaryProps {
+  summary?: Summary | string | null;
+  onGenerate?: () => void;
+  onRegenerate?: () => void;
+  onSave?: (summary: Summary) => void | Promise<void>;
+  loading?: boolean;
+  editable?: boolean;
+}
 
 /**
  * AI 摘要展示组件
  * 用于显示项目的 AI 生成摘要
  */
 export default function AISummary({
-  summary,
+  summary: savedSummary,
   onGenerate,
   onRegenerate,
   onSave,
   loading = false,
   editable = false,
-}) {
+}: AISummaryProps) {
+  const summary = typeof savedSummary === "string" ? { summary: savedSummary } : savedSummary;
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(summary?.summary || "");
 
@@ -28,7 +40,7 @@ export default function AISummary({
         setIsEditing(false);
       } catch (error) {
         console.error("保存摘要失败:", error);
-        toast.error("保存失败：" + error.message);
+        toast.error("保存失败：" + (error instanceof Error ? error.message : String(error)));
       }
     } else {
       setIsEditing(false);
@@ -105,7 +117,10 @@ export default function AISummary({
         <div className="flex items-center space-x-1">
           {editable && !isEditing && (
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setEditedSummary(summary?.summary || "");
+                setIsEditing(true);
+              }}
               className="p-1.5 text-text-secondary hover:text-primary hover:bg-surface rounded-lg transition-fast focus-ring"
               title="编辑摘要"
             >

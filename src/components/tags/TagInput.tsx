@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import { useState } from "react";
 import { Tag, Check } from "lucide-react";
 
@@ -7,15 +8,23 @@ import { Tag, Check } from "lucide-react";
  * @param {Array<string>} props.suggestions - 建议的标签列表
  * @param {Function} props.onAdd - 添加标签回调
  */
-export default function TagInput({ suggestions = [], onAdd, placeholder = "输入标签..." }) {
+export default function TagInput({
+  suggestions = [],
+  onAdd,
+  placeholder = "输入标签...",
+}: {
+  suggestions?: string[];
+  onAdd: (tag: string) => void;
+  placeholder?: string;
+}) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const filteredSuggestions = suggestions.filter(
-    (tag) => tag.toLowerCase().includes(input.toLowerCase()) && input.length > 0,
+    (tag: string) => tag.toLowerCase().includes(input.toLowerCase()) && input.length > 0,
   );
 
-  const handleAdd = (tag) => {
+  const handleAdd = (tag: string) => {
     if (tag.trim()) {
       onAdd(tag.trim());
       setInput("");
@@ -23,7 +32,7 @@ export default function TagInput({ suggestions = [], onAdd, placeholder = "输�
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleAdd(input);
@@ -54,7 +63,7 @@ export default function TagInput({ suggestions = [], onAdd, placeholder = "输�
       {/* 建议列表 */}
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-surface-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {filteredSuggestions.map((tag) => (
+          {filteredSuggestions.map((tag: string) => (
             <button
               key={tag}
               onClick={() => handleAdd(tag)}

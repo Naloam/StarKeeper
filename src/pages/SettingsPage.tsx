@@ -13,11 +13,15 @@ import {
 import toast from "react-hot-toast";
 import MainLayout from "../components/layout/MainLayout";
 import { useSettingsStore } from "../store/settings";
+import { useAuthStore } from "../store";
+import { loadMetadataFromGist } from "../services/metadata.service";
 
 type TestStatus = "idle" | "testing" | "success" | "error";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { accessToken, gistId, user } = useAuthStore();
+  const [exporting, setExporting] = useState(false);
   const { deepseekApiKey, siliconflowApiKey, setDeepseekApiKey, setSiliconflowApiKey } =
     useSettingsStore();
 
@@ -30,6 +34,26 @@ export default function SettingsPage() {
     setDeepseekApiKey(localDeepseek.trim());
     setSiliconflowApiKey(localSiliconflow.trim());
     toast.success("设置已保存");
+  };
+
+  const downloadMetadata = async () => {
+    if (!accessToken || !gistId || !user) return;
+    setExporting(true);
+    try {
+      const data = await loadMetadataFromGist(accessToken, gistId, user.id);
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "starkeeper-metadata-backup.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error("无法导出当前元数据");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleTestDeepseek = async () => {
@@ -98,8 +122,24 @@ export default function SettingsPage() {
 
         <h1 className="text-2xl font-bold text-text-primary mb-2">设置</h1>
         <p className="text-text-secondary mb-8">
-          配置 AI 服务的 API Key 以启用智能功能。你的 Key 仅存储在浏览器本地，不会上传到任何服务器。
+          配置 AI 服务的 API Key。应用在当前标签页会话中保存凭据，请求时会把对应的 Key
+          发送给该服务。
         </p>
+
+        <section className="mb-6 space-y-2 rounded-lg border border-border bg-surface-card p-4">
+          <h2 className="font-semibold text-text-primary">数据恢复</h2>
+          <p className="text-sm text-text-secondary">
+            下载合并后的 Gist 元数据和本机待同步编辑。备份可能含有私人笔记，请妥善保存。
+          </p>
+          <button
+            className="btn-secondary"
+            type="button"
+            disabled={!gistId || exporting}
+            onClick={() => void downloadMetadata()}
+          >
+            {exporting ? "正在导出…" : "下载元数据备份"}
+          </button>
+        </section>
 
         {/* DeepSeek */}
         <div className="bg-surface-card rounded-lg border border-border p-6 mb-6">
@@ -241,7 +281,7 @@ export default function SettingsPage() {
         {/* Privacy note */}
         <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
           <p className="text-sm text-text-secondary">
-            <strong>隐私说明：</strong>你的 API Key 仅存储在浏览器 localStorage 中，仅在发起 API
+            <strong>隐私说明：</strong>你的 API Key 仅存储在当前标签页的会话存储中，仅在发起 API
             请求时使用。不会发送到任何第三方服务器，也不会在页面源码中暴露。
           </p>
         </div>

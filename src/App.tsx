@@ -7,11 +7,14 @@ import CallbackPage from "./pages/CallbackPage";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import OfflineIndicator from "./components/common/OfflineIndicator";
+import MetadataConnection from "./components/common/MetadataConnection";
+import { startBackgroundSync, stopBackgroundSync } from "./services/background-sync.service";
 import { useEffect, useState } from "react";
 import { validateGitHubToken } from "./utils/auth";
 import { setupNetworkListener } from "./utils/toast";
 
 // 路由级代码分割 — 懒加载页面组件
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const CleanupPage = lazy(() => import("./pages/CleanupPage"));
 const DeduplicationPage = lazy(() => import("./pages/DeduplicationPage"));
@@ -25,6 +28,7 @@ function App() {
   // 设置网络状态监听
   useEffect(() => {
     setupNetworkListener();
+    void globalThis.caches?.delete("github-api-cache").catch(() => undefined);
   }, []);
 
   // 应用启动时检查 store 中的 token
@@ -42,13 +46,11 @@ function App() {
             if (!isAuthenticated) {
               login(result.user, token);
             }
-          } else {
-            // Token 无效，通过 zustand 的 logout 清除数据
+          } else if (result.invalidToken) {
             logout();
           }
-        } catch (error) {
-          console.error("Token 验证异常:", error);
-          logout();
+        } catch {
+          // A network failure must not discard an active browser session.
         }
       }
 
@@ -58,6 +60,11 @@ function App() {
     initAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) startBackgroundSync();
+    return stopBackgroundSync;
+  }, [isAuthenticated]);
 
   // 显示加载状态
   if (isChecking) {
@@ -99,6 +106,10 @@ function App() {
               path="/deduplication"
               element={isAuthenticated ? <DeduplicationPage /> : <Navigate to="/" />}
             />
+            <Route
+              path="/discover"
+              element={isAuthenticated ? <DiscoverPage /> : <Navigate to="/" />}
+            />
             <Route path="/share/:shareId" element={<SharePage />} />
             <Route
               path="/settings"
@@ -114,6 +125,7 @@ function App() {
 
       {/* 离线状态指示器 */}
       <OfflineIndicator />
+      {isAuthenticated && <MetadataConnection />}
 
       {/* Toast 通知组件 */}
       <Toaster

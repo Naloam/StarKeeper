@@ -12,59 +12,20 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { useStarsStore, useAuthStore } from "../store";
+import { useStarsStore } from "../store";
 import type { StarredRepo, RepoMetadata } from "../types";
 import { generateDeduplicationReport } from "../services/similarity.service";
-import { saveMetadataToGist } from "../services/metadata.service";
+import { updateSessionMetadata } from "../services/session-metadata.service";
+import { archiveRepos } from "../services/cleanup.service";
 import SimilarReposCard from "../components/common/SimilarReposCard";
 import MainLayout from "../components/layout/MainLayout";
 
-/** 推荐信息 */
-interface Recommendation {
-  repoId: number;
-  repoName: string;
-  score: number;
-  reasons: string[];
-}
-
-/** 相似项目组 */
-interface DeduplicationGroup {
-  repos: StarredRepo[];
-  similarities: Array<{
-    repo1: number;
-    repo2: number;
-    score: number;
-    details: Record<string, number>;
-  }>;
-  averageSimilarity: number;
-  recommendation: Recommendation;
-}
-
-/** 去重报告 */
-interface DeduplicationReport {
-  totalRepos: number;
-  duplicateGroups: number;
-  totalDuplicates: number;
-  potentialSavings: number;
-  groups: DeduplicationGroup[];
-  summary: {
-    highSimilarity: number;
-    mediumSimilarity: number;
-    lowSimilarity: number;
-  };
-}
+type DeduplicationReport = ReturnType<typeof generateDeduplicationReport<StarredRepo>>;
+type DeduplicationGroup = DeduplicationReport["groups"][number];
 
 export default function DeduplicationPage() {
   const navigate = useNavigate();
-  const { stars, metadata, setMetadata } = useStarsStore() as {
-    stars: StarredRepo[];
-    metadata: Record<number, RepoMetadata>;
-    setMetadata: (m: Record<number, RepoMetadata>) => void;
-  };
-  const { accessToken, gistId } = useAuthStore() as {
-    accessToken: string | null;
-    gistId: string | null;
-  };
+  const { stars, metadata } = useStarsStore();
 
   const [report, setReport] = useState<DeduplicationReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,35 +88,21 @@ export default function DeduplicationPage() {
 
     setRemoving(true);
     try {
-      // 将选中的项目标记为已归档
-      const updatedMetadata = { ...metadata } as Record<
-        number,
-        RepoMetadata & Record<string, unknown>
-      >;
-      const now = new Date().toISOString();
-
-      selectedRepos.forEach((repoId) => {
-        if (!updatedMetadata[repoId]) {
-          updatedMetadata[repoId] = {};
-        }
-        updatedMetadata[repoId].archived = true;
-        updatedMetadata[repoId].archivedAt = now;
-        updatedMetadata[repoId].archivedReason = "duplicate";
-      });
-
-      // 保存到 Gist
-      await saveMetadataToGist(accessToken, gistId, updatedMetadata);
-      setMetadata(updatedMetadata);
+      const archived = archiveRepos(Array.from(selectedRepos), {});
+      const changes = Object.fromEntries(
+        Object.entries(archived).map(([id, value]) => [
+          id,
+          { ...(value as RepoMetadata), archivedReason: "duplicate" },
+        ]),
+      );
+      await updateSessionMetadata([{ kind: "repos", changes }]);
 
       // 清除选择
       setSelectedRepos(new Set());
 
       // 重新分析
-      analyzeDeduplication();
-
       toast.success(`成功归档 ${selectedRepos.size} 个项目！`);
-    } catch (error) {
-      console.error("归档失败:", error);
+    } catch {
       toast.error("归档失败，请重试");
     } finally {
       setRemoving(false);

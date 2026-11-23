@@ -1,9 +1,12 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { moveToSessionStorage } from "./session-storage";
+
+moveToSessionStorage("starkeeper-settings");
 
 /**
  * 用户设置状态管理
- * 持久化到 localStorage，存储用户自行配置的 API Key
+ * 持久化到当前标签页会话，存储用户自行配置的 API Key
  */
 interface SettingsState {
   deepseekApiKey: string;
@@ -26,6 +29,7 @@ export const useSettingsStore = create(
     }),
     {
       name: "starkeeper-settings",
+      storage: createJSONStorage(() => sessionStorage),
     },
   ),
 );

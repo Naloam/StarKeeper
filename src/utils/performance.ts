@@ -6,8 +6,11 @@ import { useEffect, useRef, useCallback, useState } from "react";
  * @param {Number} delay - 延迟时间（毫秒）
  * @returns {Function} 防抖后的函数
  */
-export function useDebounce(callback, delay = 300) {
-  const timeoutRef = useRef(null);
+export function useDebounce<Args extends unknown[]>(
+  callback: (...args: Args) => void,
+  delay = 300,
+) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbackRef = useRef(callback);
 
   // 保持 callback 引用最新
@@ -25,7 +28,7 @@ export function useDebounce(callback, delay = 300) {
   }, []);
 
   return useCallback(
-    (...args) => {
+    (...args: Args) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -44,9 +47,12 @@ export function useDebounce(callback, delay = 300) {
  * @param {Number} delay - 节流时间（毫秒）
  * @returns {Function} 节流后的函数
  */
-export function useThrottle(callback, delay = 300) {
+export function useThrottle<Args extends unknown[]>(
+  callback: (...args: Args) => void,
+  delay = 300,
+) {
   const lastRunRef = useRef(Date.now());
-  const timeoutRef = useRef(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbackRef = useRef(callback);
 
   // 保持 callback 引用最新
@@ -64,7 +70,7 @@ export function useThrottle(callback, delay = 300) {
   }, []);
 
   return useCallback(
-    (...args) => {
+    (...args: Args) => {
       const now = Date.now();
       const timeSinceLastRun = now - lastRunRef.current;
 
@@ -94,7 +100,7 @@ export function useThrottle(callback, delay = 300) {
  * @param {Number} delay - 延迟时间（毫秒）
  * @returns {*} 防抖后的值
  */
-export function useDebouncedValue(value, delay = 300) {
+export function useDebouncedValue<T>(value: T, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {

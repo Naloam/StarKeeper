@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Github, Star, Sparkles, Key } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -10,11 +10,11 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [token, setToken] = useState(import.meta.env.VITE_GITHUB_TOKEN || "");
+  const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleOAuthLogin = () => {
+  const handleOAuthLogin = async () => {
     // 检查是否配置了 GitHub OAuth
     if (!import.meta.env.VITE_GITHUB_CLIENT_ID) {
       toast.error(
@@ -23,8 +23,11 @@ export default function LoginPage() {
       return;
     }
 
-    const authUrl = getGitHubAuthUrl();
-    window.location.href = authUrl;
+    try {
+      window.location.href = await getGitHubAuthUrl();
+    } catch {
+      setError("无法发起 GitHub OAuth，请使用 HTTPS 或 localhost");
+    }
   };
 
   const handleTokenLogin = async () => {
@@ -56,13 +59,15 @@ export default function LoginPage() {
 
       // 登录成功 - 只使用 zustand store 存储
       // 不再使用 localStorage 的 github_token，避免双重存储
-      login(user, token.trim());
+      login(
+        { id: user.id, login: user.login, name: user.name, avatarUrl: user.avatar_url },
+        token.trim(),
+      );
 
       // 强制刷新页面以确保使用新的 token
       window.location.href = "/dashboard";
     } catch (err) {
-      console.error("Token login error:", err);
-      setError(err.message || "Token 验证失败");
+      setError(err instanceof Error ? err.message : "Token 验证失败");
     } finally {
       setLoading(false);
     }
@@ -237,23 +242,21 @@ export default function LoginPage() {
         {/* Footer - 柔和自然 */}
         <div className="text-center text-sm text-text-tertiary space-y-3 mt-8">
           <p className="font-light">Made with ❤️ for GitHub Users</p>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              sessionStorage.clear();
-              window.location.reload();
-            }}
-            className="text-xs text-text-muted hover:text-text-secondary underline transition-colors"
-          >
-            清除缓存并刷新
-          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function Feature({ icon, title, description }) {
+function Feature({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex items-start space-x-3 group">
       <div className="flex-shrink-0 mt-1 transition-transform group-hover:scale-110 duration-200">

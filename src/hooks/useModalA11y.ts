@@ -11,14 +11,18 @@ import { useEffect, useRef, useCallback } from "react";
  * @param {Function} onClose - 关闭回调
  * @returns {React.RefObject} 绑定到模态框容器的 ref
  */
-export default function useModalA11y(isOpen, onClose) {
-  const modalRef = useRef(null);
-  const previousFocusRef = useRef(null);
+export default function useModalA11y<T extends HTMLElement = HTMLDivElement>(
+  isOpen: boolean,
+  onClose: () => void,
+) {
+  const modalRef = useRef<T>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // 记录打开前的焦点元素
   useEffect(() => {
     if (isOpen) {
-      previousFocusRef.current = document.activeElement;
+      previousFocusRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
     }
   }, [isOpen]);
 
@@ -31,7 +35,7 @@ export default function useModalA11y(isOpen, onClose) {
       if (!modalRef.current) return;
 
       // 找到第一个可交互元素
-      const focusable = modalRef.current.querySelectorAll(
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       );
       if (focusable.length > 0) {
@@ -41,7 +45,10 @@ export default function useModalA11y(isOpen, onClose) {
       }
     }, 50);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      previousFocusRef.current?.focus();
+    };
   }, [isOpen]);
 
   // 关闭时恢复焦点
@@ -54,7 +61,7 @@ export default function useModalA11y(isOpen, onClose) {
 
   // Escape 键和焦点陷阱
   const handleKeyDown = useCallback(
-    (e) => {
+    (e: KeyboardEvent) => {
       if (!isOpen) return;
 
       if (e.key === "Escape") {
@@ -64,7 +71,7 @@ export default function useModalA11y(isOpen, onClose) {
       }
 
       if (e.key === "Tab" && modalRef.current) {
-        const focusable = modalRef.current.querySelectorAll(
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         );
         if (focusable.length === 0) return;

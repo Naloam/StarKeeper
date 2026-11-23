@@ -1,5 +1,9 @@
+import type { RepoMetadata, StarredRepo } from "@/types";
+import type { detectSimilarRepos } from "../../services/similarity.service";
 import { Star, GitFork, Clock, TrendingUp, CheckCircle, ExternalLink, Info } from "lucide-react";
 import HealthBadge from "./HealthBadge";
+
+type Group = ReturnType<typeof detectSimilarRepos<StarredRepo>>[number];
 
 /**
  * 相似项目组展示卡片
@@ -9,7 +13,17 @@ import HealthBadge from "./HealthBadge";
  * @param {Set} props.selectedRepos - 已选择的项目 ID 集合
  * @param {Object} props.metadata - 项目元数据
  */
-export default function SimilarReposCard({ group, onSelectRepo, selectedRepos, metadata }) {
+export default function SimilarReposCard({
+  group,
+  onSelectRepo,
+  selectedRepos,
+  metadata,
+}: {
+  group: Group;
+  onSelectRepo: (repoId: number) => void;
+  selectedRepos: Set<number>;
+  metadata: Record<string, RepoMetadata>;
+}) {
   const { repos, averageSimilarity, recommendation } = group;
 
   // 排序：推荐的在最前面

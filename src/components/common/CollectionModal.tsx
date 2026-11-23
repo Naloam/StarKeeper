@@ -1,4 +1,5 @@
-import { useState } from "react";
+import type { Collection } from "../../types";
+import { type FormEvent, useState } from "react";
 import { X, Plus, FolderOpen, Trash2, Check } from "lucide-react";
 import useModalA11y from "../../hooks/useModalA11y";
 
@@ -10,23 +11,39 @@ import useModalA11y from "../../hooks/useModalA11y";
  *   "edit"   — 编辑收藏夹名称/描述
  *   "add"    — 将某个 repo 添加到已有收藏夹
  */
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  mode?: "create" | "edit" | "add";
+  collection?: Collection;
+  repoId?: number | null;
+  collections?: Collection[];
+  onSave: (data: {
+    name?: string;
+    description?: string;
+    collectionId?: string;
+    repoId?: number;
+  }) => void | Promise<void>;
+  onDelete: (id: string) => void | Promise<void>;
+}
+
 export default function CollectionModal({
   isOpen,
   onClose,
   mode = "create",
   collection,
   repoId,
-  collections,
+  collections = [],
   onSave,
   onDelete,
-}) {
+}: Props) {
   const [name, setName] = useState(collection?.name || "");
   const [description, setDescription] = useState(collection?.description || "");
   const modalRef = useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim() && mode !== "add") return;
     onSave({ name: name.trim(), description: description.trim() });
@@ -68,14 +85,14 @@ export default function CollectionModal({
                 </p>
               ) : (
                 collections.map((col) => {
-                  const isAdded = col.repoIds.includes(repoId);
+                  const isAdded = repoId != null && col.repoIds.includes(repoId);
                   return (
                     <button
                       key={col.id}
                       type="button"
                       onClick={() => {
-                        if (!isAdded) {
-                          onSave({ collectionId: col.id, repoId });
+                        if (!isAdded && repoId != null) {
+                          void onSave({ collectionId: col.id, repoId });
                           onClose();
                         }
                       }}
@@ -129,7 +146,7 @@ export default function CollectionModal({
 
           {/* 操作按钮 */}
           <div className="flex items-center justify-between pt-2">
-            {mode === "edit" && onDelete ? (
+            {mode === "edit" && collection ? (
               <button
                 type="button"
                 onClick={() => {

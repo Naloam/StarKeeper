@@ -1,113 +1,52 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-import { parseOAuthCallback, validateState } from "../utils/auth";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store";
+import { consumeOAuthState } from "../utils/auth";
 import { getCurrentUser } from "../services/github.service";
 
 export default function CallbackPage() {
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
+  const started = useRef(false);
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
 
   useEffect(() => {
-    handleCallback();
-  }, []);
-
-  const handleCallback = async () => {
-    try {
-      // 解析 URL 参数
-      const {
-        code,
-        state,
-        error: oauthError,
-        errorDescription,
-      } = parseOAuthCallback(window.location.href);
-
-      if (oauthError) {
-        throw new Error(errorDescription || oauthError);
-      }
-
-      if (!code) {
-        throw new Error("缺少授权码");
-      }
-
-      // 验证 state（CSRF 保护）
-      if (!validateState(state)) {
-        throw new Error("State 验证失败，可能存在安全风险");
-      }
-
-      // 通过 Vercel Serverless Function 交换 token
-      const tokenResponse = await fetch("/api/auth/callback", {
+    if (started.current) return;
+    started.current = true;
+    const exchange = async () => {
+      const params = new URLSearchParams(location.search);
+      const code = params.get("code");
+      const verifier = consumeOAuthState(params.get("state"));
+      history.replaceState(history.state, "", location.pathname);
+      if (!code || !verifier) throw new Error("GitHub 授权已取消或会话过期，请重新登录");
+      const response = await fetch("/api/auth/callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, codeVerifier: verifier }),
       });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenResponse.ok || !tokenData.access_token) {
-        throw new Error(tokenData.error || "获取 access token 失败");
-      }
-
-      const user = await getCurrentUser(tokenData.access_token);
-      login(user, tokenData.access_token);
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("OAuth 回调处理失败:", err);
-      setError(err.message);
-    }
-  };
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <span className="text-3xl">❌</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">登录失败</h2>
-            <p className="text-gray-600 mb-6 whitespace-pre-line">{error}</p>
-            <div className="space-y-3">
-              <button
-                onClick={() => navigate("/")}
-                className="w-full bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                返回首页
-              </button>
-
-              {import.meta.env.DEV && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
-                  <p className="text-sm font-medium text-yellow-900 mb-2">开发模式快速设置：</p>
-                  <ol className="text-xs text-yellow-800 space-y-1 list-decimal list-inside">
-                    <li>创建 GitHub Personal Access Token</li>
-                    <li>打开浏览器控制台</li>
-                    <li>执行以下代码：</li>
-                  </ol>
-                  <pre className="mt-2 text-xs bg-yellow-100 p-2 rounded overflow-x-auto">
-                    {`localStorage.setItem(
-  'github_token', 
-  btoa('ghp_your_token_here')
-);
-window.location.href = '/';`}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      const data = await response.json();
+      if (!response.ok || typeof data.access_token !== "string")
+        throw new Error("GitHub 授权交换失败，请检查部署配置");
+      login(await getCurrentUser(data.access_token), data.access_token);
+      navigate("/dashboard", { replace: true });
+    };
+    void exchange().catch((failure) =>
+      setError(failure instanceof Error ? failure.message : "登录失败"),
     );
-  }
+  }, [login, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">正在登录...</h2>
-        <p className="text-gray-600">请稍候，正在处理您的授权信息</p>
-      </div>
-    </div>
+    <main className="min-h-screen bg-surface px-4 py-16 text-center text-text-primary">
+      {error ? (
+        <>
+          <p role="alert">{error}</p>
+          <Link to="/" className="mt-4 inline-block text-info-text underline">
+            返回登录
+          </Link>
+        </>
+      ) : (
+        <p role="status">正在验证 GitHub 授权…</p>
+      )}
+    </main>
   );
 }

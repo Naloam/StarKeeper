@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import type { StatsReport } from "../../services/stats.service";
 import React from "react";
 import {
   TrendingUp,
@@ -10,11 +12,17 @@ import {
   PieChart,
 } from "lucide-react";
 
+interface StatItemProps {
+  label: string;
+  value: number | string;
+  subtitle?: string;
+}
+
 /**
  * 统计面板组件
  * 显示项目的基础统计信息
  */
-const StatsPanel = ({ stats }) => {
+const StatsPanel = ({ stats }: { stats?: StatsReport | null }) => {
   if (!stats) return null;
 
   const { basic, health } = stats;
@@ -83,7 +91,7 @@ const StatsPanel = ({ stats }) => {
 /**
  * 统计卡片组件
  */
-const StatCard = ({ icon, label, value, subtitle }) => {
+const StatCard = ({ icon, label, value, subtitle }: StatItemProps & { icon: ReactNode }) => {
   return (
     <div className="bg-surface rounded-xl p-4 border border-border transition-fast hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-2">
@@ -99,7 +107,7 @@ const StatCard = ({ icon, label, value, subtitle }) => {
 /**
  * 健康度统计项组件
  */
-const HealthStatItem = ({ label, value, subtitle }) => {
+const HealthStatItem = ({ label, value, subtitle }: StatItemProps) => {
   return (
     <div className="bg-surface rounded-lg p-3 border border-border-light">
       <div className="text-caption text-text-secondary mb-1">{label}</div>
@@ -112,7 +120,7 @@ const HealthStatItem = ({ label, value, subtitle }) => {
 /**
  * 语言分布组件
  */
-export const LanguageDistribution = ({ languages }) => {
+export const LanguageDistribution = ({ languages }: { languages: StatsReport["languages"] }) => {
   if (!languages || languages.length === 0) return null;
 
   const topLanguages = languages.slice(0, 8);
@@ -148,7 +156,13 @@ export const LanguageDistribution = ({ languages }) => {
 /**
  * 语言条形图组件
  */
-const LanguageBar = ({ language, count, percentage, maxCount, index }) => {
+const LanguageBar = ({
+  language,
+  count,
+  percentage,
+  maxCount,
+  index,
+}: StatsReport["languages"][number] & { maxCount: number; index: number }) => {
   const width = (count / maxCount) * 100;
 
   return (
@@ -172,14 +186,14 @@ const LanguageBar = ({ language, count, percentage, maxCount, index }) => {
 /**
  * 标签云组件
  */
-export const TagCloud = ({ tags }) => {
+export const TagCloud = ({ tags }: { tags: StatsReport["tags"] }) => {
   if (!tags || tags.length === 0) return null;
 
   const topTags = tags.slice(0, 20);
   const maxCount = topTags[0]?.count || 1;
 
   // 计算字体大小（12px - 24px）
-  const getFontSize = (count) => {
+  const getFontSize = (count: number) => {
     const size = 12 + (count / maxCount) * 12;
     return `${size}px`;
   };
@@ -214,7 +228,7 @@ export const TagCloud = ({ tags }) => {
 /**
  * 最近活跃项目列表
  */
-export const RecentlyActiveRepos = ({ repos }) => {
+export const RecentlyActiveRepos = ({ repos }: { repos: StatsReport["recentlyActive"] }) => {
   if (!repos || repos.length === 0) return null;
 
   return (
@@ -235,7 +249,7 @@ export const RecentlyActiveRepos = ({ repos }) => {
 /**
  * 项目条目组件
  */
-const RepoItem = ({ repo }) => {
+const RepoItem = ({ repo }: { repo: StatsReport["recentlyActive"][number] }) => {
   const timeAgo = getTimeAgo(repo.pushedAt);
 
   return (
@@ -264,10 +278,10 @@ const RepoItem = ({ repo }) => {
 /**
  * 计算时间差
  */
-function getTimeAgo(dateString) {
+function getTimeAgo(dateString: string) {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now - date;
+  const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return "今天";

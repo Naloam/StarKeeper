@@ -1,3 +1,6 @@
+import type { HealthScore, StarredRepo } from "../types";
+import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
+
 /**
  * 健康度分析服务
  *
@@ -8,18 +11,17 @@
  * - 维护状态 (30分): 未archived + 有CI + README更新
  */
 
-import { getRepoReleases, getRepoActivity, getRepoCIStatus } from "./github.service";
-
 /**
  * 计算项目健康度评分
  * @param {string} accessToken
  * @param {Object} repo - 仓库基本信息
  * @returns {Promise<Object>} - { score, activity, community, maintenance, details, level }
  */
-export async function calculateHealthScore(accessToken, repo) {
+export async function calculateHealthScore(
+  accessToken: string,
+  repo: StarredRepo,
+): Promise<HealthScore> {
   try {
-    console.log(`🏥 开始分析健康度: ${repo.fullName}`);
-
     // 并行获取所需数据
     const [releasesData, activityData, ciData] = await Promise.all([
       getRepoReleases(accessToken, repo.owner.login, repo.name),
@@ -80,10 +82,8 @@ export async function calculateHealthScore(accessToken, repo) {
       cacheExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7天后过期
     };
 
-    console.log(`✅ 健康度分析完成: ${repo.fullName} - ${totalScore}分 (${level})`);
     return result;
   } catch (error) {
-    console.error(`❌ 健康度分析失败: ${repo.fullName}`, error);
     // 返回默认的低分
     return {
       score: 0,
@@ -92,7 +92,7 @@ export async function calculateHealthScore(accessToken, repo) {
       maintenance: 0,
       level: "critical",
       details: {},
-      error: error.message,
+      error: "GitHub 健康度查询未完成",
       calculatedAt: new Date().toISOString(),
       cacheExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
@@ -104,7 +104,11 @@ export async function calculateHealthScore(accessToken, repo) {
  * @param {Object} data
  * @returns {number}
  */
-export function calculateActivityScore(data) {
+export function calculateActivityScore(data: {
+  commitsLast30Days: number;
+  latestRelease: { publishedAt: string | null } | null;
+  pushedAt: string;
+}) {
   let score = 0;
 
   // 1. 最近30天 commits (15分)
@@ -117,7 +121,7 @@ export function calculateActivityScore(data) {
 
   // 2. Release 频率 (15分)
   const { latestRelease } = data;
-  if (latestRelease) {
+  if (latestRelease?.publishedAt) {
     const daysSinceRelease = Math.floor(
       (Date.now() - new Date(latestRelease.publishedAt).getTime()) / (1000 * 60 * 60 * 24),
     );
@@ -146,7 +150,12 @@ export function calculateActivityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-export function calculateCommunityScore(data) {
+export function calculateCommunityScore(data: {
+  openIssues: number;
+  openPRs: number;
+  contributors: number;
+  stargazersCount: number;
+}) {
   let score = 0;
   const { openIssues, openPRs, contributors, stargazersCount } = data;
 
@@ -181,7 +190,11 @@ export function calculateCommunityScore(data) {
  * @param {Object} data
  * @returns {number}
  */
-export function calculateMaintenanceScore(data) {
+export function calculateMaintenanceScore(data: {
+  archived: boolean;
+  hasCI: boolean;
+  updatedAt: string;
+}) {
   let score = 0;
   const { archived, hasCI, updatedAt } = data;
 
@@ -212,7 +225,7 @@ export function calculateMaintenanceScore(data) {
  * @param {number} score
  * @returns {string} - excellent | good | fair | poor | critical
  */
-export function getHealthLevel(score) {
+export function getHealthLevel(score: number): HealthScore["level"] {
   if (score >= 80) return "excellent"; // 优秀
   if (score >= 60) return "good"; // 良好
   if (score >= 40) return "fair"; // 一般
@@ -226,7 +239,10 @@ export function getHealthLevel(score) {
  * @param {Object} healthScore - 健康度评分
  * @returns {boolean}
  */
-export function detectStaleRepo(repo, healthScore) {
+export function detectStaleRepo(
+  repo: Pick<StarredRepo, "pushedAt">,
+  healthScore: Pick<HealthScore, "score">,
+) {
   // 条件: 健康度 < 30 且最后更新 > 365天
   if (healthScore.score < 30) {
     const daysSinceUpdate = Math.floor(
@@ -243,7 +259,7 @@ export function detectStaleRepo(repo, healthScore) {
  * @param {Object} healthScore
  * @returns {Object} - { trend, recommendation }
  */
-export function analyzeActivity(repo, healthScore) {
+export function analyzeActivity(repo: Pick<StarredRepo, "pushedAt">, healthScore: HealthScore) {
   const { score, details } = healthScore;
   let trend = "stable";
   let recommendation = "";
@@ -271,13 +287,13 @@ export function analyzeActivity(repo, healthScore) {
 
   // 额外建议
   const suggestions = [];
-  if (details.daysSinceLastUpdate > 180) {
+  if ((details.daysSinceLastUpdate ?? 0) > 180) {
     suggestions.push("超过6个月未更新");
   }
   if (!details.hasCI) {
     suggestions.push("缺少自动化测试");
   }
-  if (details.openIssues > 200) {
+  if ((details.openIssues ?? 0) > 200) {
     suggestions.push("积压的 Issues 较多");
   }
 
@@ -295,8 +311,18 @@ export function analyzeActivity(repo, healthScore) {
  * @param {Function} onProgress - 进度回调
  * @returns {Promise<Map>} - Map<repoId, healthScore>
  */
-export async function batchCalculateHealthScore(accessToken, repos, onProgress) {
-  const results = new Map();
+export async function batchCalculateHealthScore(
+  accessToken: string,
+  repos: StarredRepo[],
+  onProgress?: (data: {
+    current: number;
+    total: number;
+    repoName: string;
+    score?: number;
+    error?: string;
+  }) => void,
+) {
+  const results = new Map<number, HealthScore>();
   const total = repos.length;
 
   for (let i = 0; i < repos.length; i++) {
@@ -317,14 +343,13 @@ export async function batchCalculateHealthScore(accessToken, repos, onProgress) 
       // 避免速率限制，每个请求间隔 500ms
       await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
-      console.error(`批量分析失败: ${repo.fullName}`, error);
       // 继续处理下一个
       if (onProgress) {
         onProgress({
           current: i + 1,
           total,
           repoName: repo.fullName,
-          error: error.message,
+          error: "GitHub 健康度查询未完成",
         });
       }
     }

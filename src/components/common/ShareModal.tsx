@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
 import { X, Globe, Lock, Copy, Check, Share2, ExternalLink } from "lucide-react";
+import { isShareLink } from "../../services/share.service";
+import type { ShareConfig } from "../../types";
 import useModalA11y from "../../hooks/useModalA11y";
 
 /**
  * 分享功能 Modal
  * 允许用户公开分享他们的 Stars Collection
  */
-export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare }) {
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  shareConfig: ShareConfig | null;
+  onUpdateShare: (
+    value: Pick<ShareConfig, "isPublic" | "shareTitle" | "shareDescription">,
+  ) => Promise<void>;
+}
+export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare }: Props) {
   const [isPublic, setIsPublic] = useState(shareConfig?.isPublic || false);
   const [shareTitle, setShareTitle] = useState(shareConfig?.shareTitle || "");
   const [shareDescription, setShareDescription] = useState(shareConfig?.shareDescription || "");
@@ -25,9 +35,11 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   if (!isOpen) return null;
 
-  const shareUrl = shareConfig?.shareId
-    ? `${window.location.origin}/share/${shareConfig.shareId}`
-    : "";
+  const legacyShare = !!shareConfig?.shareId && !isShareLink(shareConfig.shareId);
+  const shareUrl =
+    shareConfig?.shareId && shareConfig.isPublic && !legacyShare
+      ? `${window.location.origin}/share/${shareConfig.shareId}`
+      : "";
 
   const handleCopy = async () => {
     try {
@@ -47,6 +59,8 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
         shareTitle: shareTitle.trim() || "My Stars Collection",
         shareDescription: shareDescription.trim(),
       });
+    } catch {
+      // The parent shows the save error.
     } finally {
       setSaving(false);
     }
@@ -54,7 +68,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
   const handleOpenShare = () => {
     if (shareUrl) {
-      window.open(shareUrl, "_blank");
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -90,6 +104,16 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {legacyShare && (
+            <p role="alert" className="text-sm text-warning-text">
+              旧链接曾包含元数据 Gist 地址，任何知道地址的人可能仍可读取其历史内容。请查阅 README
+              中的恢复指南，再生成独立分享链接。
+            </p>
+          )}
+          <p className="text-sm text-text-secondary">
+            快照包含公开仓库及你填写的标题、简介。持有链接的人可访问快照。撤销会关闭当前链接，已有副本和
+            Gist 历史仍可能被访问。
+          </p>
           {/* 公开/私有切换 */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-text-primary">分享状态</label>
@@ -109,7 +133,7 @@ export default function ShareModal({ isOpen, onClose, shareConfig, onUpdateShare
                   >
                     私有
                   </div>
-                  <div className="text-xs text-text-secondary">只有你可以访问</div>
+                  <div className="text-xs text-text-secondary">关闭快照链接</div>
                 </div>
               </button>
 

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — Unreleased
+
+### Added
+
+- Discover 浏览公开 GitHub 仓库，提供新项目、近期活跃、话题、个性化四种入口，支持筛选、排序理由、反馈和浏览器收藏。
+- Project Match 按需读取公开 README、许可证和依赖清单，分开展示事实、推断、建议与来源。深度分析可选。
+- 设置页支持下载合并后的元数据备份，已使用旧版分享的用户可确认迁移到新的 Gist。
+
+### Fixed
+
+- Gist 查找兼容旧描述、文件名和分页列表，出现重复时由用户选择。
+- 标签、笔记、收藏夹、摘要、清理、归档和离线补交使用字段级日志，保留独立设备的修改。
+- 使用数字仓库 ID 持久化摘要与健康度，并保留和迁移旧键。
+- 大体积向量使用 IndexedDB，依据输入哈希和模型复用，旧向量保留。
+- OAuth 使用随机 state 和 PKCE，Client Secret 只由服务端读取。浏览器凭据改用会话存储。
+- 分享路由只拉取独立快照文件，旧主 Gist 链接显示停用提示。
+- ESLint 覆盖 TS、TSX 和 API 源码。
+
 ## [0.3.0] - 2025-11-24
 
 ### Added

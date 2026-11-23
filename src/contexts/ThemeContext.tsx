@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-const ThemeContext = createContext();
+const ThemeContext = createContext<
+  { theme: "light" | "dark"; toggleTheme: () => void } | undefined
+>(undefined);
 
-export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+export const ThemeProvider = ({ children }: React.PropsWithChildren) => {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
+      if (savedTheme === "light" || savedTheme === "dark") {
         return savedTheme;
       }
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {

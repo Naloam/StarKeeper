@@ -1,16 +1,25 @@
+import type { MouseEvent } from "react";
+import type { HealthScore } from "@/types";
 import React from "react";
+
+interface HealthBadgeProps {
+  healthScore?: HealthScore | null;
+  size?: "sm" | "md" | "lg";
+  showScore?: boolean;
+  onClick?: () => void;
+}
 
 /**
  * 健康度徽章组件
  * 显示项目的健康度评分和等级
  */
-const HealthBadge = ({ healthScore, size = "md", showScore = true, onClick }) => {
+const HealthBadge = ({ healthScore, size = "md", showScore = true, onClick }: HealthBadgeProps) => {
   if (!healthScore) return null;
 
   const { score, level } = healthScore;
 
   // 根据等级配置颜色和图标
-  const getLevelConfig = (level) => {
+  const getLevelConfig = (level: HealthScore["level"]) => {
     switch (level) {
       case "excellent":
         return {
@@ -78,7 +87,7 @@ const HealthBadge = ({ healthScore, size = "md", showScore = true, onClick }) =>
     lg: "text-base px-4 py-1.5",
   };
 
-  const handleClick = (e) => {
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     if (onClick) {
       e.stopPropagation();
       onClick();
@@ -106,8 +115,14 @@ const HealthBadge = ({ healthScore, size = "md", showScore = true, onClick }) =>
 /**
  * 简单的健康度进度条
  */
-export const HealthProgressBar = ({ score, showLabel = true }) => {
-  const getColor = (score) => {
+export const HealthProgressBar = ({
+  score,
+  showLabel = true,
+}: {
+  score: number;
+  showLabel?: boolean;
+}) => {
+  const getColor = (score: number) => {
     if (score >= 80) return "bg-success";
     if (score >= 60) return "bg-primary";
     if (score >= 40) return "bg-warning";
@@ -136,7 +151,13 @@ export const HealthProgressBar = ({ score, showLabel = true }) => {
 /**
  * 健康度图标（紧凑版）
  */
-export const HealthIcon = ({ level, size = "16" }) => {
+export const HealthIcon = ({
+  level,
+  size = "16",
+}: {
+  level: HealthScore["level"];
+  size?: string;
+}) => {
   const icons = {
     excellent: "🟢",
     good: "🔵",
