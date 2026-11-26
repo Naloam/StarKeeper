@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  exportStatsReport,
   exportToMarkdown,
   exportToCSV,
   exportToJSON,
@@ -171,5 +172,49 @@ describe("export.service", () => {
       });
       expect(csv).toContain("总 Stars 数,10");
     });
+  });
+});
+
+describe("exportStatsReport", () => {
+  it("does not mutate the caller's stars array order", () => {
+    // 按 stars 数量升序构造，导出报告后原数组顺序必须保持不变
+    const stars = [
+      { ...mockStars[0], id: 101, name: "low-star", stargazersCount: 5, forksCount: 1, pushedAt: "2024-06-01T00:00:00Z" },
+      { ...mockStars[0], id: 102, name: "high-star", stargazersCount: 99999, forksCount: 2, pushedAt: "2024-06-02T00:00:00Z" },
+    ];
+    const orderBefore = stars.map((s) => s.name);
+    exportStatsReport({}, stars, {});
+    expect(stars.map((s) => s.name)).toEqual(orderBefore);
+  });
+
+  it("renders a markdown report", () => {
+    const md = exportStatsReport({ basic: { totalStars: 1 } }, mockStars.slice(0, 1), {});
+    expect(md).toContain("# StarKeeper 统计报告");
+    expect(md).toContain(`最受欢迎项目`);
+  });
+});
+
+describe("escaping user-controlled text", () => {
+  it("escapes pipes in tag names inside markdown report tables", () => {
+    const md = exportStatsReport(
+      { tags: [{ tag: "web|dev", count: 2, percentage: 50 }] },
+      [],
+      {},
+    );
+    expect(md).toContain("web\\|dev");
+    expect(md).not.toMatch(/\| web\|dev /);
+  });
+
+  it("quotes CSV cells when tags contain commas or quotes", () => {
+    const csv = exportStatsCSV({
+      tags: [
+        { tag: 'frontend, react', count: 3, percentage: 30 },
+        { tag: 'quote"inside', count: 1, percentage: 10 },
+      ],
+    });
+    // 含逗号的标签被引号包裹，不产生多余列
+    expect(csv).toContain('"frontend, react"');
+    // 引号按 RFC 4180 翻倍
+    expect(csv).toContain('"quote""inside"');
   });
 });
